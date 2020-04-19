@@ -1,0 +1,204 @@
+" ----------------------------------------------
+" 		Plugin loading
+" ----------------------------------------------
+
+" Set vim-plug plugins directory
+call plug#begin('~/.vim/plugged')
+
+" NERDTree
+Plug 'https://github.com/scrooloose/nerdtree.git'
+
+" Undotree
+Plug 'https://github.com/mbbill/undotree.git'
+
+" NERDCommenter
+Plug 'https://github.com/scrooloose/nerdcommenter.git'
+
+" YouCompleteMe
+Plug 'https://github.com/Valloric/YouCompleteMe.git'
+
+" Lightline
+Plug 'https://github.com/itchyny/lightline.vim.git'
+
+" EasyMotion
+Plug 'https://github.com/easymotion/vim-easymotion.git'
+
+" Ack.vim
+Plug 'https://github.com/mileszs/ack.vim.git'
+
+" Syntastic
+Plug 'https://github.com/vim-syntastic/syntastic.git'
+
+" Ansible VIM
+Plug 'https://github.com/pearofducks/ansible-vim.git'
+
+" Fugitive
+Plug 'https://github.com/tpope/vim-fugitive.git'
+
+" vim-terraform
+Plug 'https://github.com/hashivim/vim-terraform.git'
+
+" markdown-preview
+Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
+
+" Initialize vim-plug plugin system
+call plug#end()
+
+" ----------------------------------------------
+" 		Settings
+" ----------------------------------------------
+
+set nu
+set rnu
+set foldmethod=manual
+
+" ---------
+" Backspace
+" ---------
+
+" Can only delete text you have inserted
+set backspace=start
+
+" -----------
+" Indentation
+" -----------
+
+filetype plugin indent on
+" show existing tab with 4 spaces width
+set tabstop=4
+" when indenting with '>', use 4 spaces width
+set shiftwidth=4
+" On pressing tab, insert 4 spaces
+set expandtab
+
+" -------------
+" Tab switching
+" -------------
+
+noremap <C-T> :tabnew<CR> 
+noremap <BS> <C-T> 
+nnoremap <C-h> :tabprevious<CR>
+nnoremap <C-l> :tabnext<CR>
+
+" -----------
+" Colorscheme
+" -----------
+
+set background=dark
+colorscheme pablo
+
+" ----------------
+" plugin: NERDTree
+" ----------------
+
+" Open a NERDTree automatically when vim starts up if no files were specified
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd BufWinEnter * NERDTreeMirror
+
+" Change default arrows
+let g:NERDTreeDirArrowExpandable = '▸'
+let g:NERDTreeDirArrowCollapsible = '▾'
+
+" ---------------------
+" plugin: NERDCommenter
+" ---------------------
+
+" Add spaces after comment delimiters by default
+let g:NERDSpaceDelims = 1
+
+" Use compact syntax for prettified multi-line comments
+let g:NERDCompactSexyComs = 1
+
+" Align line-wise comment delimiters flush left instead of following code
+" indentation
+let g:NERDDefaultAlign = 'left'
+
+" Set a language to use its alternate delimiters by default
+let g:NERDAltDelims_java = 1
+
+" Add your own custom formats or override the defaults
+let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
+
+" Allow commenting and inverting empty lines (useful when commenting a
+" region)
+let g:NERDCommentEmptyLines = 1
+
+" Enable trimming of trailing whitespace when uncommenting
+let g:NERDTrimTrailingWhitespace = 1
+
+" Enable NERDCommenterToggle to check all selected lines is commented or not 
+let g:NERDToggleCheckAllLines = 1
+
+" -----------------
+" plugin: Lightline
+" -----------------
+
+set laststatus=2
+if !has('gui_running')
+    set t_Co=256
+endif
+set noshowmode
+let g:lightline = {
+      \ 'colorscheme': 'wombat',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'readonly', 'filename', 'modified' ],
+      \             [ 'gitbranch' ] ], 
+      \   'right': [ [ 'lineinfo' ],
+      \              [ 'percent' ],
+      \              [ 'fileformat', 'fileencoding', 'filetype' ],
+      \              [ 'syntastic' ] ]
+      \ },
+      \ 'component_function': {
+      \   'fugitive':  'FugitiveStatusline',
+      \   'gitbranch': 'fugitive#head',
+      \ },
+      \ 'component_expand': {
+      \   'syntastic': 'SyntasticStatuslineFlag',
+      \ },
+      \ 'component_type': {
+      \   'syntastic': 'error',
+      \ }
+\ }
+
+let g:syntastic_mode_map = { 'mode': 'active' }
+function! s:syntastic()
+  SyntasticCheck
+  call lightline#update()
+endfunction
+
+" ------------------
+" plugin: EasyMotion
+" ------------------
+
+" Word search motion
+map  / <Plug>(easymotion-sn)
+omap / <Plug>(easymotion-tn)
+
+" ---------------
+" plugin: Ack.vim
+" ---------------
+
+nnoremap <Leader>a :Ack!<Space>
+
+" -----------------
+" plugin: Syntastic
+" -----------------
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 0
+let g:syntastic_yaml_ansible_checkers = ['ansible_lint']
+let g:syntastic_yaml_checkers = ['yamllint']
+let g:syntastic_enable_highlighting = 1
+
+" ---------------------
+" plugin: vim-terraform
+" ---------------------
+
+let g:terraform_fmt_on_save=1
+let g:terraform_align=1
+let g:terraform_fold_sections=0
+let g:terraform_remap_spacebar=1
