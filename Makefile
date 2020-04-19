@@ -5,38 +5,41 @@ DOTFILES=$(HOME)/.dotfiles
 
 .DEFAULT_GOAL := all
 
-all: init bash git i3 i3status terminator tmux vim xbindkeys
+all: init update bash git i3 i3status terminator tmux vim xbindkeys
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
 		git clone -q $(REPO) $(DOTFILES); \
-	else \
+	fi
+
+update: init
+	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
 		git fetch -q && \
 		git reset -q --hard origin/master && \
 		popd > /dev/null; \
 	fi
 
-bash:
+bash: update
 	@ln -sf $(DOTFILES)/bash/bashrc ~/.bashrc
 
-git:
+git: update
 	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
 
-i3:
+i3: update
 	@ln -sf $(DOTFILES)/i3/config ~/.config/i3/config
 
-i3status:
+i3status: update
 	@ln -sf $(DOTFILES)/i3status/config ~/.config/i3status/config
 
-terminator:
+terminator: update
 	@ln -sf $(DOTFILES)/terminator/config ~/.config/terminator/config
 
-tmux:
+tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf ~/.tmux.conf
 
-vim:
+vim: update
 	@ln -sf $(DOTFILES)/vim/vimrc ~/.vimrc
 
-xbindkeys:
+xbindkeys: update
 	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc ~/.xbindkeysrc
