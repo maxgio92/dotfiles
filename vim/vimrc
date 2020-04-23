@@ -41,6 +41,9 @@ Plug 'https://github.com/hashivim/vim-terraform.git'
 " markdown-preview
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 
+" vim-colors-solarized
+Plug 'https://github.com/altercation/vim-colors-solarized.git'
+
 " Initialize vim-plug plugin system
 call plug#end()
 
@@ -85,7 +88,7 @@ nnoremap <C-l> :tabnext<CR>
 " -----------
 
 set background=dark
-colorscheme pablo
+colorscheme solarized
 
 " ----------------
 " plugin: NERDTree
