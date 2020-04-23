@@ -19,7 +19,7 @@
     font = Noto Sans Mono Thin 12
     use_system_font = False
   [[massi]]
-    background_color = "#1a1a1a"
+    background_color = "#002b36"
     background_darkness = 0.47
     cursor_color = "#aaaaaa"
     font = Monospace 11
