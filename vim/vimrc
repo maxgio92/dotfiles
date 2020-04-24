@@ -44,6 +44,9 @@ Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 " vim-colors-solarized
 Plug 'https://github.com/altercation/vim-colors-solarized.git'
 
+" ctrlp.vim
+Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
+
 " Initialize vim-plug plugin system
 call plug#end()
 
@@ -96,7 +99,7 @@ colorscheme solarized
 
 " Open a NERDTree automatically when vim starts up if no files were specified
 autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+"autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 autocmd BufWinEnter * NERDTreeMirror
 
 " Change default arrows
