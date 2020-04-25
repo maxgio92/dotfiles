@@ -14,9 +14,13 @@ general {
         color_bad = "#5b5b5b"
 }
 
+order += "run_watch DHCP"
 order += "wireless _first_"
 order += "ethernet _first_"
 order += "path_exists VPN"
+order += "ethernet virbr0"
+order += "ethernet docker0"
+order += "run_watch "
 order += "load"
 order += "disk /"
 order += "memory"
@@ -33,6 +37,24 @@ wireless _first_ {
 ethernet _first_ {
         format_up = " %ip (%speed)"
         format_down = " down"
+}
+
+ethernet virbr0 {
+        format_up = "virbr0: %ip"
+        format_down = "virbr0: down"
+}
+
+ethernet docker0 {
+        format_up = "docker0: %ip"
+        format_down = "docker0: down"
+}
+
+run_watch  {
+        pidfile = "/var/run/docker.pid"
+}
+
+run_watch DHCP {
+    pidfile = "/var/run/dhcpcd.pid"
 }
 
 path_exists VPN {
