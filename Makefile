@@ -1,4 +1,6 @@
 REPO=https://github.com/maxgio92/dotfiles.git
+REMOTE=origin
+MASTER=master
 DOTFILES=$(HOME)/.dotfiles
 
 .PHONY: init bash git i3 i3status terminator tmux vim xbindkeys
@@ -16,7 +18,7 @@ update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
 		git fetch -q && \
-		git reset -q --hard origin/master && \
+		git reset -q --hard $(REMOTE)/$(MASTER) && \
 		popd > /dev/null; \
 	fi
 
@@ -43,3 +45,11 @@ vim: update
 
 xbindkeys: update
 	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc ~/.xbindkeysrc
+
+openresolv: update
+	@sudo ln -sf $(DOTFILES)/openresolv/resolvconf.conf /etc/resolvconf.conf
+
+dnsmasq: openresolv update
+	@sudo mkdir -p /etc/dnsmasq.d \
+		&& sudo ln -sf $(DOTFILES)/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
+		&& sudo systemctl reload dnsmasq
