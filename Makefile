@@ -52,4 +52,4 @@ openresolv: update
 dnsmasq: openresolv update
 	@sudo mkdir -p /etc/dnsmasq.d \
 		&& sudo ln -sf $(DOTFILES)/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
-		&& sudo systemctl reload dnsmasq
+		&& sudo systemctl restart dnsmasq
