@@ -18,3 +18,4 @@
 - `make tmux`
 - `make vim`
 - `make xbindkeys`
+- `make dnsmasq`
