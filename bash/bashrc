@@ -156,6 +156,8 @@ alias grep='grep --color' # Enable colorized output
 alias pbcopy='xsel --clipboard --input'
 alias pbpaste='xsel --clipboard --output'
 alias k='kubectl'
+alias kns='kubens'
+alias kctx='kubectx'
 
 # Completions
 
