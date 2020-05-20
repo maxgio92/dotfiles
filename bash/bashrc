@@ -138,7 +138,7 @@ bash_prompt() {
     local UC=$EMK               # user's color
     [ $UID -eq "0" ] && UC=$EMR   # root's color
 
-    PS1="$TITLEBAR ${EMB}\${NEW_PWD}${R}\`parse_git_branch\`${P}\`terraform_workspace\` ${UC}\\$ ${NONE}"
+    PS1="$TITLEBAR ${G}\${NEW_PWD}${B}\`parse_git_branch\`${P}\`terraform_workspace\` ${B}\n\\$ ${NONE}"
 
     # without colors: PS1="[\u@\h \${NEW_PWD}]\\$ "
     # extra backslash in front of \$ to make bash colorize the prompt
