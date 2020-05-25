@@ -72,13 +72,16 @@ function terraform_workspace()
 # Get current namespace
 
 function kubernetes_namespace() {
-	NS=`kubens -c 2> /dev/null`
+	local namespace=`kubens -c 2> /dev/null`
+    local curdir="${PWD}"
 
-	if [ ! "${NS}" == "" ]; then
-		echo -n " ${NS}"
-	else
-		echo -n ""
-	fi
+    if [[ $curdir == *"kubernetes"* ]]; then
+	    if [ ! "${namespace}" == "" ]; then
+	        echo -n " ${namespace}"
+	    else
+	        echo -n ""
+	    fi
+    fi
 }
 
 
