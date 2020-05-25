@@ -170,14 +170,7 @@ unset bash_prompt
 
 # Aliases
 
-#alias ls='ls -G' # Enable colorized output for MacOS
-alias ls='ls --color' # Enable colorized output for Linux
-alias grep='grep --color' # Enable colorized output
-alias pbcopy='xsel --clipboard --input'
-alias pbpaste='xsel --clipboard --output'
-alias k='kubectl'
-alias kns='kubens'
-alias kctx='kubectx'
+[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 # Completions
 
