@@ -23,9 +23,10 @@ update: init
 	fi
 
 bash: update
-	@ln -sf $(DOTFILES)/bash/bashrc ~/.bashrc && \
+	@ln -sf $(DOTFILES)/bash/bash_profile ~/.bash_profile && \
+	ln -sf $(DOTFILES)/bash/bashrc ~/.bashrc && \
 	ln -sf $(DOTFILES)/bash/bash_aliases ~/.bash_aliases && \
-	ln -sf $(DOTFILES)/bash/bash_profile ~/.bash_profile &&
+	ln -sf $(DOTFILES)/bash/bash_logout ~/.bash_logout
 
 git: update
 	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
