@@ -2,6 +2,7 @@ REPO=https://github.com/maxgio92/dotfiles.git
 REMOTE=origin
 MASTER=master
 DOTFILES=$(HOME)/.dotfiles
+git=`which git`
 
 .PHONY: init bash git i3 i3status terminator tmux vim xbindkeys
 
@@ -11,14 +12,14 @@ all: init update bash git i3 i3status terminator tmux vim xbindkeys
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
-		git clone -q $(REPO) $(DOTFILES); \
+		$(git) clone -q $(REPO) $(DOTFILES); \
 	fi
 
 update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
-		git fetch -q && \
-		git reset -q --hard $(REMOTE)/$(MASTER) && \
+		$(git) fetch -q && \
+		$(git) reset -q --hard $(REMOTE)/$(MASTER) && \
 		popd > /dev/null; \
 	fi
 
