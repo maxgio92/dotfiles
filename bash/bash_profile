@@ -1,0 +1,7 @@
+#
+# ~/.bash_profile
+#
+
+[[ -f ~/.bashrc ]] && . ~/.bashrc
+
+export BASH_ENV=~/.bash_aliases
