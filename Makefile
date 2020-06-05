@@ -4,11 +4,11 @@ MASTER=master
 DOTFILES=$(HOME)/.dotfiles
 git=`which git`
 
-.PHONY: init bash git i3 i3status terminator tmux vim xbindkeys
+.PHONY: init bash git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
 .DEFAULT_GOAL := all
 
-all: init update bash git i3 i3status terminator tmux vim xbindkeys
+all: init update bash git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
@@ -49,6 +49,9 @@ vim: update
 
 xbindkeys: update
 	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc ~/.xbindkeysrc
+
+xinit: update
+	@ln -sf $(DOTFILES)/xinit/xinitrc ~/.xinitrc
 
 openresolv: update
 	@sudo ln -sf $(DOTFILES)/openresolv/resolvconf.conf /etc/resolvconf.conf
