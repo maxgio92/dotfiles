@@ -47,6 +47,9 @@ Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
 " CoC
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
+" repmo
+Plug 'https://github.com/Houl/repmo-vim.git'
+
 " Initialize vim-plug plugin system
 call plug#end()
 
@@ -92,6 +95,10 @@ nnoremap <C-l> :tabnext<CR>
 
 set background=dark
 colorscheme solarized
+
+" ----------------------------------------------
+" 		Plugin settings
+" ----------------------------------------------
 
 " ----------------
 " plugin: NERDTree
@@ -368,3 +375,26 @@ nnoremap <silent> <space>j  :<C-u>CocNext<CR>
 nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list.
 nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
+
+" ----------------
+" plugin: repmo
+" ----------------
+
+" map a motion and its reverse motion:
+:noremap <expr> h repmo#SelfKey('h', 'l')|sunmap h
+:noremap <expr> l repmo#SelfKey('l', 'h')|sunmap l
+
+" if you like `:noremap j gj', you can keep that:
+:map <expr> j repmo#Key('gj', 'gk')|sunmap j
+:map <expr> k repmo#Key('gk', 'gj')|sunmap k
+
+" repeat the last [count]motion or the last zap-key:
+:map <expr> ; repmo#LastKey(';')|sunmap ;
+:map <expr> , repmo#LastRevKey(',')|sunmap ,
+
+" add these mappings when repeating with `;' or `,':
+:noremap <expr> f repmo#ZapKey('f')|sunmap f
+:noremap <expr> F repmo#ZapKey('F')|sunmap F
+:noremap <expr> t repmo#ZapKey('t')|sunmap t
+:noremap <expr> T repmo#ZapKey('T')|sunmap T
+
