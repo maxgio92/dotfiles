@@ -145,11 +145,16 @@ if !has('gui_running')
     set t_Co=256
 endif
 set noshowmode
+
+function! CocCurrentFunction()
+    return get(b:, 'coc_current_function', '')
+endfunction
+
 let g:lightline = {
       \ 'colorscheme': 'solarized',
       \ 'active': {
       \   'left': [ [ 'mode', 'paste' ],
-      \             [ 'readonly', 'filename', 'modified' ],
+      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ],
       \             [ 'gitbranch' ] ], 
       \   'right': [ [ 'lineinfo' ],
       \              [ 'percent' ],
@@ -159,6 +164,8 @@ let g:lightline = {
       \ 'component_function': {
       \   'fugitive':  'FugitiveStatusline',
       \   'gitbranch': 'fugitive#head',
+      \   'cocstatus': 'coc#status',
+      \   'currentfunction': 'CocCurrentFunction'
       \ },
       \ 'component_expand': {
       \   'syntastic': 'SyntasticStatuslineFlag',
@@ -212,6 +219,7 @@ let g:terraform_remap_spacebar=1
 " --------------------
 "  plugin: coc
 " --------------------
+
 " TextEdit might fail if hidden is not set.
 set hidden
 
