@@ -54,9 +54,9 @@ xinit: update
 	@ln -sf $(DOTFILES)/xinit/xinitrc ~/.xinitrc
 
 openresolv: update
-	@sudo ln -sf $(DOTFILES)/openresolv/resolvconf.conf /etc/resolvconf.conf
+	@sudo ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
 
 dnsmasq: openresolv update
 	@sudo mkdir -p /etc/dnsmasq.d \
-		&& sudo ln -sf $(DOTFILES)/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
+		&& sudo ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
 		&& sudo systemctl restart dnsmasq
