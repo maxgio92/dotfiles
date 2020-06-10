@@ -13,9 +13,9 @@
 #                                 Definitions
 # -------------------------------------------------------------------------------
 set $mod        Mod4
-set $shutdown   sudo shutdown -h now
-set $reboot     sudo shutdown -r now
-set $wifitoggle sudo /usr/local/bin/wifi-toggle
+set $shutdown   sudo -A shutdown -h now
+set $reboot     sudo -A shutdown -r now
+set $wifitoggle sudo -A wifi-toggle
 set $hibernate  sudo -A systemctl suspend
 
 # Font for window titles. Will also be used by the bar unless a different font
@@ -163,7 +163,9 @@ bindsym $mod+Shift+c reload
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Shift+r restart
 
-bindsym $mod+Shift+x exec prompt "Are you sure you want to hibernate?" $hibernate
+bindsym $mod+Shift+z exec prompt "Are you sure you want to hibernate?"  $hibernate
+bindsym $mod+Shift+x exec prompt "Are you sure you want to shutdown?"   $shutdown
+bindsym $mod+Shift+a exec prompt "Are you sure you want to reboot?"     $reboot
 
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
