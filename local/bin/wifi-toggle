@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+UP=up
+DOWN=down
+SUDO=$(which sudo)
+IP=$(which ip)
+CAT=$(which cat)
+WL_DEV=wlp3s0
+WL_DEV_STATUS=$(${CAT} /sys/class/net/${WL_DEV}/operstate)
+WL_DEV_DOWN="${SUDO} ${IP} link set ${WL_DEV} down"
+WL_DEV_UP="${SUDO} ${IP} link set ${WL_DEV} up"
+
+if [ "${WL_DEV_STATUS}" == "${UP}" ]; then
+	${WL_DEV_DOWN}	
+	exit $?
+elif [ "${WL_DEV_STATUS}" == "${DOWN}" ]; then
+	${WL_DEV_UP}	
+	exit $?
+else
+	echo "Status not detected."
+	exit 1
+fi
+exit 0
