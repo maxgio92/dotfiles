@@ -4,11 +4,11 @@ MASTER=master
 DOTFILES=$(HOME)/.dotfiles
 git=`which git`
 
-.PHONY: init bash git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
+.PHONY: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
 .DEFAULT_GOAL := all
 
-all: init update bash git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
+all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
@@ -29,6 +29,9 @@ bash: update
 	ln -sf $(DOTFILES)/bash/bash_aliases ~/.bash_aliases && \
 	ln -sf $(DOTFILES)/bash/bash_logout ~/.bash_logout && \
 	ln -sf $(DOTFILES)/bash/bash_completion ~/.bash_completion
+
+bin: update
+	@ln -sf $(DOTFILES)/local/bin ~/.local/
 
 git: update
 	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
