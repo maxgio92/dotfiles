@@ -6,8 +6,9 @@ git=`which git`
 
 .PHONY: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := dotonly
 
+dotonly: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit
 all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
 
 init:
