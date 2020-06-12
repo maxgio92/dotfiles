@@ -11,6 +11,7 @@
 ##### Specific
 
 - `make bash`
+- `make bin`
 - `make git`
 - `make i3`
 - `make i3status`
