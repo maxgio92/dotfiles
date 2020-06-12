@@ -152,10 +152,10 @@ bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 
 # --- Options from Dmenu ---
-bindsym $mod+Shift+z  exec                                              "$hibernate"
-bindsym $mod+Shift+x  exec prompt "Are you sure you want to shutdown?"  "$shutdown"
-bindsym $mod+Shift+a  exec prompt "Are you sure you want to reboot?"    "$reboot"
-bindsym $mod+F1       exec --no-startup-id                              "$displayselect"
+bindsym $mod+F1  exec --no-startup-id                              "$displayselect"
+bindsym $mod+F2  exec                                              "$hibernate"
+bindsym $mod+F3  exec prompt "Are you sure you want to shutdown?"  "$shutdown"
+bindsym $mod+F4  exec prompt "Are you sure you want to reboot?"    "$reboot"
 
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
