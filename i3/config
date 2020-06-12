@@ -95,7 +95,7 @@ bindsym           $mod+o            split       h             # split in horizon
 
 # --- Mode ---
 bindsym           $mod+Shift+space  floating    toggle        # toggle tiling / floating
-floating_modifier $mod                                        # drag floating windows to their wanted position (use Mouse+$mod)
+floating_modifier $mod                                        # drag floating windows to their wanted position (use Mouse+mod)
 bindsym           $mod+f            fullscreen  toggle        # enter fullscreen mode for the focused container
 
 # --- Focus ---
