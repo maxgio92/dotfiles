@@ -13,9 +13,9 @@
 #                                 Definitions
 # -------------------------------------------------------------------------------
 set $mod        Mod4
-set $shutdown   sudo -A shutdown -h now
-set $reboot     sudo -A shutdown -r now
-set $wifitoggle sudo -A wifi-toggle
+set $shutdown   shutdown -h now
+set $reboot     shutdown -r now
+set $wifitoggle wifi-toggle
 set $hibernate  systemctl suspend
 
 # Font for window titles. Will also be used by the bar unless a different font
@@ -43,9 +43,6 @@ bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT
 bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
-
-# Use Mouse+$mod to drag floating windows to their wanted position
-floating_modifier $mod
 
 # start a terminal
 bindsym $mod+Return exec i3-sensible-terminal
@@ -88,32 +85,22 @@ bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
-# split in horizontal orientation
-#bindsym $mod+h split h
-bindsym $mod+o split h
+# --- Layout ---
+bindsym           $mod+s            layout      stacking      # change container layout to stacked
+bindsym           $mod+w            layout      tabbed        # change container layout to tabbed
+bindsym           $mod+e            layout      toggle split  # toggle split container layout
+bindsym           $mod+v            split       v             # split in vertical orientation
+bindsym           $mod+o            split       h             # split in horizontal orientation
 
-# split in vertical orientation
-bindsym $mod+v split v
+# --- Mode ---
+bindsym           $mod+Shift+space  floating    toggle        # toggle tiling / floating
+floating_modifier $mod                                        # drag floating windows to their wanted position (use Mouse+$mod)
+bindsym           $mod+f            fullscreen  toggle        # enter fullscreen mode for the focused container
 
-# enter fullscreen mode for the focused container
-bindsym $mod+f fullscreen toggle
-
-# change container layout (stacked, tabbed, toggle split)
-bindsym $mod+s layout stacking
-bindsym $mod+w layout tabbed
-bindsym $mod+e layout toggle split
-
-# toggle tiling / floating
-bindsym $mod+Shift+space floating toggle
-
-# change focus between tiling / floating windows
-bindsym $mod+space focus mode_toggle
-
-# focus the parent container
-bindsym $mod+a focus parent
-
-# focus the child container
-#bindsym $mod+d focus child
+# --- Focus ---
+bindsym           $mod+space        focus mode_toggle         # change focus between tiling / floating windows
+bindsym           $mod+a            focus parent              # focus the parent container
+#bindsym          $mod+d            focus child               # focus the child container
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
@@ -163,10 +150,11 @@ bindsym $mod+Shift+c reload
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Shift+r restart
 
-bindsym $mod+Shift+z  exec                                              $hibernate
-bindsym $mod+Shift+x  exec prompt "Are you sure you want to shutdown?"  $shutdown
-bindsym $mod+Shift+a  exec prompt "Are you sure you want to reboot?"    $reboot
-bindsym $mod+F1       exec --no-startup-id                              $displayselect
+# --- Options from Dmenu ---
+bindsym $mod+Shift+z  exec                                              "$hibernate"
+bindsym $mod+Shift+x  exec prompt "Are you sure you want to shutdown?"  "$shutdown"
+bindsym $mod+Shift+a  exec prompt "Are you sure you want to reboot?"    "$reboot"
+bindsym $mod+F1       exec --no-startup-id                              "$displayselect"
 
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
