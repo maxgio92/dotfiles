@@ -87,21 +87,32 @@ bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
 # --- Layout ---
-bindsym           $mod+s            layout      stacking      # change container layout to stacked
-bindsym           $mod+w            layout      tabbed        # change container layout to tabbed
-bindsym           $mod+e            layout      toggle split  # toggle split container layout
-bindsym           $mod+v            split       v             # split in vertical orientation
-bindsym           $mod+o            split       h             # split in horizontal orientation
+# change container layout to stacked
+bindsym           $mod+s            layout      stacking
+# change container layout to tabbed
+bindsym           $mod+w            layout      tabbed
+# toggle split container layout
+bindsym           $mod+e            layout      toggle split
+# split in vertical orientation
+bindsym           $mod+v            split       v
+# split in horizontal orientation
+bindsym           $mod+o            split       h
 
 # --- Mode ---
-bindsym           $mod+Shift+space  floating    toggle        # toggle tiling / floating
-floating_modifier $mod                                        # drag floating windows to their wanted position (use Mouse+mod)
-bindsym           $mod+f            fullscreen  toggle        # enter fullscreen mode for the focused container
+# toggle tiling / floating
+bindsym           $mod+Shift+space  floating    toggle
+# drag floating windows to their wanted position (use Mouse+mod)
+floating_modifier $mod
+# enter fullscreen mode for the focused container
+bindsym           $mod+f            fullscreen  toggle
 
 # --- Focus ---
-bindsym           $mod+space        focus mode_toggle         # change focus between tiling / floating windows
-bindsym           $mod+a            focus parent              # focus the parent container
-#bindsym          $mod+d            focus child               # focus the child container
+# change focus between tiling / floating windows
+bindsym           $mod+space        focus mode_toggle
+# focus the parent container
+bindsym           $mod+a            focus parent
+## focus the child container
+#bindsym          $mod+d            focus child
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
