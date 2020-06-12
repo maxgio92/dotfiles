@@ -153,7 +153,7 @@ bindsym $mod+Shift+r restart
 
 # --- Options from Dmenu ---
 bindsym $mod+F1  exec --no-startup-id                              "$displayselect"
-bindsym $mod+F2  exec                                              "$hibernate"
+bindsym $mod+F2  exec prompt "Are you sure you want to shutdown?"  "$hibernate"
 bindsym $mod+F3  exec prompt "Are you sure you want to shutdown?"  "$shutdown"
 bindsym $mod+F4  exec prompt "Are you sure you want to reboot?"    "$reboot"
 
