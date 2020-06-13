@@ -4,12 +4,12 @@ MASTER=master
 DOTFILES=$(HOME)/.dotfiles
 git=`which git`
 
-.PHONY: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
+.PHONY: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
 .DEFAULT_GOAL := dotonly
 
 dotonly: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit
-all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq
+all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
@@ -63,11 +63,29 @@ openresolv: update
 	@ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
 
 dnsmasq: openresolv update
-	@mkdir -p /etc/dnsmasq.d \
-		&& ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
-		&& systemctl restart dnsmasq
+	ifneq ($(shell id -u), 0)
+		@echo "You must be root to perform this action."
+	else
+		@mkdir -p /etc/dnsmasq.d \
+			&& ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
+			&& systemctl restart dnsmasq
+	endif
 
-logind: update
-	@mkdir -p /etc/systemd/logind.conf.d \
-		&& cp $(DOTFILES)/etc/systemd/logind.conf.d/*.conf /etc/systemd/logind.conf.d/ \
-		&& systemctl kill -s HUP systemd-logind
+systemd-logind: update
+	ifneq ($(shell id -u), 0)
+		@echo "You must be root to perform this action."
+	else
+		@mkdir -p /etc/systemd/logind.conf.d \
+			&& cp $(DOTFILES)/etc/systemd/logind.conf.d/*.conf /etc/systemd/logind.conf.d/ \
+			&& systemctl kill -s HUP systemd-logind
+	endif
+
+systemd-system-suspend: update
+	ifneq ($(shell id -u), 0)
+		@echo "You must be root to perform this action."
+	else
+		@cp $(DOTFILES)/etc/systemd/system/suspend@.service /etc/systemd/system/ \
+			&& cp $(DOTFILES)/etc/systemd/system/resume@.service /etc/systemd/system/ \
+			&& systemctl enable suspend@.service \
+			&& systemctl enable resume@.service
+	endif
