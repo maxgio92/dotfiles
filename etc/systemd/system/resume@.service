@@ -1,0 +1,11 @@
+[Unit]
+Description=User resume actions
+After=suspend.target
+
+[Service]
+User=%I
+Type=simple
+ExecStart=/home/massi/.dotfiles/bin/i3-exit resume
+
+[Install]
+WantedBy=suspend.target

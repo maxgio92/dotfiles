@@ -1,0 +1,13 @@
+[Unit]
+Description=User suspend actions
+Before=sleep.target
+
+[Service]
+User=%I
+Type=forking
+Environment=DISPLAY=:0
+ExecStart=/home/massi/.dotfiles/bin/i3-exit suspend
+ExecStartPost=/usr/bin/sleep 1
+
+[Install]
+WantedBy=sleep.target

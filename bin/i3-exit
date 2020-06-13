@@ -1,7 +1,13 @@
 #!/bin/sh
 
+WIFI_NET_DEV=wlp3s0
+
 before_suspend() {
-  sudo systemctl stop wpa_supplicant@wlp3s0
+  sudo systemctl stop wpa_supplicant@$WIFI_NET_DEV
+}
+
+resume() {
+  sudo systemctl start wpa_supplicant@$WIFI_NET_DEV
 }
 
 case "$1" in
@@ -11,6 +17,9 @@ case "$1" in
   suspend)
     before_suspend
     systemctl suspend
+    ;;
+  resume)
+    resume
     ;;
   hibernate)
     before_suspend
