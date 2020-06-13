@@ -33,7 +33,7 @@ bash: update
 	ln -sf $(DOTFILES)/bash/bash_completion ~/.bash_completion
 
 bin: update
-	@ln -sf $(DOTFILES)/local/bin ~/.local/
+	@ln -sf $(DOTFILES)/bin ~/.local/
 
 git: update
 	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
