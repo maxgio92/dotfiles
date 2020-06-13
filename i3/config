@@ -199,10 +199,14 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
-set $archlinux_blue #333333
-set $archlinux_gray #1793d1
+# -------------------------------------------------------------------------------
+#                                 Theme
+# -------------------------------------------------------------------------------
 
-# color defines for zenburn styled i3
+# Color defintions
+set $archlinux_gray #333333
+set $archlinux_blue #1793d1
+
 set $bd     #111111
 set $bg     #222222
 set $fg     #9f9f9f
@@ -215,7 +219,7 @@ set $yw     #ccdc90
 set $gn     #88b090
 set $rd     #e89393
 
-# set some nice colors          border     background  text
+# Set some nice colors          border     background  text
 client.focused                  $bd        $bg         $ac
 client.unfocused                $bd        $bg         $ia
 client.focused_inactive         $bd        $bg         $ac
