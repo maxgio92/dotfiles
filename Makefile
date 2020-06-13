@@ -66,3 +66,8 @@ dnsmasq: openresolv update
 	@sudo mkdir -p /etc/dnsmasq.d \
 		&& sudo ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
 		&& sudo systemctl restart dnsmasq
+
+logind: update
+	@mkdir -p /etc/systemd/logind.conf.d \
+		&& cp $(DOTFILES)/etc/systemd/logind.conf.d/*.conf /etc/systemd/logind.conf.d/ \
+		&& systemctl kill -s HUP systemd-logind
