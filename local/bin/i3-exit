@@ -1,0 +1,28 @@
+#!/bin/sh
+
+before_suspend() {
+  sudo systemctl stop wpa_supplicant@wlp3s0
+}
+
+case "$1" in
+  logout)
+    i3-msg exit
+    ;;
+  suspend)
+    before_suspend
+    systemctl suspend
+    ;;
+  hibernate)
+    before_suspend
+    systemctl hibernate
+    ;;
+  reboot)
+    systemctl reboot
+    ;;
+  shutdown)
+    systemctl poweroff
+    ;;
+  *)
+    echo "Usage: $0 {lock|logout|suspend|hibernate|reboot|shutdown}"
+    exit 2
+esac
