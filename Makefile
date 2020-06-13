@@ -60,12 +60,12 @@ xinit: update
 	@ln -sf $(DOTFILES)/xinit/xinitrc ~/.xinitrc
 
 openresolv: update
-	@sudo ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
+	@ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
 
 dnsmasq: openresolv update
-	@sudo mkdir -p /etc/dnsmasq.d \
-		&& sudo ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
-		&& sudo systemctl restart dnsmasq
+	@mkdir -p /etc/dnsmasq.d \
+		&& ln -sf $(DOTFILES)/etc/dnsmasq/dnsmasq.conf /etc/dnsmasq.conf \
+		&& systemctl restart dnsmasq
 
 logind: update
 	@mkdir -p /etc/systemd/logind.conf.d \
