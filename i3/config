@@ -16,7 +16,7 @@ set $mod            Mod4
 set $shutdown       shutdown -h now
 set $reboot         shutdown -r now
 set $wifitoggle     wifi-toggle
-set $hibernate      systemctl suspend
+set $suspend        systemctl suspend
 set $displayselect  displayselect
 
 # Font for window titles. Will also be used by the bar unless a different font
@@ -165,7 +165,7 @@ bindsym $mod+Shift+r restart
 # --- Options from Dmenu ---
 bindsym $mod+F1       exec --no-startup-id                                "$displayselect"
 bindsym $mod+Shift+w  exec prompt "Are you sure you want to toggle WIFI?" "$wifitoggle"
-bindsym $mod+F2       exec prompt "Are you sure you want to hibernate?"   "$hibernate"
+bindsym $mod+F2       exec prompt "Are you sure you want to suspend?"     "$suspend"
 bindsym $mod+F3       exec prompt "Are you sure you want to shutdown?"    "$shutdown"
 bindsym $mod+F4       exec prompt "Are you sure you want to reboot?"      "$reboot"
 
