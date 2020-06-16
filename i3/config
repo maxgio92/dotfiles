@@ -249,7 +249,7 @@ for_window [class="Terminator"] move window to workspace number $ws1
 for_window [class="Chromium"] move window to workspace number $ws2
 for_window [class="Slack"] move window to workspace number $ws3
 for_window [class="Spotify"] move window to workspace number $ws8
-for_window [class=".*"] title_format " %title"
+for_window [class=".*"] title_format <span size="large"> %title</span>
 
 # Wallpaper
 exec --no-startup-id feh --bg-scale ~/Images/wallpapers/archlinux_dark_wood.jpg
