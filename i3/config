@@ -229,6 +229,7 @@ client.urgent                   $rd        $rd         $tx
 bar {
         status_command i3status
         position bottom
+        strip_workspace_numbers yes
 
         colors {
             background          $bg
