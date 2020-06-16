@@ -4,12 +4,18 @@ MASTER=master
 DOTFILES=$(HOME)/.dotfiles
 git=`which git`
 
-.PHONY: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
+.PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
 .DEFAULT_GOAL := dotonly
 
 dotonly: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit
 all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
+
+list:
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null \
+		| awk -v RS= -F: '/^# File/,/^# Finished Make data base/ \
+		{if ($$1 !~ "^[#.]") {print $$1}}' \
+		| sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$'
 
 init:
 	@if [ ! -d $(DOTFILES) ]; then \
