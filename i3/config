@@ -219,11 +219,11 @@ set $yw     #ccdc90
 set $gn     #88b090
 set $rd     #e89393
 
-# Set some nice colors          border     background  text
-client.focused                  $bd        $bg         $ac
-client.unfocused                $bd        $bg         $ia
-client.focused_inactive         $bd        $bg         $ac
-client.urgent                   $rd        $rd         $tx
+# Set some nice colors          border     background  text    indicator  child_border
+client.focused                  $bd        $bg         $ac     $bg        $bg
+client.unfocused                $bd        $bg         $ia     $bg        $bg
+client.focused_inactive         $bd        $bg         $ac     $bg        $bg
+client.urgent                   $rd        $rd         $tx     $rd        $rd
 
 # Start i3bar to display bar (plus i3status)
 bar {
