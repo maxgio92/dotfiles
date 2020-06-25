@@ -227,6 +227,8 @@ let g:terraform_remap_spacebar=1
 "  plugin: coc
 " --------------------
 
+let g:coc_disable_startup_warning = 1
+
 " TextEdit might fail if hidden is not set.
 set hidden
 
