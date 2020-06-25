@@ -22,6 +22,7 @@ init:
 		$(git) clone -q $(REPO) $(DOTFILES); \
 	fi
 
+update: SHELL := /bin/bash
 update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
