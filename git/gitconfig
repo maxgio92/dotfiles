@@ -1,7 +1,6 @@
 [user]
     email = massimiliano.giovagnoli.1992@gmail.com
-    name = Massimiliano
-    surname = Giovagnoli
+    name = "Massimiliano Giovagnoli"
 
 [diff]
     submodule = log
