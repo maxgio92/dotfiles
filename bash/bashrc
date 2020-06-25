@@ -112,15 +112,9 @@ bash_prompt_command() {
 }
 
 bash_prompt() {
-    case $TERM in
-     xterm*|rxvt*)
-         local TITLEBAR='\[\033]0;\u:${NEW_PWD}\007\]'
-          ;;
-     *)
-         local TITLEBAR=""
-          ;;
-    esac
-    local NONE="\[\033[0m\]"    # unsets color to term's fg color
+
+    # default term's fg color
+    local NONE="\[\033[0m\]"
     
     # regular colors
     local K="\[\033[0;30m\]"    # black
@@ -155,13 +149,23 @@ bash_prompt() {
     local BGW="\[\033[47m\]"
     local BGP="\[\033[48;5;99m\]"
     
-    local UC=$EMK               # user's color
-    [ $UID -eq "0" ] && UC=$EMR   # root's color
+    # user's color
+    local UC=$EMK
 
-    PS1="$TITLEBAR ${G}\${NEW_PWD}${M}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_namespace\` ${B}\n\\$ ${NONE}"
+    # root's color
+    [ $UID -eq "0" ] && UC=$EMR
 
-    # without colors: PS1="[\u@\h \${NEW_PWD}]\\$ "
-    # extra backslash in front of \$ to make bash colorize the prompt
+    # titlebar setting
+    case $TERM in
+     xterm*|rxvt*)
+         local TITLEBAR="${EMG}\u@\h${NONE}:${B}\${NEW_PWD}"
+          ;;
+     *)
+         local TITLEBAR=""
+          ;;
+    esac
+
+    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_namespace\` ${NONE}\\$ ${NONE}"
 }
 
 PROMPT_COMMAND=bash_prompt_command
