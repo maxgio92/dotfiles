@@ -69,21 +69,37 @@ function terraform_workspace()
 # Kubernetes
 #-------------------------------------------------------------------------
 
+# Get current context
+
+function kubernetes_context() {
+  local context=`kubectx -c 2> /dev/null`
+
+  if [ ! "${context}" == "" ]; then
+      echo -n "${context}"
+  else
+      echo -n ""
+  fi
+}
+
 # Get current namespace
 
 function kubernetes_namespace() {
   local namespace=`kubens -c 2> /dev/null`
-    local curdir="${PWD}"
 
-    if [[ $curdir == *"kubernetes"* ]]; then
-      if [ ! "${namespace}" == "" ]; then
-          echo -n " ${namespace}"
-      else
-          echo -n ""
-      fi
-    fi
+  if [ ! "${namespace}" == "" ]; then
+      echo -n "${namespace}"
+  else
+      echo -n ""
+  fi
 }
 
+function kubernetes_prompt() {
+  if [ -z "$(kubernetes_context)$(kubernetes_namespace)" ]; then
+    echo -n ""
+  else
+    echo " $(kubernetes_context):$(kubernetes_namespace)"
+  fi
+}
 
 #-------------------------------------------------------------------------
 # Fancy PWD display function
@@ -158,14 +174,14 @@ bash_prompt() {
     # titlebar setting
     case $TERM in
      xterm*|rxvt*)
-         local TITLEBAR="${EMG}\u@\h${NONE}:${B}\${NEW_PWD}"
+         local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
           ;;
      *)
-         local TITLEBAR=""
+         local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
           ;;
     esac
 
-    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_namespace\` ${NONE}\\$ ${NONE}"
+    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_prompt\` ${NONE}\\$ ${NONE}"
 }
 
 PROMPT_COMMAND=bash_prompt_command
