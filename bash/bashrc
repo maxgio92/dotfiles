@@ -226,8 +226,14 @@ export LS_COLORS
 # Completions
 #-------------------------------------------------------------------------
 
+# AWS CLI
 complete -C '/usr/local/bin/aws_completer' aws
 
+# NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Kubectl
+source <(kubectl completion bash)
+complete -F __start_kubectl k
