@@ -5,3 +5,4 @@
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
 export BASH_ENV=~/.bash_aliases
+export PATH=$PATH:~/.local/bin
