@@ -34,7 +34,7 @@ for n in 1 2; do
   WINDOW=$SESSION:$n
   case $n in
     1)
-      tmux rename-window -t $WINDOW "EDITOR"
+      tmux rename-window -t $WINDOW "editor"
       #tmux split-window -t $WINDOW -p 50 -c $WORKSPACE
       tmux send-keys -t $WINDOW "export KUBECONFIG=${KUBECONFIG}" C-m
       tmux send-keys -t $WINDOW "${EDITOR_TERMINAL_COMMAND}" C-m
