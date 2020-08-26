@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+function show_help {
+  echo "Usage: tmux-start PROJECT_DIRNAME KUEBCONFIG_FILENAME"
+  echo ""
+  echo "PROJECT_DIRNAME: it must exist as a directory in \$HOME/workspace directory."
+  echo "KUBECONFIG_FILENAME: it must exist as a file in \$HOME/.kube directory."
+}
+
+project="${1}"
+kubeconfig="${2}"
+
+if [ -z "${project}" ] || [ -z "${kubeconfig}" ]; then
+  echo "Project or kubeconfig file name not specified." 
+  show_help
+  exit 1
+fi
+
+workspace="${HOME}/workspace/${project}"
+session="${project}"
+
+editor="vim -c NERDTree"
+editor_main_command="${editor}"
+editor_terminal_command="git log --oneline --decorate --graph"
+
+dashboard_command="k9s"
+
+tmux new-session -d -P -c $workspace -s $session
+
+for n in 1 2; do
+  window=$session:$n
+  case $n in
+    1)
+      tmux rename-window -t $window "editor"
+      #tmux split-window -t $window -p 50 -c $workspace
+      tmux send-keys -t $window "export KUBECONFIG=${kubeconfig}" C-m
+      tmux send-keys -t $window "${editor_terminal_command}" C-m
+      #tmux select-pane -t $window.0
+      #tmux send-keys -t $window "${editor_main_command}" C-m
+      ;;
+    2)
+      tmux new-window -t $window -n "dashboard" -c $workspace
+      tmux send-keys -t $window "export KUBECONFIG=${kubeconfig}" C-m
+      tmux send-keys -t $window "${dashboard_command}" C-m
+      ;;
+  esac
+done
