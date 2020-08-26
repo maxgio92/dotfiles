@@ -9,41 +9,42 @@ function show_help {
   echo "KUBECONFIG_FILENAME: it must exist as a file in \$HOME/.kube directory."
 }
 
-project="${1}"
-kubeconfig="${2}"
+PROJECT="${1}"
+KUBECONFIG_FILENAME="${2}"
 
-if [ -z "${project}" ] || [ -z "${kubeconfig}" ]; then
-  echo "Project or kubeconfig file name not specified." 
+if [ -z "${PROJECT}" ] || [ -z "${KUBECONFIG_FILENAME}" ]; then
+  echo "PROJECT_DIRNAME or KUBECONFIG_FILENAME file name not specified." 
   show_help
   exit 1
 fi
 
-workspace="${HOME}/workspace/${project}"
-session="${project}"
+KUBECONFIG_DIRNAME="${HOME}/.kube"
+KUBECONFIG="${KUBECONFIG_DIRNAME}/${KUBECONFIG_FILENAME}"
+WORKSPACE_HOME="${HOME}/workspace"
+WORKSPACE="${WORKSPACE_HOME}/${PROJECT}"
+SESSION="${PROJECT}"
+EDITOR="vim -c NERDTree"
+EDITOR_MAIN_COMMAND="${EDITOR}"
+EDITOR_TERMINAL_COMMAND="git log --oneline --decorate --graph"
+DASHBOARD_COMMAND="k9s"
 
-editor="vim -c NERDTree"
-editor_main_command="${editor}"
-editor_terminal_command="git log --oneline --decorate --graph"
-
-dashboard_command="k9s"
-
-tmux new-session -d -P -c $workspace -s $session
+tmux new-session -d -P -c $WORKSPACE -s $SESSION
 
 for n in 1 2; do
-  window=$session:$n
+  WINDOW=$SESSION:$n
   case $n in
     1)
-      tmux rename-window -t $window "editor"
-      #tmux split-window -t $window -p 50 -c $workspace
-      tmux send-keys -t $window "export KUBECONFIG=${kubeconfig}" C-m
-      tmux send-keys -t $window "${editor_terminal_command}" C-m
-      #tmux select-pane -t $window.0
-      #tmux send-keys -t $window "${editor_main_command}" C-m
+      tmux rename-window -t $WINDOW "EDITOR"
+      #tmux split-window -t $WINDOW -p 50 -c $WORKSPACE
+      tmux send-keys -t $WINDOW "export KUBECONFIG=${KUBECONFIG}" C-m
+      tmux send-keys -t $WINDOW "${EDITOR_TERMINAL_COMMAND}" C-m
+      #tmux select-pane -t $WINDOW.0
+      #tmux send-keys -t $WINDOW "${EDITOR_MAIN_COMMAND}" C-m
       ;;
     2)
-      tmux new-window -t $window -n "dashboard" -c $workspace
-      tmux send-keys -t $window "export KUBECONFIG=${kubeconfig}" C-m
-      tmux send-keys -t $window "${dashboard_command}" C-m
+      tmux new-window -t $WINDOW -n "dashboard" -c $WORKSPACE
+      tmux send-keys -t $WINDOW "export KUBECONFIG=${KUBECONFIG}" C-m
+      tmux send-keys -t $WINDOW "${DASHBOARD_COMMAND}" C-m
       ;;
   esac
 done
