@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+SEPARATOR=$(printf '=%.0s' {1..20})
+OUTPUT=$(join -1 2 -2 2 -a 1 -a 2 -o "2.1 0 1.3 2.3 2.5 1.4 2.4 2.6" -e '<wait>' \
+    <( kubectl top pods --all-namespaces | sort --key 2 -b ) \
+      <( kubectl get pods --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,"CPU_REQ(cores)":.spec.containers[*].resources.requests.cpu,"MEMORY_REQ(bytes)":.spec.containers[*].resources.requests.memory,"CPU_LIM(cores)":.spec.containers[*].resources.limits.cpu,"MEMORY_LIM(bytes)":.spec.containers[*].resources.limits.memory | sort --key 2 -b ) \
+      | column -t -s' ')
+TOTALS=$(printf "%s" "$OUTPUT" | awk '{s+=$2; t+=$3; u+=$4; v+=$5; w+=$6; x+=$7} END {print s" "t" "u" "v" "w" "x}')
+
+printf "%s\n%s\nTotals: %s\n" "$OUTPUT" "$SEPARATOR" "$TOTALS" | column -t -s' '
+printf %"$COLUMNS"s |tr " " "-"
