@@ -96,3 +96,6 @@ else
 		&& systemctl enable suspend@$(USERNAME).service \
 		&& systemctl enable resume@$(USERNAME).service
 endif
+
+zsh: update
+	@ln -sf $(DOTFILES)/zsh/zshrc ~/.zshrc
