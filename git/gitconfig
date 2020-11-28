@@ -17,7 +17,7 @@ lg = log --oneline --decorate --graph
 sts = status
 pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
 new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
-bclean = "!f() { git branch --merged ${1-master} | grep -v " ${1-master}$" | xargs -r git branch -d; }; f"
-rbclean = "!f() { git branch --merged ${1-master} | grep -v " ${1-master}$" | xargs -r git push origin :; }; f"
+bclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git branch -d; }; f"
+rbclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git push origin :; }; f"
 credstore = config credential.helper store
 
