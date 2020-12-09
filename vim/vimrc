@@ -59,7 +59,8 @@ call plug#end()
 
 set nu
 set rnu
-set foldmethod=manual
+set foldmethod=indent
+set nofoldenable
 
 " ---------
 " Backspace
