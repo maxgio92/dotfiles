@@ -6,3 +6,5 @@
 
 export BASH_ENV=~/.bash_aliases
 export PATH=$PATH:~/.local/bin
+export GOPATH=$HOME/workspace/go
+export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
