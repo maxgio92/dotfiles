@@ -1,0 +1,773 @@
+#!/usr/bin/env bash
+#
+# Copyright 2019 Peter Strzyzewski
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Prints cluster resource utilization
+
+
+PLUGIN_VERSION="v0.3.3"
+VIEW_UTILIZATION_NAMESPACE=""
+VIEW_UTILIZATION_NODE_LABEL=""
+VIEW_UTILIZATION_OUTPUT="text"
+VIEW_UTILIZATION_SUBCOMMAND=""
+VIEW_UTILIZATION_UNITS="full"
+VIEW_UTILIZATION_CONTEXT=""
+VIEW_UTILIZATION_HEADERS="true"
+
+print_plugin_version() {
+    echo "${PLUGIN_VERSION}"
+    exit
+}
+
+print_help() {
+    echo "usage: $0 [-v] [--namespace[=]<value>]" >&2
+    echo "" >&2
+    echo "-n[--namespace]     Filter by namespace" >&2
+    echo "-l[--selector]      Filter by node label" >&2
+    echo "-o[--output]        Output [text/json] default text" >&2
+    echo "-h                  Human readable" >&2
+    echo "--context           The name of the kubeconfig context to use" >&2
+    echo "--no-headers        Disable printing headers" >&2
+    echo "-v                  Prints version" >&2
+    echo "--help              Prints help" >&2
+    echo "subcommands:" >&2
+    echo "    namespace[s]    Shows namespace utilization" >&2
+    echo "    node[s]         Shows node utilization" >&2
+    exit
+}
+
+get_pod_data() {
+
+    local template
+    local namespace
+    local context
+
+    read -r -d '' template <<'EOF'
+    {{/* get_pod_data */}}
+    {{ range .items }}
+
+        {{ $namespace:=.metadata.namespace }}
+        {{ $node:=.spec.nodeName }}
+
+        {{ range .spec.containers }}
+
+            {{ $namespace }}
+            {{ "\t" }}
+
+            {{ $node }}
+            {{"\t"}}
+
+            {{ if .resources.requests.cpu }}
+                {{ .resources.requests.cpu }}
+            {{ else }}
+                0
+            {{end}}
+            {{ "\t" }}
+
+            {{ if .resources.requests.memory }}
+                {{ .resources.requests.memory }}
+            {{ else }}
+                0Ki
+            {{end}}
+            {{ "\t" }}
+
+            {{ if .resources.limits.cpu }}
+                {{ .resources.limits.cpu }}
+            {{ else }}
+                0
+            {{end}}
+            {{ "\t" }}
+
+            {{ if .resources.limits.memory }}
+                {{ .resources.limits.memory }}
+            {{ else }}
+                0Ki
+            {{end}}
+
+            {{ "\n" }}
+
+        {{end}}
+    {{end}}
+EOF
+
+    # Debug
+    # echo "${template//[$' \t\r\n']}" >&2
+
+    if [ "${VIEW_UTILIZATION_NAMESPACE}" != "" ]; then
+        namespace="--namespace=${VIEW_UTILIZATION_NAMESPACE}"
+    else
+        namespace="--all-namespaces"
+    fi
+
+    if [ "${VIEW_UTILIZATION_CONTEXT}" != "" ]; then
+        context="--context=${VIEW_UTILIZATION_CONTEXT}"
+    else
+        context=""
+    fi
+
+
+    kubectl $context get pod $namespace --field-selector=status.phase=Running -o=go-template --template="${template//[$' \t\r\n']}"
+}
+
+get_node_data() {
+    local node_label
+    local context
+
+    if [ "${VIEW_UTILIZATION_NODE_LABEL}" != "" ]; then
+        node_label="-l ${VIEW_UTILIZATION_NODE_LABEL}"
+    fi
+    if [ "${VIEW_UTILIZATION_CONTEXT}" != "" ]; then
+        context="--context=${VIEW_UTILIZATION_CONTEXT}"
+    else
+        context=""
+    fi
+
+
+    # shellcheck disable=SC2086
+    kubectl $context get nodes $node_label --field-selector=spec.unschedulable=false -o=jsonpath="{range .items[*]}{.metadata.name}{'\t'}{.status.allocatable.cpu}{'\t'}{.status.allocatable.memory}{'\n'}{end}"
+}
+
+test_kubectl_context() {
+    local output
+
+    # Check if context exists in kubeconfig
+    output=$(kubectl config get-contexts ${VIEW_UTILIZATION_CONTEXT} -o name)
+
+    if [ "${output}" == "${VIEW_UTILIZATION_CONTEXT}" ]; then
+        context="--context=${VIEW_UTILIZATION_CONTEXT}"
+    else
+        echo "Context error"
+        exit 1
+    fi
+}
+
+
+cluster_utilization() {
+
+    # shellcheck disable=SC2016
+    awkcmd='BEGIN {FS="\t"};
+    NR==FNR { node[$1]; }
+
+    NR==FNR && $2 ~ /[0-9]$/    { alloc_cpu+=$2*1000; };
+    NR==FNR && $2 ~ /m?$/       { alloc_cpu+=$2; };
+    NR==FNR && $3 ~ /[0-9]$/    { alloc_mem+=$3; next };
+    NR==FNR && $3 ~ /[kK](i)?$/ { alloc_mem+=$3*1024; next };
+    NR==FNR && $3 ~ /M(i)?$/    { alloc_mem+=$3*1048576; next };
+    NR==FNR && $3 ~ /[gG](i)?$/ { alloc_mem+=$3*1073741824; next };
+
+    # CPU requests
+    $2 in node && $3 ~ /[0-9]$/ { req_cpu+=$3*1000; };
+    $2 in node && $3 ~ /m?$/    { req_cpu+=$3; };
+
+    # memory requests
+    $2 in node && $4 ~ /m$/         { req_mem+=$4/1000; next };  # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $2 in node && $4 ~ /[kK](i)?$/  { req_mem+=$4*1024; };
+    $2 in node && $4 ~ /M(i)?$/     { req_mem+=$4*1048576; };
+    $2 in node && $4 ~ /[gG](i)?$/  { req_mem+=$4*1073741824; };
+    $2 in node && $4 ~ /[tT](i)?$/  { req_mem+=$4*1099511627776; };
+
+    # CPU limits
+    $2 in node && $5 ~ /[0-9]$/ { lim_cpu+=$5*1000; };
+    $2 in node && $5 ~ /m?$/    { lim_cpu+=$5; };
+
+    # memory limits
+    $2 in node && $6 ~ /m$/         { lim_mem+=$6/1000; next };  # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $2 in node && $6 ~ /[kK](i)?$/  { lim_mem+=$6*1024; next };
+    $2 in node && $6 ~ /M(i)?$/     { lim_mem+=$6*1048576; next };
+    $2 in node && $6 ~ /[gG](i)?$/  { lim_mem+=$6*1073741824; next };
+    $2 in node && $6 ~ /[tT](i)?$/  { lim_mem+=$6*1099511627776; next };
+    END {
+
+        req_cpu_text=prettify(sprintf("%.0f",req_cpu), cpu_pretty(req_cpu))
+        req_mem_text=prettify(sprintf("%.0f",req_mem), mem_pretty(req_mem))
+        req_header=prettify("Requests", "Req")
+        req_width=calc_max_width(req_header, req_cpu_text, req_mem_text)
+
+        percent_req_cpu_text=prettify(calc_percentage(req_cpu, alloc_cpu), sprintf("%s%%", calc_percentage(req_cpu, alloc_cpu)))
+        percent_req_mem_text=prettify(calc_percentage(req_mem, alloc_mem), sprintf("%s%%", calc_percentage(req_mem, alloc_mem)))
+        percent_req_header=prettify("%Requests", "%R")
+        percent_req_width=calc_max_width(percent_req_header, percent_req_cpu_text, percent_req_mem_text)
+
+        lim_cpu_text=prettify(lim_cpu, cpu_pretty(lim_cpu))
+        lim_mem_text=prettify(lim_mem, mem_pretty(lim_mem))
+        lim_header=prettify("Limits", "Lim")
+        lim_width=calc_max_width(lim_header, lim_cpu_text, lim_mem_text)
+
+        percent_lim_cpu_text=prettify(calc_percentage(lim_cpu, alloc_cpu), sprintf("%s%%", calc_percentage(lim_cpu, alloc_cpu)))
+        percent_lim_mem_text=prettify(calc_percentage(lim_mem, alloc_mem), sprintf("%s%%", calc_percentage(lim_mem, alloc_mem)))
+        percent_lim_header=prettify("%Limits", "%L")
+        percent_lim_width=calc_max_width(percent_lim_header, percent_lim_cpu_text, percent_lim_mem_text)
+
+        alloc_cpu_text=prettify(alloc_cpu, cpu_pretty(alloc_cpu))
+        alloc_mem_text=prettify(sprintf("%.0f", alloc_mem), mem_pretty(alloc_mem))
+        alloc_header=prettify("Allocatable", "Alloc")
+        alloc_width=calc_max_width(alloc_header, alloc_cpu_text, alloc_mem_text)
+
+        sched_cpu_text=prettify(calc_sched(req_cpu, alloc_cpu), cpu_pretty(calc_sched(req_cpu, alloc_cpu)))
+        sched_mem_text=prettify(sprintf("%.0f", calc_sched(req_mem, alloc_mem)), mem_pretty(calc_sched(req_mem, alloc_mem)))
+        sched_header=prettify("Schedulable", "Sched")
+        sched_width=calc_max_width(sched_header, sched_cpu_text, sched_mem_text)
+
+        free_cpu_text=prettify(calc_free(req_cpu, lim_cpu, alloc_cpu), cpu_pretty(calc_free(req_cpu, lim_cpu, alloc_cpu)))
+        free_mem_text=prettify(sprintf("%.0f", calc_free(req_mem, lim_mem, alloc_mem)), mem_pretty(calc_free(req_mem, lim_mem, alloc_mem)))
+        free_width=calc_max_width("Free", free_cpu_text, free_mem_text)
+
+        if ( output == "text") {
+
+            if ( headers == "true" ) {
+                printf("%-8s  %"req_width"s  %"percent_req_width"s  %"lim_width"s  %"percent_lim_width"s  %"alloc_width"s  %"sched_width"s  %"free_width"s\n", "Resource", req_header, percent_req_header, lim_header, percent_lim_header, alloc_header, sched_header, "Free");
+            }
+            printf("%-8s  %"req_width"s  %"percent_req_width"s  %"lim_width"s  %"percent_lim_width"s  %"alloc_width"s  %"sched_width"s  %"free_width"s\n", "CPU", req_cpu_text, percent_req_cpu_text, lim_cpu_text, percent_lim_cpu_text, alloc_cpu_text, sched_cpu_text, free_cpu_text);
+            printf("%-8s  %"req_width"s  %"percent_req_width"s  %"lim_width"s  %"percent_lim_width"s  %"alloc_width"s  %"sched_width"s  %"free_width"s\n", "Memory", req_mem_text, percent_req_mem_text, lim_mem_text, percent_lim_mem_text, alloc_mem_text, sched_mem_text, free_mem_text);
+        }
+
+        if ( output == "json" ) {
+            quotes=( units == "full")? "":"\""
+            printf("{");
+            printf("\"CPU\": {");
+            printf("\"requested\": "quotes"%s"quotes",", req_cpu_text);
+            printf("\"limits\": "quotes"%s"quotes",", lim_cpu_text);
+            printf("\"allocatable\": "quotes"%s"quotes",", alloc_cpu);
+            printf("\"schedulable\": "quotes"%s"quotes",", sched_cpu_text);
+            printf("\"free\": "quotes"%s"quotes"", free_cpu_text);
+            printf("},");
+
+            printf("\"Memory\": {");
+            printf("\"requested\": "quotes"%s"quotes",", req_mem_text);
+            printf("\"limits\": "quotes"%s"quotes",", lim_mem_text);
+            printf("\"allocatable\": "quotes"%s"quotes",", alloc_mem_text);
+            printf("\"schedulable\": "quotes"%s"quotes",", sched_mem_text);
+            printf("\"free\": "quotes"%s"quotes"", free_mem_text);
+            printf("}");
+            printf("}");
+        }
+    }
+    '
+    awk -v output="${VIEW_UTILIZATION_OUTPUT}" \
+        -v units="${VIEW_UTILIZATION_UNITS}" \
+        -v headers="${VIEW_UTILIZATION_HEADERS}" \
+        "${VIEW_UTILIZATION_AWK_FN}${awkcmd}" <(get_node_data) <(get_pod_data)
+}
+
+namespace_utilization() {
+
+    # shellcheck disable=SC2016
+    awkcmd='BEGIN {FS="\t"};
+    namespaces[$1];
+
+    # CPU requests
+    $3 ~ /[0-9]$/ { req_cpu[$1]+=$3*1000; };
+    $3 ~ /m?$/    { req_cpu[$1]+=$3; };
+
+    # memory requests
+    $4 ~ /m$/         { req_mem[$1]+=$4/1000; };   # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $4 ~ /[kK](i)?$/  { req_mem[$1]+=$4*1024; };
+    $4 ~ /M(i)?$/     { req_mem[$1]+=$4*1048576; };
+    $4 ~ /[gG](i)?$/  { req_mem[$1]+=$4*1073741824; };
+    $4 ~ /[tT](i)?$/  { req_mem[$1]+=$4*1099511627776; };
+
+    # CPU limits
+    $5 ~ /[0-9]$/ { lim_cpu[$1]+=$5*1000; };
+    $5 ~ /m?$/    { lim_cpu[$1]+=$5; };
+
+    # memory limits
+    $6 ~ /m$/         { lim_mem[$1]+=$6/1000; next };  # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $6 ~ /[kK](i)?$/  { lim_mem[$1]+=$6*1024; next };
+    $6 ~ /M(i)?$/     { lim_mem[$1]+=$6*1048576; next };
+    $6 ~ /[gG](i)?$/  { lim_mem[$1]+=$6*1073741824; next };
+    $6 ~ /[tT](i)?$/  { lim_mem[$1]+=$6*1099511627776; next };
+
+    END {
+
+        total_records=0;
+        for (namespace in namespaces) {
+            total_records++;
+            nsindex[total_records]=namespace;
+            if (longest_namespace_len < length(namespace)) longest_namespace_len = length(namespace)
+        }
+        if (longest_namespace_len < 9 ) longest_namespace_len = 9
+
+        # sort namespaces alphabetically
+        a_sort(nsindex)
+
+        if ( output == "text" ) {
+
+            req_cpu_header=prettify("CPU Requests", "Req")
+            req_mem_header=prettify("Memory Requests", "Req")
+            lim_cpu_header=prettify("CPU Limits", "Lim")
+            lim_mem_header=prettify("Memory Limits", "Lim")
+
+            req_cpu_width=length(req_cpu_header)
+            req_mem_width=length(req_mem_header)
+            lim_cpu_width=length(lim_cpu_header)
+            lim_mem_width=length(lim_mem_header)
+
+            for (z = 1; z in nsindex; z++) {
+
+                req_cpu_text[z]=prettify(req_cpu[nsindex[z]], cpu_pretty(req_cpu[nsindex[z]]))
+                req_mem_text[z]=prettify(sprintf("%.0f",req_mem[nsindex[z]]), mem_pretty(req_mem[nsindex[z]]))
+                lim_cpu_text[z]=prettify(lim_cpu[nsindex[z]], cpu_pretty(lim_cpu[nsindex[z]]))
+                lim_mem_text[z]=prettify(sprintf("%.0f",lim_mem[nsindex[z]]), mem_pretty(lim_mem[nsindex[z]]))
+
+                req_cpu_width=(req_cpu_width < length(req_cpu_text[z]))? length(req_cpu_text[z]): req_cpu_width
+                req_mem_width=(req_mem_width < length(req_mem_text[z]))? length(req_mem_text[z]): req_mem_width
+                lim_cpu_width=(lim_cpu_width < length(lim_cpu_text[z]))? length(lim_cpu_text[z]): lim_cpu_width
+                lim_mem_width=(lim_mem_width < length(lim_mem_text[z]))? length(lim_mem_text[z]): lim_mem_width
+            }
+
+
+            if ( headers == "true" ) {
+                if ( units == "human" ) {
+                    printf("%-"longest_namespace_len"s  %-"req_cpu_width"s  %"lim_cpu_width"s  %-"req_mem_width"s  %"lim_mem_width"s\n", "", "CPU", "", "Memory", "")
+                }
+                printf("%-"longest_namespace_len"s  %"req_cpu_width"s  %"lim_cpu_width"s  %"req_mem_width"s  %"lim_mem_width"s\n", "Namespace", req_cpu_header, lim_cpu_header, req_mem_header, lim_mem_header)
+            }
+
+            for (z = 1; z in nsindex; z++) {
+                printf("%-"longest_namespace_len"s  %"req_cpu_width"s  %"lim_cpu_width"s  %"req_mem_width"s  %"lim_mem_width"s\n", nsindex[z], req_cpu_text[z], lim_cpu_text[z], req_mem_text[z], lim_mem_text[z])
+            }
+        }
+
+        if ( output == "json" ) {
+            printf("{");
+
+            for (z = 1; z in nsindex; z++) {
+                printf("\"%s\": {", nsindex[z]);
+                printf("\"CPU\": {");
+                printf("\"requested\": %s,", (req_cpu[nsindex[z]]=="" ? "0" : req_cpu[nsindex[z]]));
+                printf("\"limits\": %s", (lim_cpu[nsindex[z]]=="" ? "0" : lim_cpu[nsindex[z]]));
+                printf("},");
+                printf("\"Memory\": {");
+                printf("\"requested\": %s,", (req_mem[nsindex[z]]=="" ? "0" : req_mem[nsindex[z]]));
+                printf("\"limits\": %s", (lim_mem[nsindex[z]]=="" ? "0" : lim_mem[nsindex[z]]));
+                printf("}");
+                separator = (z < total_records ? "," : "");
+                printf("}%s",separator);
+            }
+            printf("}");
+        }
+    }
+    '
+    awk -v output="${VIEW_UTILIZATION_OUTPUT}" \
+        -v units="${VIEW_UTILIZATION_UNITS}" \
+        -v headers="${VIEW_UTILIZATION_HEADERS}" \
+        "${VIEW_UTILIZATION_AWK_FN}${awkcmd}" <(get_pod_data)
+}
+
+node_utilization() {
+
+    # shellcheck disable=SC2016
+    awkcmd='BEGIN {FS="\t"};
+    NR==FNR { nodes[$1]; }
+
+    NR==FNR && $2 ~ /[0-9]$/ { alloc_cpu[$1]+=$2*1000; };
+    NR==FNR && $2 ~ /m?$/    { alloc_cpu[$1]+=$2; };
+    NR==FNR && $3 ~ /Ki?$/   { alloc_mem[$1]+=$3*1024; next };
+
+    # CPU requests
+    $3 ~ /[0-9]$/ { req_cpu[$2]+=$3*1000; };
+    $3 ~ /m$/    { req_cpu[$2]+=$3; };
+
+    # memory requests
+    $4 ~ /m$/         { req_mem[$2]+=$4/1000; };   # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $4 ~ /[kK](i)?$/  { req_mem[$2]+=$4*1024; };
+    $4 ~ /M(i)?$/     { req_mem[$2]+=$4*1048576; };
+    $4 ~ /[gG](i)?$/  { req_mem[$2]+=$4*1073741824; };
+    $4 ~ /[tT](i)?$/  { req_mem[$2]+=$4*1099511627776; };
+
+    # CPU limits
+    $5 ~ /[0-9]$/ { lim_cpu[$2]+=$5*1000; };
+    $5 ~ /m$/    { lim_cpu[$2]+=$5; };
+
+    # memory limits
+    $6 ~ /m$/         { lim_mem[$2]+=$6/1000; next };  # there is a bug where bytes are given a unit of "m" but multiplied by 1000
+    $6 ~ /[kK](i)?$/  { lim_mem[$2]+=$6*1024; next };
+    $6 ~ /M(i)?$/     { lim_mem[$2]+=$6*1048576; next };
+    $6 ~ /[gG](i)?$/  { lim_mem[$2]+=$6*1073741824; next };
+    $6 ~ /[tT](i)?$/  { lim_mem[$2]+=$6*1099511627776; next };
+
+    END {
+
+        total_records=0;
+        for (node in nodes) {
+            total_records++;
+            noindex[total_records]=node;
+            if (longest_node_len < length(node)) longest_node_len = length(node)
+        }
+        if (longest_node_len < 9 ) longest_node_len = 9
+
+        # sort nodes alphabetically
+        a_sort(noindex)
+
+        if ( output == "text" ) {
+
+            req_cpu_header=prettify("Requests", "Req")
+            percent_req_cpu_header=prettify("%Requests", "%R")
+            req_mem_header=prettify("Requests", "Req")
+            percent_req_mem_header=prettify("%Requests", "%R")
+            lim_cpu_header=prettify("Limits", "Lim")
+            percent_lim_cpu_header=prettify("%Limits", "%L")
+            lim_mem_header=prettify("Limits", "Lim")
+            percent_lim_mem_header=prettify("%Limits", "%L")
+
+            # Calculate header width
+            req_cpu_width=length(req_cpu_header)
+            percent_req_cpu_width=length(percent_req_cpu_header)
+            if (percent_req_cpu_width < 3 ) percent_req_cpu_width = 3
+
+            req_mem_width=length(req_mem_header)
+            percent_req_mem_width=length(percent_req_mem_header)
+
+            if (percent_req_mem_width < 3 ) percent_req_mem_width = 3
+
+            lim_cpu_width=length(lim_cpu_header)
+            lim_mem_width=length(lim_mem_header)
+            percent_lim_cpu_width=length(percent_lim_cpu_header)
+            if (percent_lim_cpu_width < 3 ) percent_lim_cpu_width = 4
+
+            req_mem_width=length(req_mem_header)
+            percent_lim_mem_width=length(percent_lim_mem_header)
+            if (percent_lim_mem_width < 3 ) percent_lim_mem_width = 4
+
+
+            for (z = 1; z in noindex; z++) {
+
+                req_cpu_text[z]=prettify(req_cpu[noindex[z]], cpu_pretty(req_cpu[noindex[z]]))
+                req_mem_text[z]=prettify(sprintf("%.0f",req_mem[noindex[z]]), mem_pretty(req_mem[noindex[z]]))
+                lim_cpu_text[z]=prettify(lim_cpu[noindex[z]], cpu_pretty(lim_cpu[noindex[z]]))
+                lim_mem_text[z]=prettify(sprintf("%.0f",lim_mem[noindex[z]]), mem_pretty(lim_mem[noindex[z]]))
+
+                percent_req_cpu_text[z]=prettify(calc_percentage(req_cpu[noindex[z]], alloc_cpu[noindex[z]]), sprintf("%s%%", calc_percentage(req_cpu[noindex[z]], alloc_cpu[noindex[z]])))
+                percent_req_mem_text[z]=prettify(calc_percentage(req_mem[noindex[z]], alloc_mem[noindex[z]]), sprintf("%s%%", calc_percentage(req_mem[noindex[z]], alloc_mem[noindex[z]])))
+
+                req_cpu_width=(req_cpu_width < length(req_cpu_text[z]))? length(req_cpu_text[z]): req_cpu_width
+                req_mem_width=(req_mem_width < length(req_mem_text[z]))? length(req_mem_text[z]): req_mem_width
+                lim_cpu_width=(lim_cpu_width < length(lim_cpu_text[z]))? length(lim_cpu_text[z]): lim_cpu_width
+                lim_mem_width=(lim_mem_width < length(lim_mem_text[z]))? length(lim_mem_text[z]): lim_mem_width
+
+                percent_lim_cpu_text[z]=prettify(calc_percentage(lim_cpu[noindex[z]], alloc_cpu[noindex[z]]), sprintf("%s%%", calc_percentage(lim_cpu[noindex[z]], alloc_cpu[noindex[z]])))
+                percent_lim_mem_text[z]=prettify(calc_percentage(lim_mem[noindex[z]], alloc_mem[noindex[z]]), sprintf("%s%%", calc_percentage(lim_mem[noindex[z]], alloc_mem[noindex[z]])))
+
+                percent_lim_cpu_graph[z]=calc_percentage(lim_cpu[noindex[z]], alloc_cpu[noindex[z]])
+                percent_lim_mem_graph[z]=calc_percentage(lim_mem[noindex[z]], alloc_mem[noindex[z]])
+                percent_lim_cpu_graph_input[z]=percent_lim_cpu_graph[z]
+                percent_lim_mem_graph_input[z]=percent_lim_mem_graph[z]
+            }
+
+            if ( headers == "true" ) {
+
+                printf("CPU   : %s\n", graph(percent_lim_cpu_graph_input))
+                printf("Memory: %s\n", graph(percent_lim_mem_graph_input))
+
+                printf("%-"longest_node_len"s  ", "")
+                printf("%-"req_cpu_width"s  ", "CPU")
+                printf("%"percent_req_cpu_width"s  ", "")
+                printf("%"lim_cpu_width"s  ", "")
+                printf("%"percent_lim_cpu_width"s  ", "")
+                printf("%-"req_mem_width"s  ", "Memory")
+                printf("%"percent_req_mem_width"s  ", "")
+                printf("%"lim_mem_width"s  ", "")
+                printf("%"percent_lim_mem_width"s\n", "")
+
+
+                printf("%-"longest_node_len"s  ",     "Node")
+                printf("%"req_cpu_width"s  ",         req_cpu_header)
+                printf("%"percent_req_cpu_width"s  ", percent_req_cpu_header)
+                printf("%"lim_cpu_width"s  ",         lim_cpu_header)
+                printf("%"percent_lim_cpu_width"s  ", percent_lim_cpu_header)
+                printf("%"req_mem_width"s  ",         req_mem_header)
+                printf("%"percent_req_mem_width"s  ", percent_req_mem_header)
+                printf("%"lim_mem_width"s  ",         lim_mem_header)
+                printf("%"percent_lim_mem_width"s\n", percent_lim_mem_header)
+            }
+
+            for (z = 1; z in noindex; z++) {
+                printf("%-"longest_node_len"s  ",       noindex[z])
+                printf("%"req_cpu_width"s  ",           req_cpu_text[z])
+                printf("%"percent_req_cpu_width"s  ",   percent_req_cpu_text[z])
+                printf("%"lim_cpu_width"s  ",           lim_cpu_text[z])
+                printf("%"percent_lim_cpu_width"s  ", percent_lim_cpu_text[z])
+                printf("%"req_mem_width"s  ",           req_mem_text[z])
+                printf("%"percent_req_mem_width"s  ",   percent_req_mem_text[z])
+                printf("%"lim_mem_width"s  ",           lim_mem_text[z])
+                printf("%"percent_lim_mem_width"s\n", percent_lim_mem_text[z])
+            }
+        }
+
+
+        if ( output == "json" ) {
+            printf("{");
+
+            for (z = 1; z in noindex; z++) {
+                printf("\"%s\": {", noindex[z]);
+                printf("\"CPU\": {");
+                printf("\"requested\": %s,", (req_cpu[noindex[z]]=="" ? "0" : req_cpu[noindex[z]]));
+                printf("\"limits\": %s", (lim_cpu[noindex[z]]=="" ? "0" : lim_cpu[noindex[z]]));
+                printf("},");
+                printf("\"Memory\": {");
+                printf("\"requested\": %s,", (req_mem[noindex[z]]=="" ? "0" : req_mem[noindex[z]]));
+                printf("\"limits\": %s", (lim_mem[noindex[z]]=="" ? "0" : lim_mem[noindex[z]]));
+                printf("}");
+                separator = (z < total_records ? "," : "");
+                printf("}%s",separator);
+            }
+            printf("}");
+        }
+    }
+    '
+    awk -v output="${VIEW_UTILIZATION_OUTPUT}" \
+        -v units="${VIEW_UTILIZATION_UNITS}" \
+        -v headers="${VIEW_UTILIZATION_HEADERS}" \
+        "${VIEW_UTILIZATION_AWK_FN}${awkcmd}" <(get_node_data) <(get_pod_data)
+}
+
+VIEW_UTILIZATION_AWK_FN='
+function graph(a){
+    result=""
+    min=0
+    max=100
+    delete overcommit
+    color_end="\033[0m"
+    split("▁ ▂ ▃ ▄ ▅ ▆ ▇ █", bars, " ");
+
+    for (n in a) {
+        if (int(a[n]) > 100) {
+            overcommit[n]=int(a[n])
+            a[n]=100
+        }
+    }
+
+    # mawk does not support lshift so we use *2^8
+    f=int(int(int(max - min)*2^8)/7)
+    if (f < 1 ) f=1
+
+    for (n in a) {
+        bar_index=int(int(int(a[n]-min)*2^8) / f ) + 1
+        if (int(overcommit[n])>125) {
+            color="\033[31m"
+        } else if (int(overcommit[n])>100) {
+            color="\033[33m"
+        } else {
+            color="\033[32m"
+        }
+        result=sprintf("%s%s%s%s", result, color, bars[bar_index], color_end)
+    }
+    return result
+}
+function a_sort(ary,   q, x, z){
+   for (q in ary)
+   {
+      x = ary[q]
+      for (z = q - 1; z && ary[z] > x; z--)
+      {
+         ary[z + 1] = ary[z]
+      }
+      ary[z + 1] = x
+   }
+   return a_join(ary, ORS)
+}
+
+function a_join(ary, sep,   q, x, z){
+   # argument order is copacetic with Ruby
+   for (q = 1; q in ary; q++)
+   {
+      if (x)
+      {
+         z = z sep ary[q]
+      }
+      else
+      {
+         z = ary[q]
+         x = 1
+      }
+   }
+   return z
+}
+
+function prettify(full, human) {
+    return ( units == "full" )? full : human;
+}
+
+function calc_max_width(a, b ,c) {
+    len1=(length(a)>length(b))? length(a) : length(b)
+    return (len1>length(c))? len1 : length(c) 
+}
+
+function calc_sched(requests, allocatable) {
+    if ( allocatable>= requests ) {
+        return (allocatable - requests)
+    } else {
+        return 0
+    }
+}
+function calc_free(requests, limits, allocatable) {
+    total_used=(limits > requests)? limits : requests
+    if ( allocatable > total_used ) {
+        return (allocatable - total_used)
+    } else {
+        return 0
+    }
+}
+
+function calc_percentage(a,b){
+    if ( a > 0 && b > 0 ) {
+        return sprintf("%d", a * 100 / b);
+    } else if ( b > 0 ) {
+        return "0";
+    } else {
+        return "Err";
+    }
+}
+
+function cpu_pretty(sum){
+    if (sum < 10000) {
+        ret = sprintf("%.2g",sum/1000)
+    } else {
+        ret = sprintf("%d",sum/1000)
+    }
+    return ret
+}
+
+function mem_pretty(sum){
+    if (sum > 0) {
+        hum[1024^4]="T";
+        hum[1024^3]="G";
+        hum[1024^2]="M";
+        hum[1024^1]="K";
+        hum[1]="";
+        for (x=1024^4; x>=0; x/=1024){
+            if (sum>=x) {
+                if (sum/x <= 10){
+                    ret = sprintf("%.2g%s",sum/x,hum[x]);break;
+                } else {
+                    ret = sprintf("%.f%s",sum/x,hum[x]);break;
+                }
+            }
+        }
+    } else {
+        return "0"
+    }
+    return ret
+}
+'
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        namespace*) VIEW_UTILIZATION_SUBCOMMAND="namespaces"; shift;;
+        node*) VIEW_UTILIZATION_SUBCOMMAND="nodes"; shift;;
+        -n|--namespace)
+            if [[ $# -lt 2 ]]; then
+                echo "Namespace name is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_NAMESPACE="$2";
+            shift 2
+            ;;
+        -l|--selector)
+            if [[ $# -lt 2 ]]; then
+                echo "Label selector value is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_NODE_LABEL="$2";
+            shift 2
+            ;;
+        -o|--output)
+            if [ "${2}" == "text" ] || [ "${2}" == "json" ]; then
+                VIEW_UTILIZATION_OUTPUT="$2";
+            else
+                echo "Output value is required. Valid values are: text, json."
+                exit 1
+            fi
+            shift 2
+            ;;
+        --context)
+            if [[ $# -lt 2 ]]; then
+                echo "The name of kubeconfig context name is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_CONTEXT="${2}";
+            test_kubectl_context
+            shift 2
+            ;;
+        --context=*)
+            if [ "${1#*=}" == "" ]; then
+                echo "The name of kubeconfig context name is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_CONTEXT="${1#*=}";
+            test_kubectl_context
+            shift 1
+            ;;
+        -h)
+            VIEW_UTILIZATION_UNITS="human";
+            shift
+            ;;
+        -v)
+            print_plugin_version
+            ;;
+        --namespace=*)
+            if [ "${1#*=}" == "" ]; then
+                echo "Namespace name is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_NAMESPACE="${1#*=}";
+            shift 1
+            ;;
+        --selector=*)
+            if [ "${1#*=}" == "" ]; then
+                echo "Label selector value is required"
+                exit 1
+            fi
+            VIEW_UTILIZATION_NODE_LABEL="${1#*=}";
+            shift 1
+            ;;
+        --output=*)
+            if [ "${1#*=}" == "text" ] || [ "${1#*=}" == "json" ]; then
+                VIEW_UTILIZATION_OUTPUT="${1#*=}";
+            else
+                echo "Output value is required. Valid values are: text, json."
+                exit 1
+            fi
+            shift 1
+            ;;
+        --no-headers)
+            VIEW_UTILIZATION_HEADERS="false";
+            shift 1
+            ;;
+        --help)
+            print_help
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2;
+            exit 1
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2;
+            exit 1
+            ;;
+    esac
+done
+
+case ${VIEW_UTILIZATION_SUBCOMMAND} in
+    namespaces)
+        namespace_utilization
+        ;;
+    nodes)
+        node_utilization
+        ;;
+    *)
+        cluster_utilization
+        ;;
+esac
