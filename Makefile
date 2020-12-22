@@ -22,7 +22,7 @@ init:
 		$(git) clone -q $(REPO) $(DOTFILES); \
 	fi
 
-update: SHELL := /bin/bash
+update: SHELL := /usr/bin/env bash
 update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
@@ -58,6 +58,10 @@ tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf ~/.tmux.conf
 
 vim: update
+	./bin/install-ospackage.sh nodejs
+	curl -sfLo ~/.vim/autoload/plug.vim --create-dirs \
+		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+	vim +PlugInstall +qall
 	@ln -sf $(DOTFILES)/vim/vimrc ~/.vimrc
 
 xbindkeys: update
