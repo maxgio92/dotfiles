@@ -95,7 +95,7 @@ nnoremap <C-l> :tabnext<CR>
 " -----------
 
 set background=dark
-colorscheme solarized
+silent! colorscheme solarized
 
 " ----------------------------------------------
 " 		Plugin settings
