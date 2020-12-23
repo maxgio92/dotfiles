@@ -58,10 +58,10 @@ tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf ~/.tmux.conf
 
 vim: update
-	./bin/install-ospackage.sh nodejs
-	curl -sfLo ~/.vim/autoload/plug.vim --create-dirs \
+	@./bin/install-ospackage.sh nodejs
+	@curl -sfLo ~/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-	vim +PlugInstall +qall
+	@vim +PlugInstall +qall
 	@ln -sf $(DOTFILES)/vim/vimrc ~/.vimrc
 
 xbindkeys: update
