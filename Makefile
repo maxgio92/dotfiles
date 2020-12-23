@@ -1,6 +1,6 @@
 REPO=https://github.com/maxgio92/dotfiles.git
 REMOTE=origin
-MASTER=master
+BRANCH=main
 DOTFILES=$(HOME)/.dotfiles
 git=`which git`
 
@@ -27,7 +27,7 @@ update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
 		$(git) fetch -q && \
-		$(git) reset -q --hard $(REMOTE)/$(MASTER) && \
+		$(git) reset -q --hard $(REMOTE)/$(BRANCH) && \
 		popd > /dev/null; \
 	fi
 
