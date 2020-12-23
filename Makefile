@@ -1,8 +1,8 @@
-REPO=https://github.com/maxgio92/dotfiles.git
-REMOTE=origin
-BRANCH=main
-DOTFILES=$(HOME)/.dotfiles
-git=`which git`
+REPO := https://github.com/maxgio92/dotfiles.git
+REMOTE := origin
+BRANCH := main
+DOTFILES := $(HOME)/.dotfiles
+git := $(shell command -v git)
 
 .PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
@@ -32,43 +32,43 @@ update: init
 	fi
 
 bash: update
-	@ln -sf $(DOTFILES)/bash/bash_profile ~/.bash_profile && \
-	ln -sf $(DOTFILES)/bash/profile ~/.profile && \
-	ln -sf $(DOTFILES)/bash/bashrc ~/.bashrc && \
-	ln -sf $(DOTFILES)/bash/bash_aliases ~/.bash_aliases && \
-	ln -sf $(DOTFILES)/bash/bash_logout ~/.bash_logout && \
-	ln -sf $(DOTFILES)/bash/bash_completion ~/.bash_completion
+	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
+	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
+	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
+	ln -sf $(DOTFILES)/bash/bash_aliases $(HOME)/.bash_aliases && \
+	ln -sf $(DOTFILES)/bash/bash_logout $(HOME)/.bash_logout && \
+	ln -sf $(DOTFILES)/bash/bash_completion $(HOME)/.bash_completion
 
 bin: update
-	@ln -sf $(DOTFILES)/bin ~/.local/
+	@ln -sf $(DOTFILES)/bin $(HOME)/.local/
 
 git: update
-	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
+	@ln -sf $(DOTFILES)/git/gitconfig $(HOME)/.gitconfig
 
 i3: update
-	@ln -sf $(DOTFILES)/i3/config ~/.config/i3/config
+	@ln -sf $(DOTFILES)/i3/config $(HOME)/.config/i3/config
 
 i3status: update
-	@ln -sf $(DOTFILES)/i3status/config ~/.config/i3status/config
+	@ln -sf $(DOTFILES)/i3status/config $(HOME)/.config/i3status/config
 
 terminator: update
-	@ln -sf $(DOTFILES)/terminator/config ~/.config/terminator/config
+	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
 
 tmux: update
-	@ln -sf $(DOTFILES)/tmux/tmux.conf ~/.tmux.conf
+	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 vim: update
-	@./bin/install-ospackage.sh nodejs
-	@curl -sfLo ~/.vim/autoload/plug.vim --create-dirs \
+	@./bin/install-ospackage.sh nodejs &> /dev/null
+	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 	@vim +PlugInstall +qall
-	@ln -sf $(DOTFILES)/vim/vimrc ~/.vimrc
+	@ln -sf $(DOTFILES)/vim/vimrc $(HOME)/.vimrc
 
 xbindkeys: update
-	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc ~/.xbindkeysrc
+	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
 
 xinit: update
-	@ln -sf $(DOTFILES)/xinit/xinitrc ~/.xinitrc
+	@ln -sf $(DOTFILES)/xinit/xinitrc $(HOME)/.xinitrc
 
 openresolv: update
 	@ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
@@ -102,4 +102,4 @@ else
 endif
 
 zsh: update
-	@ln -sf $(DOTFILES)/zsh/zshrc ~/.zshrc
+	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
