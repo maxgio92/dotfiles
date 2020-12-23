@@ -52,6 +52,7 @@ i3status: update
 	@ln -sf $(DOTFILES)/i3status/config $(HOME)/.config/i3status/config
 
 terminator: update
+	@mkdir -p $(HOME)/.config/terminator
 	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
 
 tmux: update
