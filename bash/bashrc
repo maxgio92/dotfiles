@@ -171,17 +171,16 @@ bash_prompt() {
     # root's color
     [ $UID -eq "0" ] && UC=$EMR
 
-    # titlebar setting
-    case $TERM in
-     xterm*|rxvt*)
-         local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
-          ;;
-     *)
-         local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
-          ;;
-    esac
+    # custom prompt blocks
+    local TITLE_BLOCK="${EMG}\u@\h${NONE}"
+    local PWD_BLOCK="${EMG}\${NEW_PWD}"
+    local GIT_BLOCK="${R}\`parse_git_branch\`${NONE}"
+    local TF_BLOCK="${P}\`terraform_workspace\`${NONE}"
+    local KUBE_BLOCK="${B}\`kubernetes_prompt\`${NONE}"
+    local END_BLOCK=" ${G}\$${NONE} "
 
-    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_prompt\` ${NONE}\\$ ${NONE}"
+    # prompt setting
+    PS1="${TITLE_BLOCK}:${PWD_BLOCK}${GIT_BLOCK}${TF_BLOCK}${KUBE_BLOCK}${END_BLOCK}"
 }
 
 PROMPT_COMMAND=bash_prompt_command
