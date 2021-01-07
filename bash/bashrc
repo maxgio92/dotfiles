@@ -211,7 +211,7 @@ unset bash_prompt
 #tw = (STICKY_OTHER_WRITABLE)    Directory that is sticky and other-writable (+t,o+w)
 #*.extension =   Every file using this extension e.g. *.rpm = files with the ending .rpm
 
-ls_colors='di=0;34:'
+ls_colors='di=0;33:'
 
 LS_COLORS=$ls_colors
 export LS_COLORS
