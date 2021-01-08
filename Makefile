@@ -42,6 +42,10 @@ bash: update
 bin: update
 	@ln -sf $(DOTFILES)/bin ~/.local/
 
+fonts: update
+	@mkdir -p $(HOME)/.local/share
+	@ln -sf $(DOTFILES)/fonts $(HOME)/.local/share/fonts
+
 git: update
 	@ln -sf $(DOTFILES)/git/gitconfig ~/.gitconfig
 
