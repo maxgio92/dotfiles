@@ -1,10 +1,16 @@
+SHELL := /bin/bash
+
+required_bins := git
+required_bins_check := $(foreach required_bin,$(required_bins),\
+	$(if $(shell command -v $(required_bin)),ok,$(error "No $(required_bin) found in PATH")))
+git := $(shell command -v git 2> /dev/null)
+
 REPO=https://github.com/maxgio92/dotfiles.git
 REMOTE=origin
 MASTER=master
 DOTFILES=$(HOME)/.dotfiles
-git=`which git`
 
-.PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
+.PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume tfenv
 
 .DEFAULT_GOAL := dotonly
 
@@ -22,7 +28,6 @@ init:
 		$(git) clone -q $(REPO) $(DOTFILES); \
 	fi
 
-update: SHELL := /bin/bash
 update: init
 	@if [ -d $(DOTFILES) ]; then \
 		pushd $(DOTFILES) > /dev/null && \
@@ -39,7 +44,7 @@ bash: update
 	ln -sf $(DOTFILES)/bash/bash_logout ~/.bash_logout && \
 	ln -sf $(DOTFILES)/bash/bash_completion ~/.bash_completion
 
-bin: update
+bin: update tfenv
 	@ln -sf $(DOTFILES)/bin ~/.local/
 
 fonts: update
@@ -99,6 +104,16 @@ else
 		&& cp $(DOTFILES)/etc/systemd/system/resume@.service /etc/systemd/system/ \
 		&& systemctl enable suspend@$(USERNAME).service \
 		&& systemctl enable resume@$(USERNAME).service
+endif
+
+tfenv_dir := $(HOME)/.tfenv
+tfenv_installed := $(shell if [ -d $(tfenv_dir) ]; then echo "ok"; fi)
+tfenv:
+ifeq ($(TFENV_INSTALLED),)
+	@$(git) clone https://github.com/tfutils/tfenv.git $(tfenv_dir)
+	@$(git) -C $(tfenv_dir) config pull.rebase true
+else
+	@$(git) -C $(tfenv_dir) pull
 endif
 
 zsh: update

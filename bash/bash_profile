@@ -5,6 +5,6 @@
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
 export BASH_ENV=~/.bash_aliases
-export PATH=$PATH:~/.local/bin
+export PATH=$PATH:~/.local/bin:~/.tfenv/bin
 export GOPATH=$HOME/workspace/go
 export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
