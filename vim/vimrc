@@ -50,6 +50,9 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 " repmo
 Plug 'https://github.com/Houl/repmo-vim.git'
 
+" vim-buffet
+Plug 'https://github.com/bagrat/vim-buffet.git'
+
 " Initialize vim-plug plugin system
 call plug#end()
 
