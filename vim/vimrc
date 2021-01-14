@@ -5,76 +5,37 @@
 " Set vim-plug plugins directory
 call plug#begin('~/.vim/plugged')
 
-" NERDTree
-Plug 'https://github.com/scrooloose/nerdtree.git'
-
-" Undotree
-Plug 'https://github.com/mbbill/undotree.git'
-
-" NERDCommenter
-Plug 'https://github.com/scrooloose/nerdcommenter.git'
-
-" Lightline
-Plug 'https://github.com/itchyny/lightline.vim.git'
-
-" EasyMotion
-Plug 'https://github.com/easymotion/vim-easymotion.git'
-
-" Ack.vim
-Plug 'https://github.com/mileszs/ack.vim.git'
-
-" Syntastic
-Plug 'https://github.com/vim-syntastic/syntastic.git'
-
-" Ansible VIM
-Plug 'https://github.com/pearofducks/ansible-vim.git'
-
-" Fugitive
-Plug 'https://github.com/tpope/vim-fugitive.git'
-
-" vim-terraform
-Plug 'https://github.com/hashivim/vim-terraform.git'
-
-" markdown-preview
-Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
-
-" vim-colors-solarized
-Plug 'https://github.com/altercation/vim-colors-solarized.git'
-
-" ctrlp.vim
 Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
-
-" CoC
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'scrooloose/nerdtree'
+Plug 'easymotion/vim-easymotion'
+Plug 'vim-syntastic/syntastic'
+Plug 'tpope/vim-fugitive'
+Plug 'hashivim/vim-terraform'
+Plug 'altercation/vim-colors-solarized'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-
-" repmo
-Plug 'https://github.com/Houl/repmo-vim.git'
-
-" vim-buffet
-Plug 'https://github.com/bagrat/vim-buffet.git'
+Plug 'Houl/repmo-vim'
 
 " Initialize vim-plug plugin system
 call plug#end()
 
 " ----------------------------------------------
-" 		Settings
+"     General	settings
 " ----------------------------------------------
 
 set nu
 set rnu
 set foldmethod=indent
 set nofoldenable
+let mapleader = "`"
 
-" ---------
 " Backspace
-" ---------
 
 " Can only delete text you have inserted
-set backspace=start
+"set backspace=start
 
-" -----------
 " Indentation
-" -----------
 
 filetype plugin indent on
 " show existing tab with 2 spaces width
@@ -84,18 +45,14 @@ set shiftwidth=2
 " On pressing tab, insert 2 spaces
 set expandtab
 
-" -------------
 " Tab switching
-" -------------
 
 noremap <C-T> :tabnew<CR> 
 noremap <BS> <C-T> 
 nnoremap <C-h> :tabprevious<CR>
 nnoremap <C-l> :tabnext<CR>
 
-" -----------
 " Colorscheme
-" -----------
 
 set background=dark
 colorscheme solarized
@@ -117,35 +74,20 @@ autocmd BufWinEnter * NERDTreeMirror
 let g:NERDTreeDirArrowExpandable = '▸'
 let g:NERDTreeDirArrowCollapsible = '▾'
 
-" ---------------------
-" plugin: NERDCommenter
-" ---------------------
+" -----------------
+" plugin: Airline
+" -----------------
 
-" Add spaces after comment delimiters by default
-let g:NERDSpaceDelims = 1
+let g:airline_statusline_ontop=0
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'default'
+func! CustomStatusLine()
+  call airline#check_mode(winnr())
+  return '%<%f %h%m%r%=%-14.(%1,%c%V%) %P'
+endfunc
+set statusline=%!CustomStatusLine()
 
-" Use compact syntax for prettified multi-line comments
-let g:NERDCompactSexyComs = 1
-
-" Align line-wise comment delimiters flush left instead of following code
-" indentation
-let g:NERDDefaultAlign = 'left'
-
-" Set a language to use its alternate delimiters by default
-let g:NERDAltDelims_java = 1
-
-" Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
-
-" Allow commenting and inverting empty lines (useful when commenting a
-" region)
-let g:NERDCommentEmptyLines = 1
-
-" Enable trimming of trailing whitespace when uncommenting
-let g:NERDTrimTrailingWhitespace = 1
-
-" Enable NERDCommenterToggle to check all selected lines is commented or not 
-let g:NERDToggleCheckAllLines = 1
+let g:airline_theme='solarized'
 
 " -----------------
 " plugin: Lightline
@@ -196,15 +138,33 @@ endfunction
 " plugin: EasyMotion
 " ------------------
 
-" Word search motion
+" Disable default mappings
+let g:EasyMotion_do_mapping = 0
+
+" Turn on case-insensitive feature
+let g:EasyMotion_smartcase = 1
+
 map  / <Plug>(easymotion-sn)
 omap / <Plug>(easymotion-tn)
 
-" ---------------
-" plugin: Ack.vim
-" ---------------
+" Overwin motions
 
-nnoremap <Leader>a :Ack!<Space>
+" <Leader>f{char} to move to {char}
+map  <Leader>f <Plug>(easymotion-bd-f)
+nmap <Leader>f <Plug>(easymotion-overwin-f)
+
+" s{char}{char} to move to {char}{char}
+nmap s <Plug>(easymotion-overwin-f2)
+
+" Move to line
+map <Leader>l <Plug>(easymotion-bd-jk)
+nmap <Leader>l <Plug>(easymotion-overwin-line)
+map <Leader>j <Plug>(easymotion-j)
+map <Leader>k <Plug>(easymotion-k)
+
+" Move to word
+map  <Leader>w <Plug>(easymotion-bd-w)
+nmap <Leader>w <Plug>(easymotion-overwin-w)
 
 " -----------------
 " plugin: Syntastic
@@ -363,7 +323,7 @@ command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organize
 " Add (Neo)Vim's native statusline support.
 " NOTE: Please see `:h coc-status` for integrations with external plugins that
 " provide custom statusline: lightline.vim, vim-airline.
-set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
+" set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 
 " Mappings using CoCList:
 " Show all diagnostics.
@@ -405,3 +365,13 @@ nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
 :noremap <expr> t repmo#ZapKey('t')|sunmap t
 :noremap <expr> T repmo#ZapKey('T')|sunmap T
 
+" ------------------
+" plugin: vim-buffet
+" ------------------
+
+let g:buffet_tab_icon='#'
+noremap <Tab> :bn<CR>
+noremap <S-Tab> :bp<CR>
+noremap <Leader><Tab> :Bw<CR>
+noremap <Leader><S-Tab> :Bw!<CR>
+noremap <C-t> :tabnew split<CR>
