@@ -57,6 +57,7 @@ nnoremap <C-l> :tabnext<CR>
 
 set background=dark
 colorscheme solarized
+highlight Directory ctermfg=red
 
 " ----------------------------------------------
 " 		Plugin settings
