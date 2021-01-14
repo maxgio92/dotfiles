@@ -237,3 +237,10 @@ export NVM_DIR="$HOME/.nvm"
 # Kubectl
 source <(kubectl completion bash)
 complete -F __start_kubectl k
+
+#-------------------------------------------------------------------------
+# Other environment variables
+#-------------------------------------------------------------------------
+
+# GPG TTY
+export GPG_TTY=$(tty)
