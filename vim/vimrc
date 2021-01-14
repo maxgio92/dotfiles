@@ -16,6 +16,7 @@ Plug 'hashivim/vim-terraform'
 Plug 'altercation/vim-colors-solarized'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'Houl/repmo-vim'
+Plug 'ryanoasis/vim-devicons'
 
 " Initialize vim-plug plugin system
 call plug#end()
