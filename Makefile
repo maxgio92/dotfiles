@@ -109,7 +109,7 @@ endif
 tfenv_dir := $(HOME)/.tfenv
 tfenv_installed := $(shell if [ -d $(tfenv_dir) ]; then echo "ok"; fi)
 tfenv:
-ifeq ($(TFENV_INSTALLED),)
+ifeq ($(tfenv_installed),)
 	@$(git) clone https://github.com/tfutils/tfenv.git $(tfenv_dir)
 	@$(git) -C $(tfenv_dir) config pull.rebase true
 else
