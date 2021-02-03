@@ -118,3 +118,12 @@ endif
 
 zsh: update
 	@ln -sf $(DOTFILES)/zsh/zshrc ~/.zshrc
+
+.PHONY: krew
+krew: tempdir := $(shell mktemp -d)
+krew: KREW := $(tempdir)/krew-"$(shell uname | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*/arm/')"
+krew:
+	@set -x; cd "$(tempdir)" && \
+	curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.tar.gz" && \
+	tar zxvf krew.tar.gz && \
+	"$(KREW)" install krew
