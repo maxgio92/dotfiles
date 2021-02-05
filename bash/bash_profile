@@ -4,7 +4,14 @@
 
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
-export BASH_ENV=~/.bash_aliases
-export PATH=$PATH:~/.local/bin:~/.tfenv/bin
-export GOPATH=$HOME/workspace/go
-export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
+export BASH_ENV=${HOME}/.bash_aliases
+export GOPATH=${HOME}/workspace/go
+
+KREWPATH=${HOME}/.krew/bin
+TFENVPATH=${HOME}/.tfenv/bin
+LOCALPATH=${HOME}/.local/bin
+GOBIN=${GOPATH}/bin
+
+CUSTOMPATHS=${LOCALPATH}:${TFENVPATH}:${GOBIN}:${KREWPATH}
+
+export PATH=${PATH}:${CUSTOMPATHS}
