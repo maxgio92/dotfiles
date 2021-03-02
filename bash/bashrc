@@ -177,11 +177,11 @@ bash_prompt() {
          local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
           ;;
      *)
-         local TITLEBAR="${EMG}\u@\h${NONE}:${EMG}\${NEW_PWD}"
+         local TITLEBAR="${EMG}\${NEW_PWD}"
           ;;
     esac
 
-    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_prompt\` ${NONE}\\$ ${NONE}"
+    PS1="${TITLEBAR}${R}\`parse_git_branch\`${P}\`terraform_workspace\`${B}\`kubernetes_prompt\` ${NONE}\n$ ${NONE}"
 }
 
 PROMPT_COMMAND=bash_prompt_command
