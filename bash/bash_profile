@@ -11,7 +11,7 @@ KREWPATH=${HOME}/.krew/bin
 TFENVPATH=${HOME}/.tfenv/bin
 LOCALPATH=${HOME}/.local/bin
 GOBIN=${GOPATH}/bin
-GOGLOBALBIN=/usr/loca/go/bin
+GOGLOBALBIN=/usr/local/go/bin
 KUBEBUILDERPATH=/usr/local/kubebuilder/bin
 
 CUSTOMPATHS=${LOCALPATH}:${TFENVPATH}:${GOBIN}:${KREWPATH}:${GOGLOBALBIN}:${KUBEBUILDERPATH}
