@@ -244,3 +244,9 @@ complete -F __start_kubectl k
 
 # GPG TTY
 export GPG_TTY=$(tty)
+
+#-------------------------------------------------------------------------
+# Bat
+#-------------------------------------------------------------------------
+
+export BAT_STYLE='changes,snip' BAT_THEME='Solarized (dark)'
