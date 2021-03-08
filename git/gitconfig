@@ -12,12 +12,11 @@
 	templateDir = /home/massi/.git-template
 
 [alias]
-bra = branch -avv
-lg = log --oneline --decorate --graph
-sts = status
-pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
-new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
-bclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git branch -d; }; f"
-rbclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git push origin :; }; f"
-credstore = config credential.helper store
-
+  bra = branch -avv
+  lg = log --oneline --decorate --graph
+  sts = status
+  pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
+  new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
+  bclean = "!f() { git branch -av | grep '\\[gone\\]' | awk '{print $1}' | xargs -r git branch -D; }; f"
+  rbclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git push origin :; }; f"
+  credstore = config credential.helper store
