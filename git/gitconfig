@@ -20,3 +20,4 @@
   bclean = "!f() { git branch -av | grep '\\[gone\\]' | awk '{print $1}' | xargs -r git branch -D; }; f"
   rbclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git push origin :; }; f"
   credstore = config credential.helper store
+  ghconf = "!f() { git config commit.gpgsign true && git config user.name maxgio92; }; f"
