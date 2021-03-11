@@ -91,51 +91,6 @@ set statusline=%!CustomStatusLine()
 
 let g:airline_theme='solarized'
 
-" -----------------
-" plugin: Lightline
-" -----------------
-
-set laststatus=2
-if !has('gui_running')
-    set t_Co=256
-endif
-set noshowmode
-
-function! CocCurrentFunction()
-    return get(b:, 'coc_current_function', '')
-endfunction
-
-let g:lightline = {
-      \ 'colorscheme': 'solarized',
-      \ 'active': {
-      \   'left': [ [ 'mode', 'paste' ],
-      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ],
-      \             [ 'gitbranch' ] ], 
-      \   'right': [ [ 'lineinfo' ],
-      \              [ 'percent' ],
-      \              [ 'fileformat', 'fileencoding', 'filetype' ],
-      \              [ 'syntastic' ] ]
-      \ },
-      \ 'component_function': {
-      \   'fugitive':  'FugitiveStatusline',
-      \   'gitbranch': 'fugitive#head',
-      \   'cocstatus': 'coc#status',
-      \   'currentfunction': 'CocCurrentFunction'
-      \ },
-      \ 'component_expand': {
-      \   'syntastic': 'SyntasticStatuslineFlag',
-      \ },
-      \ 'component_type': {
-      \   'syntastic': 'error',
-      \ }
-\ }
-
-let g:syntastic_mode_map = { 'mode': 'active' }
-function! s:syntastic()
-  SyntasticCheck
-  call lightline#update()
-endfunction
-
 " ------------------
 " plugin: EasyMotion
 " ------------------
