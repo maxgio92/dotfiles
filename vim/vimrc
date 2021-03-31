@@ -39,12 +39,12 @@ let mapleader = "`"
 " Indentation
 
 filetype plugin indent on
-" show existing tab with 2 spaces width
-set tabstop=2
-" when indenting with '>', use 2 spaces width
-set shiftwidth=2
-" On pressing tab, insert 2 spaces
-set expandtab
+" show TAB chars with 4 spaces width, disable sts
+set tabstop=4 softtabstop=0
+" indent by 4 spaces width (one TAB char)
+set shiftwidth=4
+" On pressing tab, insert tab spaces
+set noexpandtab
 
 " Tab switching
 
