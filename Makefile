@@ -116,7 +116,10 @@ else
 	@$(git) -C $(tfenv_dir) pull
 endif
 
+.PHONY: zsh
 zsh: update
+	@command -v starship > /dev/null || sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+	@ln -sf $(DOTFILES)/starship/config.toml ~/.config/starship.toml
 	@ln -sf $(DOTFILES)/zsh/zshrc ~/.zshrc
 
 .PHONY: krew

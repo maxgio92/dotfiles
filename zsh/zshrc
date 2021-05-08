@@ -12,3 +12,4 @@ setopt beep nomatch
 unsetopt appendhistory autocd extendedglob notify
 bindkey -v
 # End of lines configured by zsh-newuser-install
+eval "$(starship init zsh)"

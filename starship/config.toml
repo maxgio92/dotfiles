@@ -1,0 +1,46 @@
+# Inserts a blank line between shell prompts
+add_newline = true
+
+[aws]
+disabled = false
+style = "yellow"
+format = '[$symbol($profile )(\($region\) )]($style)'
+
+[battery]
+disabled = false
+full_symbol = "🔋 "
+charging_symbol = "⚡️ "
+discharging_symbol = "💀 "
+
+[git_branch]
+style = "bold red"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold red"
+format = '([\[$all_status$ahead_behind\]]($style) )'
+conflicted = "🏳"
+untracked = "🤷‍"
+stashed = "📦"
+modified = "📝"
+staged = '[++\($count\)](green)'
+renamed = "👅"
+deleted = "🗑"
+ahead = "⇡${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+behind = "⇣${count}"
+
+[git_commit]
+style = "bold red"
+format = "[\\($hash\\)]($style) [\\($tag\\)]($style)"
+commit_hash_length = 4
+tag_symbol = "🔖 "
+
+[kubernetes]
+disabled = false
+format = '[⛵ $context \($namespace\)](blue) '
+
+[terraform]
+disabled = false
+format = "[$symbol$workspace]($style) "
+detect_folders = [".terraform"]
