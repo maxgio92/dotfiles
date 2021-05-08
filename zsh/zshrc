@@ -11,5 +11,6 @@ SAVEHIST=1000
 setopt beep nomatch
 unsetopt appendhistory autocd extendedglob notify
 bindkey -v
+bindkey "^R" history-incremental-search-backward
 # End of lines configured by zsh-newuser-install
 eval "$(starship init zsh)"
