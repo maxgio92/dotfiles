@@ -63,7 +63,17 @@ i3status: update
 terminator: update
 	@ln -sf $(DOTFILES)/terminator/config ~/.config/terminator/config
 
-tmux: update
+tmuxtpm_dir := $(HOME)/.tmux/plugins/tpm
+tmuxtpm_installed := $(shell if [ -d $(tmuxtpm_dir) ]; then echo "ok"; fi)
+tmux/tpm:
+ifeq ($(tmuxtpm_installed),)
+	@$(git) clone https://github.com/tmux-plugins/tpm $(tmuxtpm_dir)
+	@$(git) -C $(tmuxtpm_dir) config pull.rebase true
+else
+	@$(git) -C $(tmuxtpm_dir) pull > /dev/null
+endif
+
+tmux: update tmux/tpm
 	@ln -sf $(DOTFILES)/tmux/tmux.conf ~/.tmux.conf
 
 vim: update
