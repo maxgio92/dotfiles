@@ -3,7 +3,9 @@ zstyle :compinstall filename '/home/massi/.zshrc'
 
 autoload -Uz compinit
 compinit
+
 # End of lines added by compinstall
+#
 # Lines configured by zsh-newuser-install
 HISTFILE=~/.histfile
 HISTSIZE=1000
@@ -14,4 +16,37 @@ unsetopt appendhistory autocd extendedglob notify
 bindkey -v
 bindkey "^R" history-incremental-search-backward
 # End of lines configured by zsh-newuser-install
+
+# Lines configured for starship
 eval "$(starship init zsh)"
+# End of lines configured for starship
+
+# Lines configured for zsh-autosuggestions
+#source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+# End of lines configured for zsh-autosuggestions
+
+# --------------------------------------------------------
+# Aliases
+# --------------------------------------------------------
+
+#alias ls='ls -G' # Enable colorized output for MacOS
+alias ls='ls --color' # Enable colorized output for Linux
+alias grep='grep --color' # Enable colorized output
+alias pbcopy='xsel --clipboard --input'
+alias pbpaste='xsel --clipboard --output'
+alias k='kubectl'
+alias kns='kubens'
+alias kctx='kubectx'
+
+# --------------------------------------------------------
+# Autocompletions
+# --------------------------------------------------------
+
+# Kubectl
+source <(kubectl completion zsh)
+
+#-------------------------------------------------------------------------
+# Bat
+#-------------------------------------------------------------------------
+
+export BAT_STYLE='changes,snip' BAT_THEME='Solarized (dark)'
