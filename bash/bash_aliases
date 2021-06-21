@@ -9,3 +9,4 @@ alias pbpaste='xsel --clipboard --output'
 alias k='kubectl'
 alias kns='kubens'
 alias kctx='kubectx'
+alias aws="docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE amazon/aws-cli"
