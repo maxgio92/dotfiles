@@ -10,3 +10,4 @@ alias k='kubectl'
 alias kns='kubens'
 alias kctx='kubectx'
 alias aws="docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE amazon/aws-cli"
+alias ddr="sudo dockerd -p /var/run/docker.pid > /var/log/docker.log 2>&1 &"
