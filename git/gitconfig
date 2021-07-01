@@ -13,7 +13,7 @@
 
 [alias]
 bra = branch -avv
-lg = log --oneline --decorate --graph
+lg = log --all --decorate --oneline --graph
 sts = status
 pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
 new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
