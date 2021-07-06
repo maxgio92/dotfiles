@@ -219,7 +219,9 @@ export LS_COLORS
 # Aliases
 #-------------------------------------------------------------------------
 
-[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+test -f ~/.bash_aliases && source ~/.bash_aliases
+test -f ~/.kubectl_aliases  && source \
+     <(cat ~/.kubectl_aliases | sed -r 's/(kubectl.*) --watch/watch \1/g')
 
 #-------------------------------------------------------------------------
 # Completions
