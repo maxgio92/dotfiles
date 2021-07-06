@@ -36,6 +36,7 @@ bash: update
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
 	ln -sf $(DOTFILES)/bash/bash_aliases $(HOME)/.bash_aliases && \
+	ln -sf $(DOTFILES)/bash/kubectl_aliases $(HOME)/.kubectl_aliases && \
 	ln -sf $(DOTFILES)/bash/bash_logout $(HOME)/.bash_logout && \
 	ln -sf $(DOTFILES)/bash/bash_completion $(HOME)/.bash_completion
 
