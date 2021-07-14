@@ -51,6 +51,7 @@ git: update
 	@ln -sf $(DOTFILES)/git/gitconfig $(HOME)/.gitconfig
 
 i3: update
+	@mkdir -p $(HOME)/.config/i3
 	@ln -sf $(DOTFILES)/i3/config $(HOME)/.config/i3/config
 
 i3status: update
