@@ -31,6 +31,10 @@ update: init
 		popd > /dev/null; \
 	fi
 
+alacritty: update
+	@mkdir -p $(HOME)/.config/alacritty
+	@ln -sf $(DOTFILES)/alacritty/alacritty.yml $(HOME)/.config/alacritty/alacritty.yml
+
 bash: update
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
