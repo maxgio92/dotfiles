@@ -57,6 +57,10 @@ i3: update
 i3status: update
 	@ln -sf $(DOTFILES)/i3status/config $(HOME)/.config/i3status/config
 
+sway: update
+	@mkdir -p $(HOME)/.config/sway
+	@ln -sf $(DOTFILES)/sway/config $(HOME)/.config/sway/config
+
 terminator: update
 	@mkdir -p $(HOME)/.config/terminator
 	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
