@@ -47,6 +47,10 @@ bash: update
 bin: update
 	@ln -sf $(DOTFILES)/bin $(HOME)/.local/
 
+fzf: update
+	@test -d $(HOME)/.fzf || git clone --depth 1 https://github.com/junegunn/fzf.git $(HOME)/.fzf
+	@$(HOME)/.fzf/install --all
+
 git: update
 	@ln -sf $(DOTFILES)/git/gitconfig $(HOME)/.gitconfig
 
