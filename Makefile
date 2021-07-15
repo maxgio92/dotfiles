@@ -48,7 +48,9 @@ bin: update
 	@ln -sf $(DOTFILES)/bin $(HOME)/.local/
 
 fzf: update
-	@test -d $(HOME)/.fzf || git clone --depth 1 https://github.com/junegunn/fzf.git $(HOME)/.fzf
+	@test -d $(HOME)/.fzf \
+		&& $(git) -C $(HOME)/.fzf pull \
+		|| $(git) clone --depth 1 https://github.com/junegunn/fzf.git $(HOME)/.fzf
 	@$(HOME)/.fzf/install --all
 
 git: update
