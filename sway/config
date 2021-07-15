@@ -236,22 +236,25 @@ client.urgent                   $rd        $rd         $tx       $rd        $rd
 
 # Bar
 bar {
-    	# When the status_command prints a new line to stdout, swaybar updates.
-    	# The default just shows the current date and time.
-	status_command while true; do echo -n "$(uptime)"; sleep 1; done
-        position top
-        strip_workspace_numbers no
-
-        colors {
-            background          $bg
-            statusline          $ia
-            separator           $bg
-            focused_workspace   $bg        $bg        $ac1
-            active_workspace    $bg        $bg        $ia
-            inactive_workspace  $bg        $bg        $ia
-            urgent_workspace    $rd        $bg        $ac1
-    }
+  swaybar_command waybar
 }
+#bar {
+#    	# When the status_command prints a new line to stdout, swaybar updates.
+#    	# The default just shows the current date and time.
+#	status_command while true; do echo -n "$(uptime)"; sleep 1; done
+#        position top
+#        strip_workspace_numbers no
+#
+#        colors {
+#            background          $bg
+#            statusline          $ia
+#            separator           $bg
+#            focused_workspace   $bg        $bg        $ac1
+#            active_workspace    $bg        $bg        $ia
+#            inactive_workspace  $bg        $bg        $ia
+#            urgent_workspace    $rd        $bg        $ac1
+#    }
+#}
 
 # Displays
 output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
