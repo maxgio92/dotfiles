@@ -15,14 +15,16 @@ set $displayselect	displayselect
 # Your preferred application launcher
 # Note: pass the final command to swaymsg so that the resulting window can be opened
 # on the original workspace that the command was run on.
-set $menu dmenu_path | dmenu | xargs swaymsg exec --
+for_window [app_id="^launcher$"] floating enable, sticky enable, resize set 20 ppt 20 ppt, border pixel 5
+set $menu exec $term --class=launcher -e sway-launcher-desktop
 set $term alacritty
+set $laptop_display eDP-1
 
 # -------------------------------------------------------------------------------
 # Variables - END
 # -------------------------------------------------------------------------------
 
-font pango:UbuntuMono-regular 12
+font pango: Helvetica Neue 13
 
 # ------------------------------------------------------------------------------
 # Key Bindings - START
@@ -201,15 +203,20 @@ bindsym $mod+r mode "resize"
 # -------------------------------------------------------------------------------
 
 # Color defintions
-set $archlinux_gray 	#333333
+set $black            #000000
+set $darkgray         #111111
+set $gray             #222222
+set $lightgray        #333333
+set $archlinux_gray 	$lightgray
 set $archlinux_blue 	#1793d1
-set $ubuntu_orange 	#cc8400
+set $ubuntu_orange    #cc8400
 
-set $bd     #111111
-set $bg     #222222
+set $bd     $darkgray
+set $bg     $gray
 set $fg     #9f9f9f
 set $hi     #b77600
-set $ac     $archlinux_blue
+set $ac1    $archlinux_blue
+set $ac2    $ubuntu_orange
 set $tx     #040404
 set $ia     #8f8f8f
 set $be     #8faf9f
@@ -218,10 +225,10 @@ set $gn     #88b090
 set $rd     #e89393
 
 # Set some nice colors          border     background  text    indicator  child_border
-client.focused                  $bd        $bg         $ac     $bg        $bg
-client.unfocused                $bd        $bg         $ia     $bg        $bg
-client.focused_inactive         $bd        $bg         $ac     $bg        $bg
-client.urgent                   $rd        $rd         $tx     $rd        $rd
+client.focused                  $bd        $bg         $ac2      $bg        $bg
+client.focused_inactive         $bd        $bg         $ac2      $bg        $bg
+client.unfocused                $bd        $bg         $ia       $bg        $bg
+client.urgent                   $rd        $rd         $tx       $rd        $rd
 
 # -------------------------------------------------------------------------------
 # Theme - END
@@ -237,12 +244,12 @@ bar {
 
         colors {
             background          $bg
-            statusline          $fg
+            statusline          $ia
             separator           $bg
-            focused_workspace   $bg        $bg        $ac
+            focused_workspace   $bg        $bg        $ac1
             active_workspace    $bg        $bg        $ia
             inactive_workspace  $bg        $bg        $ia
-            urgent_workspace    $rd        $bg        $ac
+            urgent_workspace    $rd        $bg        $ac1
     }
 }
 
@@ -283,6 +290,8 @@ input type:touchpad {
 
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
 output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+bindswitch lid:on output $laptop_display disable
+bindswitch lid:off output $laptop_display enable
 
 # -------------------------------------------------------------------------------
 # Output - END
