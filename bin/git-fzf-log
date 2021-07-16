@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+get_hash_from_oneline="grep -o '[a-f0-9]\{7\}' | head -1"
+get_show_from_hash=""
+
+git log --all --decorate --oneline --graph --color=always "$@" |
+  fzf --ansi --no-sort --reverse --tiebreak=index \
+    --preview="{ ${get_hash_from_oneline} | xargs -I % sh -c 'git show --color=always %'; } <<< {}" \
+    --bind=ctrl-s:toggle-sort --bind "ctrl-m:execute:
+      { ${get_hash_from_oneline} | xargs -I % sh -c 'git show --color=always % | less -R'; } <<< {}"
