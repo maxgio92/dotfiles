@@ -81,6 +81,9 @@ vim: update
 	@vim +PlugInstall +qall
 	@ln -sf $(DOTFILES)/vim/vimrc $(HOME)/.vimrc
 
+waybar: update
+	@ln -sf $(DOTFILES)/waybar $(HOME)/.config
+
 xbindkeys: update
 	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
 
