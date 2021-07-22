@@ -24,7 +24,7 @@ set $laptop_display eDP-1
 # Variables - END
 # -------------------------------------------------------------------------------
 
-font pango: Helvetica Neue 13
+font pango: SF Pro Text 13
 
 # ------------------------------------------------------------------------------
 # Key Bindings - START
@@ -38,6 +38,7 @@ bindsym $mod+Shift+q kill
 
 # Start your launcher
 bindsym $mod+d exec $menu
+bindsym $mod+Space $menu
 
 # Reload the configuration file
 bindsym $mod+Shift+c reload
@@ -106,7 +107,7 @@ bindsym $mod+f fullscreen toggle
 
 # --- Focus ---
 # change focus between tiling / floating windows
-bindsym $mod+space focus mode_toggle
+#bindsym $mod+space focus mode_toggle
 # focus the parent container
 bindsym $mod+a focus parent
 ## focus the child container
@@ -122,7 +123,7 @@ set $ws5 "5"
 set $ws6 "6"
 set $ws7 "7"
 set $ws8 "8: music "
-set $ws9 "9"
+set $ws9 "9: personal"
 set $ws10 "10"
 
 # switch to workspace
