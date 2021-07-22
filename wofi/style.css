@@ -1,13 +1,12 @@
 #window, #outer-box, #input, #inner-box, #entry {
-    font-family: Verdana, Roboto, Helvetica, Arial, sans-serif;
+    font-family: "SF Pro Text","SF Pro Icons","Helvetica Neue","Helvetica","Arial",sans-serif;
+    font-size: 16px;
+    font-weight: 300;
     color: #ffffff;
-    text-shadow:1px 1px 1px #333;
-    font-size: 15px;
 }
 
 #window {
-    background: #245edb;
-    color: #ffffff;
+    background: rgba(0, 0, 0, 0.2);
     transition-property: background-color;
     transition-duration: .5s;
     border: 1px #111111;
@@ -37,6 +36,6 @@
 }
 
 #entry:selected {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
 }
