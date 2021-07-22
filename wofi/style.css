@@ -1,0 +1,42 @@
+#window, #outer-box, #input, #inner-box, #entry {
+    font-family: Verdana, Roboto, Helvetica, Arial, sans-serif;
+    color: #ffffff;
+    text-shadow:1px 1px 1px #333;
+    font-size: 15px;
+}
+
+#window {
+    background: #245edb;
+    color: #ffffff;
+    transition-property: background-color;
+    transition-duration: .5s;
+    border: 1px #111111;
+    border-style: inset;
+    border-radius: 5px;
+}
+
+#outer-box {
+    margin: 10px;
+}
+
+#input {
+    margin-bottom: 10px;
+    background-color: #eeeeee;
+    color: #111111;
+    text-shadow: none;
+    border: 1px solid white;
+    box-shadow: inset 0 -3px transparent;
+}
+
+#scroll {
+    margin: 0px;
+}
+
+#text {
+    margin: 5px;
+}
+
+#entry:selected {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
