@@ -84,6 +84,9 @@ vim: update
 waybar: update
 	@ln -sf $(DOTFILES)/waybar $(HOME)/.config
 
+wofi: update
+	@ln -sf $(DOTFILES)/wofi $(HOME)/.config
+
 xbindkeys: update
 	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
 
