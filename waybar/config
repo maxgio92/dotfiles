@@ -121,7 +121,7 @@
           "on-click-right": "close"
       },
       "sway/window": {
-          "format": "{title} ({app_id})",
+          "format": "{title}",
       }
   }
 ]

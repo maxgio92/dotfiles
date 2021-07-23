@@ -7,6 +7,7 @@
     font-weight: 300;
     color: #ffffff;
     min-height: 0;
+    text-shadow: none;
 }
 
 window#waybar {
