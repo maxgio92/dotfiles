@@ -8,7 +8,7 @@
       // Choose the order of the modules
       "modules-left": ["sway/workspaces", "sway/mode", "wlr/taskbar"],
       "modules-center": ["sway/window"],
-      "modules-right": ["idle_inhibitor", "pulseaudio", "network", "cpu", "memory", "temperature", "backlight", "sway/language", "battery", "battery#bat2", "clock", "tray", "custom/poweroff"],
+      "modules-right": ["tray", "idle_inhibitor", "pulseaudio", "network", "cpu", "memory", "temperature", "backlight", "sway/language", "battery", "battery#bat2", "clock", "custom/poweroff"],
       // Modules configuration
       //"sway/workspaces": {
       //    "disable-scroll": true,
@@ -119,6 +119,9 @@
           "tooltip": true,
           "on-click": "activate",
           "on-click-right": "close"
+      },
+      "sway/window": {
+          "format": "{title} ({app_id})",
       }
   }
 ]
