@@ -165,8 +165,11 @@ bindsym $mod+F2       exec prompt "Are you sure you want to suspend?"     "$susp
 bindsym $mod+F3       exec prompt "Are you sure you want to shutdown?"    "$shutdown"
 bindsym $mod+F4       exec prompt "Are you sure you want to reboot?"      "$reboot"
 
+# Lock sway
+bindsym $mod+Shift+e exec swaylock -i /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png
+
 # Exit sway (logs you out of your Wayland session)
-bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
+bindsym $mod+Alt+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
 
 # resize window (you can also use the mouse for that)
 mode "resize" {
@@ -235,9 +238,6 @@ default_border none
 bar {
   swaybar_command waybar
 }
-
-# Displays
-output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 
 # Windows
 for_window [class="Terminator"] move window to workspace number $ws1
