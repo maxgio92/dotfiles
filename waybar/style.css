@@ -54,13 +54,8 @@ window#waybar.chromium {
     background: rgba(0, 0, 0, 0.2);
 }
 
-#workspaces button.urgent {
+#workspaces button.urgent, #mode {
     background-color: #eb4d4b;
-}
-
-#mode {
-    background-color: #64727D;
-    border-bottom: 3px solid #ffffff;
 }
 
 #clock,
@@ -198,10 +193,6 @@ label:focus {
 
 #temperature.critical {
     background-color: #eb4d4b;
-}
-
-#tray {
-    background-color: #2980b9;
 }
 
 /*
