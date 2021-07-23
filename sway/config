@@ -1,46 +1,54 @@
+# --------------------------------------------------------------------------------
+# TOC
+# --------------------------------------------------------------------------------
+# - Variables
+# - Key bindings
+# - Modes
+# - Input
+# - Output
+# - Workspaces
+# - Scratchpad
+# - Theme
+
 # -------------------------------------------------------------------------------
-# Variables - START
+# Variables
 # -------------------------------------------------------------------------------
 
-set $mod		Mod4
-set $left 		h
-set $down 		j
-set $up 		k
-set $right 		l
-set $shutdown		shutdown -h now
-set $reboot		shutdown -r now
-set $wifitoggle		wifi-toggle
-set $suspend		systemctl suspend
+set $mod Mod4
+set $left	h
+set $down	j
+set $up	k
+set $right l
+set $wifitoggle	wifi-toggle
+set $suspend systemctl suspend
 set $displayselect	displayselect
 # Your preferred application launcher
 # Note: pass the final command to swaymsg so that the resulting window can be opened
 # on the original workspace that the command was run on.
-for_window [app_id="^launcher$"] floating enable, sticky enable, resize set 20 ppt 20 ppt, border pixel 5
-set $menu exec $term --class=launcher -e sway-launcher-desktop
+for_window [app_id="^launcher$"] floating enable, sticky enable, resize set 20 ppt 20 ppt, border pixel 1
+set $menu exec $term --class=launcher -e env GLYPH_PROMPT="" sway-launcher-desktop
 set $term alacritty
 set $laptop_display eDP-1
-
-# -------------------------------------------------------------------------------
-# Variables - END
-# -------------------------------------------------------------------------------
-
-font pango: SF Pro Text 13
+set $background_image "/usr/share/backgrounds/sway/custom.png"
+set $ws1 "1: terminal "
+set $ws2 "2: browser "
+set $ws3 "3: chat "
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8: music "
+set $ws9 "9: personal"
+set $ws10 "10"
 
 # ------------------------------------------------------------------------------
-# Key Bindings - START
+# Default mode's key Bindings
 # ------------------------------------------------------------------------------
 
-# Start a terminal
 bindsym $mod+Return exec $term
-
-# Kill focused window
 bindsym $mod+Shift+q kill
-
-# Start your launcher
 bindsym $mod+d exec $menu
 bindsym $mod+Space $menu
-
-# Reload the configuration file
 bindsym $mod+Shift+c reload
 
 # PulseAudio
@@ -55,78 +63,122 @@ bindsym XF86AudioNext exec playerctl next
 bindsym XF86AudioPrev exec playerctl previous
 bindsym XF86Search exec bemenu-run
 
-# change focus
+# Windows focus
 bindsym $mod+$left focus left
 bindsym $mod+$right focus right
 bindsym $mod+$up focus down
 bindsym $mod+$down focus up
-
-# alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
+bindsym $mod+a focus parent
+bindsym $mod+Shift+a focus child
 
-# move focused window
+# Move focused windows
 bindsym $mod+Shift+$down move left
 bindsym $mod+Shift+$up move down
 bindsym $mod+Shift+$right move up
 bindsym $mod+Shift+semicolon move right
-
-# alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
-# --- Layout ---
-# change container layout to stacked
+# Windows layout
 bindsym $mod+s layout stacking
-# change container layout to tabbed
 bindsym $mod+w layout tabbed
-# toggle split container layout
 bindsym $mod+e layout toggle split
-# split in vertical orientation
-bindsym $mod+v split v
-# split in horizontal orientation
-bindsym $mod+o split h
+#bindsym $mod+v split v
+#bindsym $mod+o split h
 
-# --- Mode ---
-# toggle tiling / floating
-bindsym $mod+Shift+space floating toggle
+# Windows mode
 
 # Drag floating windows by holding down $mod and left mouse button.
 # Resize them with right mouse button + $mod.
 # Despite the name, also works for non-floating windows.
+
 # Change normal to inverse to use left mouse button for resizing and right
 # mouse button for dragging.
 floating_modifier $mod normal
 
-# enter fullscreen mode for the focused container
+bindsym $mod+Shift+space floating toggle
 bindsym $mod+f fullscreen toggle
 
-# --- Focus ---
-# change focus between tiling / floating windows
-#bindsym $mod+space focus mode_toggle
-# focus the parent container
-bindsym $mod+a focus parent
-## focus the child container
-#bindsym $mod+d focus child
+# Options from Dmenu ---
+bindsym $mod+F1 exec --no-startup-id "$displayselect"
+bindsym $mod+Shift+w exec prompt "Are you sure you want to toggle WIFI?" "$wifitoggle"
 
-# Define names for default workspaces for which we configure key bindings later on.
-# We use variables to avoid repeating the names in multiple places.
-set $ws1 "1: terminal "
-set $ws2 "2: browser "
-set $ws3 "3: chat "
-set $ws4 "4"
-set $ws5 "5"
-set $ws6 "6"
-set $ws7 "7"
-set $ws8 "8: music "
-set $ws9 "9: personal"
-set $ws10 "10"
+# Scratchpad
 
-# switch to workspace
+# It's a bag of holding for windows.
+# You can send windows there and get them back later.
+
+# Move the currently focused window to the scratchpad
+bindsym $mod+Shift+minus move scratchpad
+
+# Show the next scratchpad window or hide the focused scratchpad window.
+# If there are multiple scratchpad windows, this command cycles through them.
+bindsym $mod+minus scratchpad show
+
+# -------------------------------------------------------------------------------
+# Modes
+# -------------------------------------------------------------------------------
+
+bindsym $mod+o mode "Launcher"
+bindsym $mod+r mode "resize"
+bindsym $mod+Escape mode "power"
+
+mode "Launcher" {
+    bindsym t exec alacritty
+    bindsym c exec google-chrome-stable
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+mode "resize" {
+        # vi keys
+        bindsym h resize shrink width 10 px or 10 ppt
+        bindsym k resize grow height 10 px or 10 ppt
+        bindsym j resize shrink height 10 px or 10 ppt
+        bindsym l resize grow width 10 px or 10 ppt
+
+        # arrow keys
+        bindsym Left resize shrink width 10 px or 10 ppt
+        bindsym Down resize grow height 10 px or 10 ppt
+        bindsym Up resize shrink height 10 px or 10 ppt
+        bindsym Right resize grow width 10 px or 10 ppt
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+        bindsym $mod+r mode "default"
+}
+
+mode "power" {
+    bindsym p exec systemctl poweroff
+    bindsym r exec systemctl reboot 
+    bindsym h exec systemctl hibernate 
+    bindsym s exec systemctl suspend
+    bindsym q exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit' , mode "default"
+    bindsym l exec swaylock -i $background_image , mode "default"
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+# -------------------------------------------------------------------------------
+# Bar
+# -------------------------------------------------------------------------------
+
+bar {
+  swaybar_command waybar
+}
+
+# -------------------------------------------------------------------------------
+# Workspaces
+# -------------------------------------------------------------------------------
+
 bindsym $mod+1 workspace number $ws1
 bindsym $mod+2 workspace number $ws2
 bindsym $mod+3 workspace number $ws3
@@ -139,11 +191,9 @@ bindsym $mod+9 workspace number $ws9
 bindsym $mod+0 workspace number $ws10
 bindsym $mod+Tab workspace back_and_forth
 
-# move workspace between outputs
 bindsym $mod+x move workspace to output right
 bindsym $mod+z move workspace to output left
 
-# move focused container to workspace
 bindsym $mod+Shift+1 move container to workspace number $ws1
 bindsym $mod+Shift+2 move container to workspace number $ws2
 bindsym $mod+Shift+3 move container to workspace number $ws3
@@ -155,56 +205,49 @@ bindsym $mod+Shift+8 move container to workspace number $ws8
 bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
 
-# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
-bindsym $mod+Shift+r restart
+for_window [class="Terminator"] move window to workspace number $ws1
+for_window [class="Alacritty"] move window to workspace number $ws1
+for_window [class="Chromium"] move window to workspace number $ws2
+for_window [class="Firefox"] move window to workspace number $ws2
+for_window [class="Slack"] move window to workspace number $ws3
+for_window [class="Teams"] move window to workspace number $ws3
+for_window [class="Spotify"] move window to workspace number $ws8
+for_window [class=".*"] title_format <span size="large"> %title</span>
 
-# --- Options from Dmenu ---
-bindsym $mod+F1       exec --no-startup-id                                "$displayselect"
-bindsym $mod+Shift+w  exec prompt "Are you sure you want to toggle WIFI?" "$wifitoggle"
-bindsym $mod+F2       exec prompt "Are you sure you want to suspend?"     "$suspend"
-bindsym $mod+F3       exec prompt "Are you sure you want to shutdown?"    "$shutdown"
-bindsym $mod+F4       exec prompt "Are you sure you want to reboot?"      "$reboot"
+# -------------------------------------------------------------------------------
+# Input
+# -------------------------------------------------------------------------------
 
-# Lock sway
-bindsym $mod+Shift+e exec swaylock -i /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png
-
-# Exit sway (logs you out of your Wayland session)
-bindsym $mod+Alt+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
-
-# resize window (you can also use the mouse for that)
-mode "resize" {
-        # These bindings trigger as soon as you enter the resize mode
-
-        # Pressing left will shrink the window’s width.
-        # Pressing right will grow the window’s width.
-        # Pressing up will shrink the window’s height.
-        # Pressing down will grow the window’s height.
-        bindsym j resize shrink width 10 px or 10 ppt
-        bindsym k resize grow height 10 px or 10 ppt
-        bindsym l resize shrink height 10 px or 10 ppt
-        bindsym semicolon resize grow width 10 px or 10 ppt
-
-        # same bindings, but for the arrow keys
-        bindsym Left resize shrink width 10 px or 10 ppt
-        bindsym Down resize grow height 10 px or 10 ppt
-        bindsym Up resize shrink height 10 px or 10 ppt
-        bindsym Right resize grow width 10 px or 10 ppt
-
-        # back to normal: Enter or Escape or $mod+r
-        bindsym Return mode "default"
-        bindsym Escape mode "default"
-        bindsym $mod+r mode "default"
+input type:pointer {
+    tap enabled
+    natural_scroll enabled
 }
 
-bindsym $mod+r mode "resize"
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+}
 
-# ------------------------------------------------------------------------------
-# Key Bindings - END
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Output
+# -------------------------------------------------------------------------------
+
+output * bg $background_image fill
+bindswitch lid:on output $laptop_display disable
+bindswitch lid:off output $laptop_display enable
+
+# -------------------------------------------------------------------------------
+# Scratchpad
+# -------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Scratchpad - END
+# -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
 # Theme - START
 # -------------------------------------------------------------------------------
+
+font pango: SF Pro Text 13
 
 # Color defintions
 set $black            #000000
@@ -232,70 +275,6 @@ default_border none
 
 # -------------------------------------------------------------------------------
 # Theme - END
-# -------------------------------------------------------------------------------
-
-# Bar
-bar {
-  swaybar_command waybar
-}
-
-# Windows
-for_window [class="Terminator"] move window to workspace number $ws1
-for_window [class="Alacritty"] move window to workspace number $ws1
-for_window [class="Chromium"] move window to workspace number $ws2
-for_window [class="Firefox"] move window to workspace number $ws2
-for_window [class="Slack"] move window to workspace number $ws3
-for_window [class="Teams"] move window to workspace number $ws3
-for_window [class="Spotify"] move window to workspace number $ws8
-for_window [class=".*"] title_format <span size="large"> %title</span>
-
-# -------------------------------------------------------------------------------
-# Input - START
-# -------------------------------------------------------------------------------
-
-input type:pointer {
-    tap enabled
-    natural_scroll enabled
-}
-
-input type:touchpad {
-    tap enabled
-    natural_scroll enabled
-}
-
-# -------------------------------------------------------------------------------
-# Input - END
-# -------------------------------------------------------------------------------
-
-# -------------------------------------------------------------------------------
-# Output - START
-# -------------------------------------------------------------------------------
-
-# Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-bindswitch lid:on output $laptop_display disable
-bindswitch lid:off output $laptop_display enable
-
-# -------------------------------------------------------------------------------
-# Output - END
-# -------------------------------------------------------------------------------
-
-# -------------------------------------------------------------------------------
-# Scratchpad - START
-# -------------------------------------------------------------------------------
-
-# Sway has a "scratchpad", which is a bag of holding for windows.
-# You can send windows there and get them back later.
-
-# Move the currently focused window to the scratchpad
-bindsym $mod+Shift+minus move scratchpad
-
-# Show the next scratchpad window or hide the focused scratchpad window.
-# If there are multiple scratchpad windows, this command cycles through them.
-bindsym $mod+minus scratchpad show
-
-# -------------------------------------------------------------------------------
-# Scratchpad - END
 # -------------------------------------------------------------------------------
 
 include /etc/sway/config.d/*
