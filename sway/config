@@ -29,6 +29,8 @@ for_window [app_id="^launcher$"] floating enable, sticky enable, resize set 20 p
 set $menu exec $term --class=launcher -e env GLYPH_PROMPT="" sway-launcher-desktop
 set $term alacritty
 set $laptop_display eDP-1
+set $laptop_display_height 1080
+set $external_display DP-3
 set $background_image "/usr/share/backgrounds/sway/custom.png"
 set $ws1 "1: terminal "
 set $ws2 "2: browser "
@@ -236,6 +238,10 @@ input type:touchpad {
 output * bg $background_image fill
 bindswitch lid:on output $laptop_display disable
 bindswitch lid:off output $laptop_display enable
+
+# External display on top of laptop display
+output $laptop_display scale 1.0 position 0 $laptop_display_height
+output $external_display scale 1.0 position 0 0
 
 # -------------------------------------------------------------------------------
 # Scratchpad
