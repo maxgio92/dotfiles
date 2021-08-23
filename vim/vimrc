@@ -5,52 +5,21 @@
 " Set vim-plug plugins directory
 call plug#begin('~/.vim/plugged')
 
-" NERDTree
 Plug 'https://github.com/scrooloose/nerdtree.git'
-
-" Undotree
 Plug 'https://github.com/mbbill/undotree.git'
-
-" NERDCommenter
 Plug 'https://github.com/scrooloose/nerdcommenter.git'
-
-" Lightline
 Plug 'https://github.com/itchyny/lightline.vim.git'
-
-" EasyMotion
 Plug 'https://github.com/easymotion/vim-easymotion.git'
-
-" Ack.vim
 Plug 'https://github.com/mileszs/ack.vim.git'
-
-" Syntastic
 Plug 'https://github.com/vim-syntastic/syntastic.git'
-
-" Ansible VIM
 Plug 'https://github.com/pearofducks/ansible-vim.git'
-
-" Fugitive
 Plug 'https://github.com/tpope/vim-fugitive.git'
-
-" vim-terraform
 Plug 'https://github.com/hashivim/vim-terraform.git'
-
-" markdown-preview
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
-
-" vim-colors-solarized
 Plug 'https://github.com/altercation/vim-colors-solarized.git'
-
-" ctrlp.vim
 Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
-
-" CoC
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-
-" repmo
 Plug 'https://github.com/Houl/repmo-vim.git'
-
-" vim-devicons
 Plug 'ryanoasis/vim-devicons'
 
 " Initialize vim-plug plugin system
@@ -81,8 +50,8 @@ filetype plugin indent on
 set tabstop=2
 " when indenting with '>', use 2 spaces width
 set shiftwidth=2
-" On pressing tab, insert 2 spaces
-set expandtab
+" On pressing tab and indenting, insert tabs
+set noexpandtab
 
 " -------------
 " Tab switching
