@@ -1,6 +1,7 @@
 [user]
     email = massimiliano.giovagnoli.1992@gmail.com
     name = "maxgio92"
+    signingkey = "maxgio92"
 
 [diff]
     submodule = log
@@ -21,3 +22,5 @@ bclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -
 rbclean = "!f() { git branch --merged ${1-main} | grep -v " ${1-main}$" | xargs -r git push origin :; }; f"
 credstore = config credential.helper store
 
+[commit]
+    gpgsign = true
