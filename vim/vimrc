@@ -15,12 +15,12 @@ Plug 'https://github.com/vim-syntastic/syntastic.git'
 Plug 'https://github.com/pearofducks/ansible-vim.git'
 Plug 'https://github.com/tpope/vim-fugitive.git'
 Plug 'https://github.com/hashivim/vim-terraform.git'
-Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 Plug 'https://github.com/altercation/vim-colors-solarized.git'
 Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'https://github.com/Houl/repmo-vim.git'
 Plug 'ryanoasis/vim-devicons'
+Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
 
 " Initialize vim-plug plugin system
 call plug#end()
@@ -373,4 +373,3 @@ nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
 :noremap <expr> F repmo#ZapKey('F')|sunmap F
 :noremap <expr> t repmo#ZapKey('t')|sunmap t
 :noremap <expr> T repmo#ZapKey('T')|sunmap T
-
