@@ -75,7 +75,7 @@ tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 vim: update
-	@./bin/install-ospackage.sh nodejs &> /dev/null
+	@hash node || ./bin/install-ospackage.sh nodejs &> /dev/null
 	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 	@vim +PlugInstall +qall
