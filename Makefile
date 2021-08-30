@@ -2,7 +2,7 @@ REPO := https://github.com/maxgio92/dotfiles.git
 REMOTE := origin
 BRANCH := main
 DOTFILES := $(HOME)/.dotfiles
-git := $(shell command -v git)
+git := $(shell command -v git 2>/dev/null)
 
 .PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
