@@ -16,5 +16,8 @@ unsetopt appendhistory autocd extendedglob notify
 bindkey -v
 # End of lines configured by zsh-newuser-install
 
+# Reverse search key binding
+bindkey '^R' history-incremental-search-backward
+
 # Aliases
 source $HOME/.kubectl_aliases
