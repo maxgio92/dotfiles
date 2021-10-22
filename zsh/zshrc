@@ -21,3 +21,6 @@ bindkey '^R' history-incremental-search-backward
 
 # Aliases
 source $HOME/.kubectl_aliases
+
+# Path
+path+=($HOME/.krew/bin)
