@@ -3,6 +3,7 @@ REMOTE := origin
 BRANCH := main
 DOTFILES := $(HOME)/.dotfiles
 git := $(shell command -v git 2>/dev/null)
+SHELL := /usr/bin/env bash -x
 
 .PHONY: list init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
@@ -35,7 +36,7 @@ alacritty: update
 	@mkdir -p $(HOME)/.config/alacritty
 	@ln -sf $(DOTFILES)/alacritty/alacritty.yml $(HOME)/.config/alacritty/alacritty.yml
 
-bash: update
+bash: shell_aliases update
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
@@ -136,5 +137,23 @@ else
 		&& systemctl enable resume@$(USERNAME).service
 endif
 
-zsh: update
+zsh: update shell_aliases prezto
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
+
+prezto: update
+	@if [ ! -d $(HOME)/.prezto ]; then \
+		$(git) clone --recursive https://github.com/sorin-ionescu/prezto.git \
+			$(HOME)/.prezto; \
+	else \
+		pushd $(HOME)/.prezto > /dev/null && \
+		$(git) pull && \
+		$(git) submodule sync --recursive && \
+		$(git) submodule update --init --recursive && \
+		popd > /dev/null; \
+	fi
+
+shell_aliases: kubectl_aliases
+
+kubectl_aliases:
+	@ln -sf $(DOTFILES)/shell_aliases/kubectl_aliases \
+		$(HOME)/.kubectl_aliases

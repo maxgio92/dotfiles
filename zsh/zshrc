@@ -1,4 +1,7 @@
 # The following lines were added by compinstall
+#
+source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+
 zstyle :compinstall filename '/home/massi/.zshrc'
 
 autoload -Uz compinit
@@ -12,3 +15,6 @@ setopt beep nomatch
 unsetopt appendhistory autocd extendedglob notify
 bindkey -v
 # End of lines configured by zsh-newuser-install
+
+# Aliases
+source $HOME/.kubectl_aliases
