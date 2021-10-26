@@ -8,7 +8,11 @@ call plug#begin('~/.vim/plugged')
 Plug 'https://github.com/scrooloose/nerdtree.git'
 Plug 'https://github.com/mbbill/undotree.git'
 Plug 'https://github.com/scrooloose/nerdcommenter.git'
-Plug 'https://github.com/itchyny/lightline.vim.git'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'edkolev/tmuxline.vim'
+"Plug 'itchyny/lightline.vim'
+Plug 'mengelbrecht/lightline-bufferline'
 Plug 'https://github.com/easymotion/vim-easymotion.git'
 Plug 'https://github.com/mileszs/ack.vim.git'
 Plug 'https://github.com/vim-syntastic/syntastic.git'
@@ -135,30 +139,49 @@ function! CocCurrentFunction()
     return get(b:, 'coc_current_function', '')
 endfunction
 
-let g:lightline = {
-      \ 'colorscheme': 'solarized',
-      \ 'active': {
-      \   'left': [ [ 'mode', 'paste' ],
-      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ],
-      \             [ 'gitbranch' ] ], 
-      \   'right': [ [ 'lineinfo' ],
-      \              [ 'percent' ],
-      \              [ 'fileformat', 'fileencoding', 'filetype' ],
-      \              [ 'syntastic' ] ]
-      \ },
-      \ 'component_function': {
-      \   'fugitive':  'FugitiveStatusline',
-      \   'gitbranch': 'fugitive#head',
-      \   'cocstatus': 'coc#status',
-      \   'currentfunction': 'CocCurrentFunction'
-      \ },
-      \ 'component_expand': {
-      \   'syntastic': 'SyntasticStatuslineFlag',
-      \ },
-      \ 'component_type': {
-      \   'syntastic': 'error',
-      \ }
-\ }
+" This is disabled by default; add the following to your vimrc to enable the
+" extension:
+let g:airline#extensions#tabline#enabled = 1
+" Separators can be configured independently for the tabline, so here is how
+" you can define \"straight\" tabs:
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'
+" This affects how file paths are displayed in each individual tab as well as
+" the current buffer indicator in the upper right.
+let g:airline#extensions#tabline#formatter = 'default'
+
+let g:airline_theme='solarized'
+
+"let g:lightline = {
+"      \ 'colorscheme': 'solarized',
+"      \ 'active': {
+"      \   'left': [ [ 'mode', 'paste' ],
+"      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ],
+"      \             [ 'gitbranch' ] ], 
+"      \   'right': [ [ 'lineinfo' ],
+"      \              [ 'percent' ],
+"      \              [ 'fileformat', 'fileencoding', 'filetype' ],
+"      \              [ 'syntastic' ] ]
+"      \ },
+"      \ 'tabline': {
+"	    \   'left': [ ['buffers'] ],
+"      \   'right': [ ['close'] ]
+"      \ },
+"      \ 'component_function': {
+"      \   'fugitive':  'FugitiveStatusline',
+"      \   'gitbranch': 'fugitive#head',
+"      \   'cocstatus': 'coc#status',
+"      \   'currentfunction': 'CocCurrentFunction'
+"      \ },
+"      \ 'component_expand': {
+"		  \   'buffers': 'lightline#bufferline#buffers',
+"      \   'syntastic': 'SyntasticStatuslineFlag',
+"      \ },
+"      \ 'component_type': {
+"			\   'buffers': 'tabsel',
+"      \   'syntastic': 'error',
+"      \ }
+"\ }
 
 let g:syntastic_mode_map = { 'mode': 'active' }
 function! s:syntastic()
