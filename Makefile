@@ -157,3 +157,10 @@ shell_aliases: kubectl_aliases
 kubectl_aliases:
 	@ln -sf $(DOTFILES)/shell_aliases/kubectl_aliases \
 		$(HOME)/.kubectl_aliases
+
+bat:
+	@hash bat || ./bin/install-ospackage.sh bat &> /dev/null
+	@test -d $(HOME)/.config/bat || \
+		mkdir $(HOME)/.config/bat
+	@ln -sf $(DOTFILES)/bat/config \
+		$(HOME)/.config/bat/config
