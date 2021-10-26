@@ -24,3 +24,6 @@ source $HOME/.kubectl_aliases
 
 # Path
 path+=($HOME/.krew/bin)
+
+# FZF
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
