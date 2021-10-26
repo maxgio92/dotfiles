@@ -23,7 +23,7 @@
 #   Example 2: Use ".gitignore"-style highlighting for ".ignore" files
 #--map-syntax "*.ino:C++"
 #--map-syntax ".ignore:Git Ignore"
---map-syntax "*.star:python"
+--map-syntax "*.star:Python"
 
 #--style="numbers,changes,header"
 --style="changes"
