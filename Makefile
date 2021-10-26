@@ -35,7 +35,7 @@ alacritty: update
 	@mkdir -p $(HOME)/.config/alacritty
 	@ln -sf $(DOTFILES)/alacritty/alacritty.yml $(HOME)/.config/alacritty/alacritty.yml
 
-bash: shell_aliases update
+bash: update shell_aliases fzf
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
@@ -137,7 +137,7 @@ else
 		&& systemctl enable resume@$(USERNAME).service
 endif
 
-zsh: update shell_aliases prezto
+zsh: update shell_aliases prezto fzf
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 
 prezto: update
