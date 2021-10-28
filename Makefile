@@ -39,8 +39,6 @@ bash: update shell_aliases fzf
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
-	ln -sf $(DOTFILES)/bash/bash_aliases $(HOME)/.bash_aliases && \
-	ln -sf $(DOTFILES)/bash/kubectl_aliases $(HOME)/.kubectl_aliases && \
 	ln -sf $(DOTFILES)/bash/bash_logout $(HOME)/.bash_logout && \
 	ln -sf $(DOTFILES)/bash/bash_completion $(HOME)/.bash_completion
 
@@ -152,11 +150,9 @@ prezto: update
 		popd > /dev/null; \
 	fi
 
-shell_aliases: kubectl_aliases
-
-kubectl_aliases: update
-	@ln -sf $(DOTFILES)/shell_aliases/kubectl_aliases \
-		$(HOME)/.kubectl_aliases
+shell_aliases: update
+	@ln -sf $(DOTFILES)/shell_aliases \
+		$(HOME)/.shell_aliases
 
 .PHONY: bat
 bat: update

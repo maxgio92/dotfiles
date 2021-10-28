@@ -1,0 +1,3 @@
+alias vimfzf="vim -o \$(fzf)"
+alias batfzf="fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+alias screencap='grim -g "$(slurp)" screenshot_$(date +%Y%m%d_%H%M%S).png'
