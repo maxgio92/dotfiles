@@ -1,0 +1,5 @@
+CURRENT=$(dirname "${0}")
+
+source $CURRENT/misc
+source $CURRENT/fzf
+source $CURRENT/kubectl
