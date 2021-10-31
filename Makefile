@@ -138,12 +138,13 @@ endif
 zsh: update shell_aliases prezto fzf
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 
+prezto: PREZTO_HOME := $(HOME)/.zprezto
 prezto: update
-	@if [ ! -d $(HOME)/.prezto ]; then \
+	@if [ ! -d $(PREZTO_HOME) ]; then \
 		$(git) clone --recursive https://github.com/sorin-ionescu/prezto.git \
-			$(HOME)/.prezto; \
+			$(PREZTO_HOME); \
 	else \
-		pushd $(HOME)/.prezto > /dev/null && \
+		pushd $(PREZTO_HOME) > /dev/null && \
 		$(git) pull && \
 		$(git) submodule sync --recursive && \
 		$(git) submodule update --init --recursive && \
