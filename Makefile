@@ -186,3 +186,7 @@ bat: update
 		mkdir $(HOME)/.config/bat
 	@ln -sf $(DOTFILES)/bat/config \
 		$(HOME)/.config/bat/config
+
+nerd-fonts:
+	@TMPDIR=$$(mktemp -d) $(git) clone https://github.com/ryanoasis/nerd-fonts.git $$(TMPDIR); \
+		pushd $$(TMPDIR) && ./install.sh && popd && rm -rf $$(TMPDIR)
