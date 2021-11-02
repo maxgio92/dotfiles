@@ -176,7 +176,8 @@ prezto: update
 
 .PHONY: shell_aliases
 shell_aliases: update
-	@ln -sf $(DOTFILES)/shell_aliases \
+	@test -h $(HOME)/.shell_aliases || \
+		ln -sf $(DOTFILES)/shell_aliases \
 		$(HOME)/.shell_aliases
 
 .PHONY: bat
