@@ -425,6 +425,8 @@ font:
 #  program: /bin/bash
 #  args:
 #    - --login
+shell:
+  program: /usr/bin/zsh
 
 # Startup directory
 #
