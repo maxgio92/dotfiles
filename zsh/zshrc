@@ -23,6 +23,7 @@ bindkey '^R' history-incremental-search-backward
 source $HOME/.shell_aliases/shell_aliases
 
 # Path
+path+=($HOME/.local/bin)
 path+=($HOME/.krew/bin)
 
 # FZF
