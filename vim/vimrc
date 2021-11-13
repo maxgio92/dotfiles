@@ -50,10 +50,10 @@ set backspace=start
 " -----------
 
 filetype plugin indent on
-" show existing tab with 2 spaces width
-set tabstop=2
-" when indenting with '>', use 2 spaces width
-set shiftwidth=2
+" show existing tab with 8 spaces width
+set tabstop=8
+" when indenting with '>', use 8 spaces width
+set shiftwidth=8
 " On pressing tab and indenting, insert tabs
 set noexpandtab
 
