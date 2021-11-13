@@ -19,11 +19,11 @@ Plug 'https://github.com/vim-syntastic/syntastic.git'
 Plug 'https://github.com/pearofducks/ansible-vim.git'
 Plug 'https://github.com/tpope/vim-fugitive.git'
 Plug 'https://github.com/hashivim/vim-terraform.git'
-Plug 'https://github.com/altercation/vim-colors-solarized.git'
 Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'https://github.com/Houl/repmo-vim.git'
 Plug 'ryanoasis/vim-devicons'
+Plug 'morhetz/gruvbox'
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
 
 " Initialize vim-plug plugin system
@@ -71,7 +71,7 @@ nnoremap <C-l> :tabnext<CR>
 " -----------
 
 set background=dark
-silent! colorscheme solarized
+silent! colorscheme gruvbox
 
 " ----------------------------------------------
 " 		Plugin settings
@@ -150,7 +150,7 @@ let g:airline#extensions#tabline#left_alt_sep = '|'
 " the current buffer indicator in the upper right.
 let g:airline#extensions#tabline#formatter = 'default'
 
-let g:airline_theme='solarized'
+let g:airline_theme='gruvbox'
 
 "let g:lightline = {
 "      \ 'colorscheme': 'solarized',
