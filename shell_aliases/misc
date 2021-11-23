@@ -1,1 +1,6 @@
 alias watch='watch '
+alias aws="docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE amazon/aws-cli"
+alias awscli=aws
+alias vimfzf="vim -o \$(fzf)"
+alias batfzf="fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+alias terraform="docker run --rm -it -v \$PWD:/workspace -v \$HOME/.aws/config:/root/.aws./config -v \$HOME/.aws/credentials:/root/.aws/credentials -e AWS_PROFILE=\$AWS_PROFILE -w /workspace hashicorp/terraform:0.14.11"
