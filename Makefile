@@ -188,6 +188,12 @@ bat: update
 	@ln -sf $(DOTFILES)/bat/config \
 		$(HOME)/.config/bat/config
 
+.PHONY: nerd-fonts
 nerd-fonts:
 	@TMPDIR=$$(mktemp -d) $(git) clone https://github.com/ryanoasis/nerd-fonts.git $$(TMPDIR); \
 		pushd $$(TMPDIR) && ./install.sh && popd && rm -rf $$(TMPDIR)
+
+.PHONY: xpanes
+xpanes:
+	TMPDIR=$$(mktemp -d); pushd $$TMPDIR && curl -LO https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.1/bin/xpanes && \
+		install ./xpanes /usr/local/bin && popd && rm -rf $$TMPDIR
