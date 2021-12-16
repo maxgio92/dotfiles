@@ -157,7 +157,7 @@ else
 endif
 
 .PHONY: zsh
-zsh: update shell_aliases prezto fzf
+zsh: update shell_aliases prezto fzf direnv
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 
 .PHONY: prezto
@@ -179,6 +179,10 @@ shell_aliases: update
 	@test -h $(HOME)/.shell_aliases || \
 		ln -sf $(DOTFILES)/shell_aliases \
 		$(HOME)/.shell_aliases
+
+.PHONY: direnv
+direnv:
+	@hash direnv || { curl -sfL https://direnv.net/install.sh | $$SHELL; }
 
 .PHONY: bat
 bat: update

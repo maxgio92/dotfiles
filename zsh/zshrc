@@ -28,3 +28,6 @@ path+=($HOME/.krew/bin)
 
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Direnv
+ eval "$(direnv hook zsh)"
