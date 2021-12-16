@@ -5,7 +5,7 @@ set -eo pipefail
 function show_help {
   echo "Usage: tmux-start PROJECT_DIRNAME KUEBCONFIG_FILENAME"
   echo ""
-  echo "PROJECT_DIRNAME: it must exist as a directory in \$HOME/workspace directory."
+  echo "PROJECT_DIRNAME: it must exist as a directory in \$HOME/src directory."
   echo "KUBECONFIG_FILENAME: it must exist as a file in \$HOME/.kube directory."
 }
 
@@ -20,7 +20,7 @@ fi
 
 KUBECONFIG_DIRNAME="${HOME}/.kube"
 KUBECONFIG="${KUBECONFIG_DIRNAME}/${KUBECONFIG_FILENAME}"
-WORKSPACE_HOME="${HOME}/workspace"
+WORKSPACE_HOME="${HOME}/src"
 WORKSPACE="${WORKSPACE_HOME}/${PROJECT}"
 SESSION="${PROJECT}"
 EDITOR="vim -c NERDTree"
