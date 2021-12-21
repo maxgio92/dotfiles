@@ -13,7 +13,7 @@ HISTSIZE=1000
 SAVEHIST=1000
 setopt beep nomatch
 unsetopt appendhistory autocd extendedglob notify
-bindkey -v
+bindkey -e
 # End of lines configured by zsh-newuser-install
 
 # Reverse search key binding
