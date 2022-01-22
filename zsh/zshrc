@@ -25,6 +25,7 @@ source $HOME/.shell_aliases/shell_aliases
 # Path
 path+=($HOME/.local/bin)
 path+=($HOME/.krew/bin)
+path+=($HOME/go/bin)
 
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
