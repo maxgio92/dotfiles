@@ -49,6 +49,10 @@ bash: update shell_aliases fzf
 bin: update
 	@ln -sf $(DOTFILES)/bin $(HOME)/.local/
 
+.PHONY: cobra
+cobra: update
+	@ln -sf $(DOTFILES)/cobra/cobra.yaml $(HOME)/.cobra.yaml
+
 .PHONY: krew
 krew: update
 	@test -d $$HOME/.krew || \
