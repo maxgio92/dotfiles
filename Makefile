@@ -87,6 +87,11 @@ i3: update
 i3status: update
 	@ln -sf $(DOTFILES)/i3status/config $(HOME)/.config/i3status/config
 
+
+.PHONY: luakit
+luakit: update
+	@ln -sf $(DOTFILES)/luakit/userconf.lua $(HOME)/.config/luakit/userconf.lua
+
 .PHONY: sway
 sway: update
 	@mkdir -p $(HOME)/.config/sway
