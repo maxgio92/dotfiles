@@ -47,7 +47,7 @@ bash: update shell_aliases fzf
 
 .PHONY: bin
 bin: update
-	@ln -sf $(DOTFILES)/bin $(HOME)/.local/
+	@rsync -avz $(DOTFILES)/bin/ $(HOME)/.local/bin/
 
 .PHONY: cobra
 cobra: update
