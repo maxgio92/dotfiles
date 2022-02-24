@@ -5,49 +5,63 @@ set -uo pipefail
 SRC_CODEC=flac
 DEST_CODEC=mp3
 
-DIRSFILE=dirs.txt
-FLACSFILE=flacs.txt
+tmpdir="$(mktemp -d)"
+src_codec_tracks_album_dirs_cache="${tmpdir}/dirs.txt"
+src_codec_tracks_cache="${tmpdir}/${SRC_CODEC}s.txt"
 
-function convert_flac_to_mp3() {
-	find . -type f -name *.$SRC_CODEC -exec echo {} >> $FLACSFILE \;
-	while read flac; do
-		if [[ $(dirname "${flac}") != **".$SRC_CODEC"** ]]; then
-			track2track "${flac}" -t "${DEST_CODEC}" -o "${flac}.${DEST_CODEC}" 2>/dev/null
+function convert_recursively() {
+	# Look for tracks with source codec to convert with destination codec
+	find . -type f -name *.$SRC_CODEC -exec echo {} >> $src_codec_tracks_cache \;
+	while read track; do
+		if [[ $(dirname "${track}") != **".$SRC_CODEC"** ]]; then
+			track2track "${track}" -t "${DEST_CODEC}" -o "${track}.${DEST_CODEC}" 2>/dev/null
 		fi
-	done <$FLACSFILE
+	done <$src_codec_tracks_cache
 }
 
 function store_flac_albums_dirs() {
-	find . -type f -name *.$SRC_CODEC -exec dirname {} >> $DIRSFILE \;
-	cat $DIRSFILE | uniq > $DIRSFILE.uniq
+	find . -type f -name *.$SRC_CODEC -exec dirname {} >> $src_codec_tracks_album_dirs_cache \;
+	cat $src_codec_tracks_album_dirs_cache | uniq > $src_codec_tracks_album_dirs_cache.uniq
 }
 
 function reorganize_dirs() {
-	while read dir; do
-		if [[ "${dir}" != *".$DEST_CODEC"* ]] && [[ "${dir}" != *".$SRC_CODEC"* ]]; then
-			mkdir -p "${dir}.$DEST_CODEC"
-			find "${dir}" -type f -name *.$SRC_CODEC.$DEST_CODEC -exec mv {} "${dir}.$DEST_CODEC"/ \;
-			while read file; do mv "${dir}.$DEST_CODEC/${file}" "${dir}.${DEST_CODEC}/${file//.$SRC_CODEC.$DEST_CODEC/.$DEST_CODEC}"; done <<<$(ls -1 "${dir}.$DEST_CODEC")
-			mv "${dir}" "${dir}.$SRC_CODEC"
+	while read album_dir; do
+		if [[ "${album_dir}" != *".$DEST_CODEC"* ]] && [[ "${album_dir}" != *".$SRC_CODEC"* ]]; then
+			mkdir -p "${album_dir}.$DEST_CODEC"
+			find "${album_dir}" -type f -name *.$SRC_CODEC.$DEST_CODEC -exec mv {} "${album_dir}.$DEST_CODEC"/ \;
+			while read file; do mv "${album_dir}.$DEST_CODEC/${file}" "${album_dir}.${DEST_CODEC}/${file//.$SRC_CODEC.$DEST_CODEC/.$DEST_CODEC}"; done <<<$(ls -1 "${album_dir}.$DEST_CODEC")
+			mv "${album_dir}" "${album_dir}.$SRC_CODEC"
 		fi
-	done <$DIRSFILE.uniq
+	done <$src_codec_tracks_album_dirs_cache.uniq
 }
 
 function clean_cache() {
-	rm -f $DIRSFILE
-	rm -f $DIRSFILE.uniq
-	rm -f $FLACSFILE
+	rm -f $src_codec_tracks_album_dirs_cache
+	rm -f $src_codec_tracks_album_dirs_cache.uniq
+	rm -f $src_codec_tracks_cache
 }
 
-function fix_wrong_dirnames() {
-	find . -type d -name *.flac.flac > dirs.wrongname.txt
-	while read dir; do echo "Renaming $dir to ${dir/.flac}"; mv "${dir}" "${dir/.flac}"; done<dirs.wrongname.txt
-	rm -f dirs.wrongname.txt
+function check_pwd() {
+	if [ "$(basename $(pwd))" != "Music" ]; then
+		echo
+		echo "You need to run this from the Music directory."
+		show_usage
+		exit 1
+	fi
+}
+
+function show_usage() {
+	echo
+	echo "Usage: $(basename $0)"
+	echo
+	echo "	Run $(basename $0) from the Music directory to convert flac tracks to mp3 tracks and re-organize album folders accordingly."
+	echo
 }
 
 function main() {
+	check_pwd
 	clean_cache
-	convert_flac_to_mp3
+	convert_recursively
 	store_flac_albums_dirs
 	reorganize_dirs
 	clean_cache
