@@ -39,6 +39,13 @@ set foldmethod=indent
 set nofoldenable
 
 " ---------
+" Completion
+" ---------
+
+"filetype plugin on
+"set omnifunc=syntaxcomplete#Complete
+
+" ---------
 " Backspace
 " ---------
 
@@ -72,6 +79,13 @@ nnoremap <C-l> :tabnext<CR>
 
 set background=dark
 silent! colorscheme gruvbox
+
+" -----------
+" Highlights
+" -----------
+
+" No background, respect terminal emulator one
+hi Normal guibg=NONE ctermbg=NONE
 
 " ----------------------------------------------
 " 		Plugin settings
