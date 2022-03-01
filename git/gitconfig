@@ -1,26 +1,29 @@
+[core]
+	editor = vim
+
+[commit]
+	gpgsign = true
+
 [user]
-    email = massimiliano.giovagnoli.1992@gmail.com
-    name = "maxgio92"
-    signingkey = "maxgio92"
+	email = massimiliano.giovagnoli.1992@gmail.com
+	name = "maxgio92"
+	signingkey = "maxgio92"
 
 [diff]
-    submodule = log
+	submodule = log
 
 [status]
-    submodulesummary = 1
+	submodulesummary = 1
 
 [init]
 	templateDir = /home/massi/.git-template
 
 [alias]
-bra = branch -avv
-lg = log --all --decorate --oneline --graph
-sts = status
-pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
-new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
-gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
-credstore = config credential.helper store
-replay = ! "git add . && git commit --amend --no-edit && git push -f"
-
-[commit]
-    gpgsign = true
+	bra = branch -avv
+	lg = log --all --decorate --oneline --graph
+	sts = status
+	pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
+	new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
+	gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
+	credstore = config credential.helper store
+	replay = ! "git add . && git commit --amend --no-edit && git push -f"
