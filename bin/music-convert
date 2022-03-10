@@ -14,7 +14,7 @@ function convert_recursively() {
 	find . -type f -name *.$SRC_CODEC -exec echo {} >> $src_codec_tracks_cache \;
 	while read track; do
 		if [[ $(dirname "${track}") != **".$SRC_CODEC"** ]]; then
-			track2track "${track}" -t "${DEST_CODEC}" -o "${track}.${DEST_CODEC}" 2>/dev/null
+			track2track "${track}" -t "${DEST_CODEC}" -q 'insane' -o "${track}.${DEST_CODEC}" 2>/dev/null
 		fi
 	done <$src_codec_tracks_cache
 }
