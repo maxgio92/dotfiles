@@ -22,6 +22,8 @@ bindkey '^R' history-incremental-search-backward
 # Aliases
 source $HOME/.shell_aliases/shell_aliases
 
+set -o vi
+
 # Path
 path+=($HOME/.local/bin)
 path+=($HOME/.krew/bin)
