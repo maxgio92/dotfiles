@@ -5,7 +5,7 @@
 	gpgsign = true
 
 [user]
-	email = massimiliano.giovagnoli.1992@gmail.com
+	email = me@maxgio.it
 	name = "maxgio92"
 	signingkey = "maxgio92"
 
