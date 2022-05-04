@@ -182,6 +182,7 @@ prezto: update
 		$(git) submodule update --init --recursive && \
 		popd > /dev/null; \
 	fi
+	@ln -sf $(DOTFILES)/prezto/zpreztorc $(HOME)/.zpreztorc
 
 .PHONY: shell_aliases
 shell_aliases: update
@@ -212,3 +213,9 @@ nerd-fonts:
 xpanes:
 	TMPDIR=$$(mktemp -d); pushd $$TMPDIR && curl -LO https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.1/bin/xpanes && \
 		install ./xpanes /usr/local/bin && popd && rm -rf $$TMPDIR
+
+.PHONY: ulauncher
+ulauncher: TMPDIR := $(shell mktemp -d)
+ulauncher:
+	@git clone https://aur.archlinux.org/ulauncher.git $(TMPDIR) && \
+		pushd $(TMPDIR) && makepkg -is && popd && rm -rf $(TMPDIR)
