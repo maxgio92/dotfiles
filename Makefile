@@ -107,7 +107,7 @@ tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 .PHONY: vim
-vim: update
+vim: nerd-fonts update
 	@hash node || ./bin/install-ospackage.sh nodejs &> /dev/null
 	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
@@ -202,9 +202,11 @@ bat: update
 		$(HOME)/.config/bat/config
 
 .PHONY: nerd-fonts
+nerd-fonts: TMPDIR := $(shell mktemp -d)
 nerd-fonts:
-	@TMPDIR=$$(mktemp -d) $(git) clone https://github.com/ryanoasis/nerd-fonts.git $$(TMPDIR); \
-		pushd $$(TMPDIR) && ./install.sh && popd && rm -rf $$(TMPDIR)
+	echo $(TMPDIR)
+	@$(git) clone https://github.com/ryanoasis/nerd-fonts.git $(TMPDIR); \
+		pushd $(TMPDIR) && ./install.sh && popd && rm -rf $(TMPDIR)
 
 .PHONY: xpanes
 xpanes:
