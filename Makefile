@@ -34,8 +34,7 @@ update: init
 
 .PHONY: alacritty
 alacritty: update
-	@mkdir -p $(HOME)/.config/alacritty
-	@ln -sf $(DOTFILES)/alacritty/alacritty.yml $(HOME)/.config/alacritty/alacritty.yml
+	@rm -rf $(HOME)/.config/alacritty && ln -sf $(DOTFILES)/alacritty $(HOME)/.config/alacritty
 
 .PHONY: bash
 bash: update shell_aliases fzf
