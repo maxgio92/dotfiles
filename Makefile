@@ -32,8 +32,15 @@ update: init
 		popd > /dev/null; \
 	fi
 
+.PHONY: alacritty-themes
+alacritty-themes: TMPDIR := $(shell mktemp -d)
+alacritty-themes:
+	@git clone https://aur.archlinux.org/alacritty-themes.git $(TMPDIR)
+	@cd $(TMPDIR) && makepkg -si --noconfirm
+	@rm -rf $(TMPDIR)
+
 .PHONY: alacritty
-alacritty: update
+alacritty: update alacritty-themes
 	@rm -rf $(HOME)/.config/alacritty && ln -sf $(DOTFILES)/alacritty $(HOME)/.config/alacritty
 
 .PHONY: bash
