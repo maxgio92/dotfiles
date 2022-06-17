@@ -171,8 +171,16 @@ else
 		&& systemctl enable resume@$(USERNAME).service
 endif
 
+.PHONY: zsh/plugins
+zsh/plugins: kubectl_prompt_home := $(HOME)/.zsh-kubectl-prompt
+zsh/plugins:
+	@test -d $(kubectl_prompt_home)  && \
+		$(git) -C $(kubectl_prompt_home) pull || \
+		$(git) clone git@github.com:superbrothers/zsh-kubectl-prompt.git \
+			$(kubectl_prompt_home)
+
 .PHONY: zsh
-zsh: update shell_aliases prezto fzf direnv
+zsh: update shell_aliases zsh/plugins prezto fzf direnv
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 
 .PHONY: prezto
