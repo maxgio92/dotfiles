@@ -20,6 +20,8 @@ unsetopt appendhistory autocd extendedglob notify
 bindkey -e
 # End of lines configured by zsh-newuser-install
 
+export EDITOR=vim
+
 # Reverse search key binding
 bindkey '^R' history-incremental-search-backward
 
