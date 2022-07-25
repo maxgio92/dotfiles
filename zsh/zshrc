@@ -22,6 +22,8 @@ bindkey -e
 
 export EDITOR=vim
 
+export CDPATH=.:$HOME:$HOME/src
+
 # Reverse search key binding
 bindkey '^R' history-incremental-search-backward
 
