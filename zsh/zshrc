@@ -24,6 +24,8 @@ export EDITOR=vim
 
 export CDPATH=.:$HOME:$HOME/src
 
+export GIT_CODE_FOLDER="${HOME}/src"
+
 # Reverse search key binding
 bindkey '^R' history-incremental-search-backward
 

@@ -233,3 +233,8 @@ ulauncher: TMPDIR := $(shell mktemp -d)
 ulauncher:
 	@git clone https://aur.archlinux.org/ulauncher.git $(TMPDIR) && \
 		pushd $(TMPDIR) && makepkg -is && popd && rm -rf $(TMPDIR)
+
+.PHONY: git-code
+git-code: install_url := https://git-co.de/install.sh
+git-code:
+	@bash <(curl -fsSL $(install_url))
