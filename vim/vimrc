@@ -373,6 +373,14 @@ nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
 nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
 " Rename the current word in the cursor.
 nnoremap <silent> <space>r  <Plug>(coc-rename)
+" Automatically add missing Go module imports on save
+autocmd BufWritePre *.go :silent call CocAction('runCommand', 'editor.action.organizeImport')
+" Enable custom locations for symbols navigation
+let g:coc_enable_locationlist = 0
+autocmd User CocLocationsChange CocList --no-quit --normal location
+nnoremap <space>u <Plug>(coc-references)
+nnoremap <c-j> :CocNext<cr>
+nnoremap <c-k> :CocPrev<cr>
 
 " ----------------
 " plugin: repmo
