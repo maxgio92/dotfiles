@@ -1,0 +1,11 @@
+{
+  "coc.preferences.formatOnSaveFiletypes": ["go"],
+  "languageserver": {
+    "go": {
+      "command": "gopls",
+      "rootPatterns": ["go.mod"],
+      "trace.server": "verbose",
+      "filetypes": ["go"]
+    }
+  }
+}
