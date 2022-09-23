@@ -5,26 +5,45 @@
 " Set vim-plug plugins directory
 call plug#begin('~/.vim/plugged')
 
+" Colorscheme
+Plug 'morhetz/gruvbox'
+
+" LSP and async
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+
+" Workspace file tree
 Plug 'https://github.com/scrooloose/nerdtree.git'
+
+" File changes tree
 Plug 'https://github.com/mbbill/undotree.git'
+
+" Helpers for commenting code
 Plug 'https://github.com/scrooloose/nerdcommenter.git'
+
+" Status and Tabline
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'edkolev/tmuxline.vim'
-"Plug 'itchyny/lightline.vim'
-Plug 'mengelbrecht/lightline-bufferline'
+
+" Search in buffer
 Plug 'https://github.com/easymotion/vim-easymotion.git'
-Plug 'https://github.com/mileszs/ack.vim.git'
-Plug 'https://github.com/vim-syntastic/syntastic.git'
-Plug 'https://github.com/pearofducks/ansible-vim.git'
+
+" Git commands
 Plug 'https://github.com/tpope/vim-fugitive.git'
-Plug 'https://github.com/hashivim/vim-terraform.git'
-Plug 'https://github.com/ctrlpvim/ctrlp.vim.git'
-Plug 'neoclide/coc.nvim', {'branch': 'release'}
+
+" Repeat motions
 Plug 'https://github.com/Houl/repmo-vim.git'
+
+" Icons for file names in other plugins
 Plug 'ryanoasis/vim-devicons'
-Plug 'morhetz/gruvbox'
+
+" Markdown preview in browser
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
+
+" Helpers for Terraform
+Plug 'https://github.com/hashivim/vim-terraform.git'
+
+" Helpers for Ansible
+Plug 'https://github.com/pearofducks/ansible-vim.git'
 
 " Initialize vim-plug plugin system
 call plug#end()
@@ -40,12 +59,12 @@ set rnu
 set foldmethod=indent
 set nofoldenable
 
-" ---------
+" -----------
 " Completion
-" ---------
+" -----------
 
 "filetype plugin on
-"set omnifunc=syntaxcomplete#Complete
+set omnifunc=syntaxcomplete#Complete
 
 " ---------
 " Backspace
@@ -92,6 +111,12 @@ hi Normal guibg=NONE ctermbg=NONE
 " ----------------------------------------------
 " 		Plugin settings
 " ----------------------------------------------
+
+" ----------------
+" plugin: UndoTree
+" ----------------
+
+nnoremap <F5> :UndotreeToggle<CR>
 
 " ----------------
 " plugin: NERDTree
@@ -168,43 +193,6 @@ let g:airline#extensions#tabline#formatter = 'default'
 
 let g:airline_theme='gruvbox'
 
-"let g:lightline = {
-"      \ 'colorscheme': 'solarized',
-"      \ 'active': {
-"      \   'left': [ [ 'mode', 'paste' ],
-"      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ],
-"      \             [ 'gitbranch' ] ], 
-"      \   'right': [ [ 'lineinfo' ],
-"      \              [ 'percent' ],
-"      \              [ 'fileformat', 'fileencoding', 'filetype' ],
-"      \              [ 'syntastic' ] ]
-"      \ },
-"      \ 'tabline': {
-"	    \   'left': [ ['buffers'] ],
-"      \   'right': [ ['close'] ]
-"      \ },
-"      \ 'component_function': {
-"      \   'fugitive':  'FugitiveStatusline',
-"      \   'gitbranch': 'fugitive#head',
-"      \   'cocstatus': 'coc#status',
-"      \   'currentfunction': 'CocCurrentFunction'
-"      \ },
-"      \ 'component_expand': {
-"		  \   'buffers': 'lightline#bufferline#buffers',
-"      \   'syntastic': 'SyntasticStatuslineFlag',
-"      \ },
-"      \ 'component_type': {
-"			\   'buffers': 'tabsel',
-"      \   'syntastic': 'error',
-"      \ }
-"\ }
-
-let g:syntastic_mode_map = { 'mode': 'active' }
-function! s:syntastic()
-  SyntasticCheck
-  call lightline#update()
-endfunction
-
 " ------------------
 " plugin: EasyMotion
 " ------------------
@@ -218,18 +206,6 @@ omap / <Plug>(easymotion-tn)
 " ---------------
 
 nnoremap <Leader>a :Ack!<Space>
-
-" -----------------
-" plugin: Syntastic
-" -----------------
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
-let g:syntastic_yaml_ansible_checkers = ['ansible_lint']
-let g:syntastic_yaml_checkers = ['yamllint']
-let g:syntastic_enable_highlighting = 1
 
 " ---------------------
 " plugin: vim-terraform
