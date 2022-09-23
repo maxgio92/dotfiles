@@ -22,7 +22,7 @@ bindkey -e
 
 export EDITOR=vim
 
-export CDPATH=.:$HOME:$HOME/src
+export CDPATH=.:$HOME:$HOME/src:$HOME/src/github.com:$HOME/src/github.com/maxgio92
 
 export GIT_CODE_FOLDER="${HOME}/src"
 
