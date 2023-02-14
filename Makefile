@@ -108,6 +108,10 @@ terminator: update
 	@mkdir -p $(HOME)/.config/terminator
 	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
 
+.PHONY: tmux-plugin-manager
+tmux-plugin-manager:
+	@git clone https://github.com/tmux-plugins/tpm $(HOME)/.tmux/plugins/tpm
+
 .PHONY: tmux
 tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
