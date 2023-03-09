@@ -41,10 +41,10 @@ alacritty-themes:
 
 .PHONY: alacritty
 alacritty: update alacritty-themes
-	@rm -rf $(HOME)/.config/alacritty && ln -sf $(DOTFILES)/alacritty $(HOME)/.config/alacritty
+	@rm -rf $(HOME)/.config/alacritty && ln -sf $(DOTFILES)/terminal-emulators/alacritty $(HOME)/.config/alacritty
 
 .PHONY: bash
-bash: update shell_aliases fzf
+bash: update shell-aliases fzf
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
@@ -91,7 +91,7 @@ i3: update
 
 .PHONY: i3status
 i3status: update
-	@ln -sf $(DOTFILES)/i3status/config $(HOME)/.config/i3status/config
+	@ln -sf $(DOTFILES)/i3/i3status/config $(HOME)/.config/i3status/config
 
 
 .PHONY: luakit
@@ -130,19 +130,19 @@ coc-settings: update
 
 .PHONY: waybar
 waybar: update
-	@ln -sf $(DOTFILES)/waybar $(HOME)/.config
+	@ln -sf $(DOTFILES)/sway/waybar $(HOME)/.config
 
 .PHONY: wofi
 wofi: update
-	@ln -sf $(DOTFILES)/wofi $(HOME)/.config
+	@ln -sf $(DOTFILES)/sway/wofi $(HOME)/.config
 
 .PHONY: xbindkeys
 xbindkeys: update
-	@ln -sf $(DOTFILES)/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
+	@ln -sf $(DOTFILES)/xorg/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
 
 .PHONY: xinit
 xinit: update
-	@ln -sf $(DOTFILES)/xinit/xinitrc $(HOME)/.xinitrc
+	@ln -sf $(DOTFILES)/xorg/xinit/xinitrc $(HOME)/.xinitrc
 
 .PHONY: openresolv
 openresolv: update
@@ -188,7 +188,7 @@ zsh/plugins:
 			$(kubectl_prompt_home)
 
 .PHONY: zsh
-zsh: update shell_aliases zsh/plugins prezto fzf direnv
+zsh: update shell-aliases zsh/plugins prezto fzf direnv
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 
 .PHONY: prezto
@@ -204,10 +204,10 @@ prezto: update
 		$(git) submodule update --init --recursive && \
 		popd > /dev/null; \
 	fi
-	@ln -sf $(DOTFILES)/prezto/zpreztorc $(HOME)/.zpreztorc
+	@ln -sf $(DOTFILES)/zsh/prezto/zpreztorc $(HOME)/.zpreztorc
 
-.PHONY: shell_aliases
-shell_aliases: update
+.PHONY: shell-aliases
+shell-aliases: update
 	@test -h $(HOME)/.shell_aliases || \
 		ln -sf $(DOTFILES)/shell_aliases \
 		$(HOME)/.shell_aliases
