@@ -1,0 +1,19 @@
+org.gnome.mutter attach-modal-dialogs true
+org.gnome.mutter auto-maximize true
+org.gnome.mutter center-new-windows true
+org.gnome.mutter check-alive-timeout uint32 5000
+org.gnome.mutter draggable-border-width 10
+org.gnome.mutter dynamic-workspaces false
+org.gnome.mutter edge-tiling true
+org.gnome.mutter experimental-features ['scale-monitor-framebuffer']
+org.gnome.mutter focus-change-on-pointer-rest true
+org.gnome.mutter locate-pointer-key 'Control_L'
+org.gnome.mutter no-tab-popup false
+org.gnome.mutter overlay-key 'Super_L'
+org.gnome.mutter workspaces-only-on-primary true
+org.gnome.mutter.keybindings rotate-monitor ['XF86RotateWindows']
+org.gnome.mutter.keybindings switch-monitor ['<Super>p', 'XF86Display']
+org.gnome.mutter.keybindings tab-popup-cancel @as []
+org.gnome.mutter.keybindings tab-popup-select @as []
+org.gnome.mutter.keybindings toggle-tiled-left ['<Super>Left']
+org.gnome.mutter.keybindings toggle-tiled-right ['<Super>Right']
