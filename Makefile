@@ -126,6 +126,7 @@ vim: coc-settings update
 
 .PHONY: coc-settings
 coc-settings: update
+	@mkdir -p $(HOME)/.vim
 	@ln -sf $(DOTFILES)/vim/coc-settings.json $(HOME)/.vim/coc-settings.json
 
 .PHONY: waybar
