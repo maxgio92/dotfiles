@@ -35,13 +35,13 @@ update: init
 .PHONY: alacritty-themes
 alacritty-themes: TMPDIR := $(shell mktemp -d)
 alacritty-themes:
-	@git clone https://aur.archlinux.org/alacritty-themes.git $(TMPDIR)
-	@cd $(TMPDIR) && makepkg -si --noconfirm
-	@rm -rf $(TMPDIR)
+	@mkdir -p $(HOME)/.config/alacritty
+	@test -d $(HOME)/.config/alacritty/themes || git clone https://github.com/alacritty/alacritty-theme $(HOME)/.config/alacritty/themes
 
 .PHONY: alacritty
 alacritty: update alacritty-themes
-	@rm -rf $(HOME)/.config/alacritty && ln -sf $(DOTFILES)/terminal-emulators/alacritty $(HOME)/.config/alacritty
+	@mkdir -p $(HOME)/.config/alacritty
+	@ln -sf $(DOTFILES)/terminal-emulators/alacritty/* $(HOME)/.config/alacritty/
 
 .PHONY: bash
 bash: update shell-aliases fzf
