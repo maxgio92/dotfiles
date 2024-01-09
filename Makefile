@@ -247,3 +247,15 @@ ulauncher:
 git-code: install_url := https://git-co.de/install.sh
 git-code:
 	@bash <(curl -fsSL $(install_url))
+
+.PHONY: yay
+yay:
+	@command -v yay >/dev/null || { echo "you need yay"; exit 1; }
+
+.PHONY: displaylink/arch
+displaylink/arch: yay
+	@yay -S evdi-git
+	@sudo modbrobe evdi
+	@yay -S displaylink
+	@sudo systemctl start --enable displaylink
+
