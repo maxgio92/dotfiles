@@ -34,14 +34,15 @@ update: init
 
 .PHONY: alacritty-themes
 alacritty-themes: TMPDIR := $(shell mktemp -d)
-alacritty-themes:
+alacritty-themes: nerd-fonts
 	@mkdir -p $(HOME)/.config/alacritty
 	@test -d $(HOME)/.config/alacritty/themes || git clone https://github.com/alacritty/alacritty-theme $(HOME)/.config/alacritty/themes
 
 .PHONY: alacritty
-alacritty: update alacritty-themes
+alacritty: update
 	@mkdir -p $(HOME)/.config/alacritty
 	@ln -sf $(DOTFILES)/terminal-emulators/alacritty/* $(HOME)/.config/alacritty/
+	@$(MAKE) alacritty-themes
 
 .PHONY: bash
 bash: update shell-aliases fzf
@@ -117,12 +118,13 @@ tmux: update
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 .PHONY: vim
-vim: coc-settings update
+vim: update
 	@hash node || ./bin/install-ospackage.sh nodejs &> /dev/null
 	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 	@vim +PlugInstall +qall
 	@ln -sf $(DOTFILES)/vim/vimrc $(HOME)/.vimrc
+	@$(MAKE) coc-settings
 
 .PHONY: coc-settings
 coc-settings: update
