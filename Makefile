@@ -191,8 +191,10 @@ zsh/plugins:
 			$(kubectl_prompt_home)
 
 .PHONY: zsh
-zsh: update shell-aliases zsh/plugins prezto fzf direnv
+zsh: update shell-aliases zsh/plugins prezto fzf
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
+	@$(MAKE) direnv
+	@chsh -s /usr/bin/zsh
 
 .PHONY: prezto
 prezto: PREZTO_HOME := $(HOME)/.zprezto
@@ -217,7 +219,7 @@ shell-aliases: update
 
 .PHONY: direnv
 direnv:
-	@hash direnv || { curl -sfL https://direnv.net/install.sh | $$SHELL; }
+	@hash direnv 2>/dev/null || { curl -sfL https://direnv.net/install.sh | $$SHELL; }
 
 .PHONY: bat
 bat: update
