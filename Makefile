@@ -210,6 +210,7 @@ prezto: update
 		popd > /dev/null; \
 	fi
 	@ln -sf $(DOTFILES)/zsh/prezto/zpreztorc $(HOME)/.zpreztorc
+	@mkdir -p $(HOME)/.zprezto-contrib
 
 .PHONY: shell-aliases
 shell-aliases: update
