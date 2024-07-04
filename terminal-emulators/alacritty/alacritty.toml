@@ -1,1 +1,32 @@
-import = ["~/.config/alacritty/colors.toml", "~/.config/alacritty/window.toml", "~/.config/alacritty/shell.yml", "~/.config/alacritty/env.yml", "~/.config/alacritty/scrolling.yml", "~/.config/alacritty/font.toml", "~/.config/alacritty/bell.yml", "~/.config/alacritty/cursor.yml", "~/.config/alacritty/hints.yml", "~/.config/alacritty/mouse.yml", "~/.config/alacritty/keybindings.yml", "~/.config/alacritty/debug.yml", "~/.config/alacritty/shell.yml", "~/.config/alacritty/selection.yml", "~/.config/alacritty/misc.yml"]
+[window]
+decorations = "none"
+opacity = 0.99
+startup_mode = "Windowed"
+[font]
+size = 9.0
+
+[font.normal]
+family = "Hack Nerd Font Mono"
+[colors.bright]
+black = "0x928374"
+blue = "0x7daea3"
+cyan = "0x89b482"
+green = "0xa9b665"
+magenta = "0xd3869b"
+red = "0xea6962"
+white = "0xdfbf8e"
+yellow = "0xe3a84e"
+
+[colors.normal]
+black = "0x665c54"
+blue = "0x7daea3"
+cyan = "0x89b482"
+green = "0xa9b665"
+magenta = "0xd3869b"
+red = "0xea6962"
+white = "0xdfbf8e"
+yellow = "0xe78a4e"
+
+[colors.primary]
+background = "0x282828"
+foreground = "0xdfbf8e"
