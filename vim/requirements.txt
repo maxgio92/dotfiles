@@ -3,7 +3,7 @@ ansible-lint==4.1.0
 asn1crypto==0.24.0
 bcrypt==3.1.6
 cffi==1.12.2
-cryptography==39.0.1
+cryptography==42.0.4
 enum34==1.1.6
 idna==2.8
 ipaddress==1.0.22
