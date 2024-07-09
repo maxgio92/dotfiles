@@ -9,7 +9,7 @@ idna==2.8
 ipaddress==1.0.22
 Jinja2==2.11.3
 MarkupSafe==1.1.1
-paramiko==2.10.1
+paramiko==3.4.0
 pathspec==0.5.9
 pyasn1==0.4.5
 pycparser==2.19
