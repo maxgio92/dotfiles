@@ -59,4 +59,4 @@ function kubectl_prompt() {
 
 	echo "%{$fg[$color]%}($ZSH_KUBECTL_PROMPT)%{$reset_color%}"
 }
-RPROMPT='$(kubectl_prompt)%F{blue}[%F{green}%D{%H:%M:%S}%F{blue}]%f'
+RPROMPT='%F{blue}[%F{green}%D{%H:%M:%S}%F{blue}]%f'
