@@ -268,6 +268,9 @@ displaylink/arch: yay
 gopls:
 	@./bin/install-ospackage.sh gopls
 
+.PHONY: delve
+delve:
+	@./bin/install-ospackage.sh delve
 
 .PHONY: neovim/vim-plug
 neovim/vim-plug:
@@ -276,7 +279,7 @@ neovim/vim-plug:
 		       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 .PHONY: neovim
 neovim: NVIM_CONFIG := $(HOME)/.config/nvim
-neovim: update neovim/vim-plug gopls
+neovim: update neovim/vim-plug gopls delve
 	@hash nvim || ./bin/install-ospackage.sh neovim &>/dev/null
 	@nvim +PlugInstall +qall
 	@mkdir -p $(NVIM_CONFIG) && \
