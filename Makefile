@@ -272,6 +272,10 @@ gopls:
 delve:
 	@./bin/install-ospackage.sh delve
 
+.PHONY: ripgrep
+ripgrep:
+	@./bin/install-ospackage.sh ripgrep
+
 .PHONY: neovim/vim-plug
 neovim/vim-plug:
 	@ls "$${XDG_DATA_HOME:-$$HOME/.local/share}"/nvim/site/autoload/plug.vim >/dev/null || \
@@ -279,7 +283,7 @@ neovim/vim-plug:
 		       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 .PHONY: neovim
 neovim: NVIM_CONFIG := $(HOME)/.config/nvim
-neovim: update neovim/vim-plug gopls delve
+neovim: update neovim/vim-plug gopls delve ripgrep
 	@hash nvim || ./bin/install-ospackage.sh neovim &>/dev/null
 	@nvim +PlugInstall +qall
 	@mkdir -p $(NVIM_CONFIG) && \

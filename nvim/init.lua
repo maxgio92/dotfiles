@@ -20,6 +20,10 @@ Plug('mfussenegger/nvim-dap') -- DAP
 Plug('leoluz/nvim-dap-go') -- Go Debug Adapter (requires Delve debugger)
 Plug('nvim-neotest/nvim-nio')
 Plug('rcarriga/nvim-dap-ui')
+Plug('nvim-lua/plenary.nvim') -- Fuzzy finder
+Plug('nvim-telescope/telescope.nvim', { ['tag'] = '0.1.8' })
+Plug('BurntSushi/ripgrep')
+Plug('nvim-telescope/telescope-fzf-native.nvim', {['do'] = 'make' })
 Plug('ray-x/aurora') -- Theme
 
 vim.call('plug#end')
@@ -130,6 +134,15 @@ require("dap-go").setup({
     }
 })
 require("dapui").setup()
+
+-- Fuzzy finder
+require('telescope').setup()
+require('telescope').load_extension('fzf')
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
+vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
 
 -- Color scheme
 vim.cmd [[colorscheme aurora]]
