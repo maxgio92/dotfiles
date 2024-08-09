@@ -4,23 +4,23 @@ local Plug = vim.fn['plug#']
 -- Plugins
 vim.call('plug#begin')
 
-Plug('neovim/nvim-lspconfig')
--- Code navigation and analysis
-Plug('nvim-treesitter/nvim-treesitter')
+Plug('neovim/nvim-lspconfig') -- LSP
+Plug('nvim-treesitter/nvim-treesitter') -- Code navigation
 Plug('ray-x/guihua.lua', {['do'] = 'cd lua/fzy && make' })
 Plug('ray-x/navigator.lua')
--- Completion
-Plug('hrsh7th/cmp-nvim-lsp')
+Plug('hrsh7th/cmp-nvim-lsp') -- Completion
 Plug('hrsh7th/cmp-buffer')
 Plug('hrsh7th/cmp-path')
 Plug('hrsh7th/cmp-cmdline')
 Plug('hrsh7th/nvim-cmp')
 Plug('hrsh7th/cmp-vsnip')
 Plug('hrsh7th/vim-vsnip')
--- Go
-Plug('ray-x/go.nvim')
--- Theme
-Plug('ray-x/aurora')
+Plug('ray-x/go.nvim') -- Go
+Plug('mfussenegger/nvim-dap') -- DAP
+Plug('leoluz/nvim-dap-go') -- Go Debug Adapter (requires Delve debugger)
+Plug('nvim-neotest/nvim-nio')
+Plug('rcarriga/nvim-dap-ui')
+Plug('ray-x/aurora') -- Theme
 
 vim.call('plug#end')
 
@@ -105,6 +105,31 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   end,
   group = format_sync_grp,
 })
+
+-- DAP
+local dap = require("dap")
+dap.adapters.delve = {
+  type = 'server',
+  port = '${port}',
+  executable = {
+    command = 'dlv',
+    args = {'dap', '-l', '127.0.0.1:${port}'},
+  }
+}
+require("dap-go").setup({
+    dap_configurations = {
+        {
+            type = "go",
+            name = "Debug (Build Flags & Arguments)",
+            request = "launch",
+            --program = "${file}",
+            program = "./${relativeFileDirname}",
+            args = require("dap-go").get_arguments,
+            buildFlags = require("dap-go").get_build_flags,
+        },
+    }
+})
+require("dapui").setup()
 
 -- Color scheme
 vim.cmd [[colorscheme aurora]]
