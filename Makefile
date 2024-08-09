@@ -264,3 +264,10 @@ displaylink/arch: yay
 	@yay -S displaylink
 	@sudo systemctl start --enable displaylink
 
+.PHONY: neovim
+neovim: NVIM_CONFIG := $(HOME)/.config/nvim
+neovim: update
+	@hash nvim || ./bin/install-ospackage.sh neovim &>/dev/null
+	@mkdir -p $(NVIM_CONFIG) && \
+		ln -s $(DOTFILES)/neovim/init.lua $(NVIM_CONFIG)/init.lua
+
