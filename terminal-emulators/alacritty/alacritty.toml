@@ -3,7 +3,7 @@ decorations = "none"
 opacity = 0.99
 startup_mode = "Windowed"
 [font]
-size = 9.0
+size = 16.0
 
 [font.normal]
-family = "Hack Nerd Font Mono"
+#family = "Hack Nerd Font Mono"
