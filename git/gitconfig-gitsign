@@ -1,0 +1,12 @@
+[user]
+	email = massimiliano.giovagnoli@chainguard.dev
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+[gpg "x509"]
+	program = gitsign
+[gpg]
+	format = x509
+[gitsign]
+	connectorID = https://accounts.google.com
