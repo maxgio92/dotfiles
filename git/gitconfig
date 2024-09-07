@@ -1,9 +1,6 @@
 [core]
 	editor = vim
 
-[commit]
-	gpgsign = true
-
 [user]
 	email = me@maxgio.it
 	name = "Massimiliano Giovagnoli"
@@ -15,9 +12,6 @@
 [status]
 	submodulesummary = 1
 
-[init]
-	templateDir = /home/massi/.git-template
-
 [alias]
 	bra = branch -avv
 	lg = log --all --decorate --oneline --graph
@@ -26,5 +20,12 @@
 	new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
 	gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
 	credstore = config credential.helper store
-	replay = ! "git commit --amend --no-edit && git push -f"
-	code = !~/.git-code/bin/git-code.sh
+	redo = ! "git commit --amend --no-edit && git push -f"
+
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+
+[includeif "gitdir:~/src/github.com/chainguard-dev/"]
+	path = ~/.gitconfig-gitsign
