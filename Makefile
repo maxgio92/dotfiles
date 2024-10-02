@@ -278,15 +278,15 @@ ripgrep:
 
 .PHONY: neovim/vim-plug
 neovim/vim-plug:
-	@ls "$${XDG_DATA_HOME:-$$HOME/.local/share}"/nvim/site/autoload/plug.vim >/dev/null || \
+	@set -x; ls "$${XDG_DATA_HOME:-$$HOME/.local/share}"/nvim/site/autoload/plug.vim >/dev/null || \
 		sh -c 'curl -sfLo "$${XDG_DATA_HOME:-$$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
 		       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 .PHONY: neovim
 neovim: NVIM_CONFIG := $(HOME)/.config/nvim
-neovim: update neovim/vim-plug gopls delve ripgrep
+neovim: neovim/vim-plug gopls delve ripgrep
 	@hash nvim || ./bin/install-ospackage.sh neovim &>/dev/null
-	@nvim +PlugInstall +qall
 	@mkdir -p $(NVIM_CONFIG) && \
-		rm $(NVIM_CONFIG)/init.lua && \
+		rm -f $(NVIM_CONFIG)/init.lua && \
 		ln -s $(DOTFILES)/nvim/init.lua $(NVIM_CONFIG)/init.lua
+	@nvim +PlugInstall +qall
 
