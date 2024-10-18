@@ -145,5 +145,5 @@ vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
 
 -- Color scheme
-vim.cmd [[colorscheme aurora]]
+vim.cmd [[colorscheme vim]]
 vim.cmd [[set nu rnu]]
