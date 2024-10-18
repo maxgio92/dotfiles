@@ -22,7 +22,7 @@ bindkey -e
 
 export EDITOR=vim
 
-export CDPATH=.:$HOME:$HOME/src:$HOME/src/github.com:$HOME/src/github.com/maxgio92:$HOME/src/github.com/chainguard-images:$HOME/src/github.com/chainguard-dev
+export CDPATH=.:$HOME:$HOME/src:$HOME/src/github.com:$HOME/src/github.com/maxgio92:$HOME/src/github.com/chainguard-images:$HOME/src/github.com/chainguard-dev:$HOME/src/github.com/wolfi-dev
 
 export GIT_CODE_FOLDER="${HOME}/src"
 
@@ -59,4 +59,17 @@ function kubectl_prompt() {
 
 	echo "%{$fg[$color]%}($ZSH_KUBECTL_PROMPT)%{$reset_color%}"
 }
-RPROMPT='%F{blue}[%F{green}%D{%H:%M:%S}%F{blue}]%f'
+
+# Setup Brew bins in PATH
+[ -d /home/linuxbrew ] && \
+	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+export WORKSTATION_USER=massimiliano-giovagnoli
+
+# The next line updates PATH for the Google Cloud SDK.
+[ -f "$HOME/.local/google-cloud-sdk/path.zsh.inc" ] && \
+	. '/var/home/massimiliano.giovagnoli/.local/google-cloud-sdk/path.zsh.inc'
+
+# The next line enables shell command completion for gcloud.
+[ -f "$HOME/.local/google-cloud-sdk/completion.zsh.inc" ] && \
+	. '/var/home/massimiliano.giovagnoli/.local/google-cloud-sdk/completion.zsh.inc'
