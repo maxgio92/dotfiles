@@ -1,5 +1,5 @@
 alias watch='watch '
-alias aws="docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE amazon/aws-cli"
-alias awscli=aws
 alias vimfzf="vim -o \$(fzf)"
 alias batfzf="fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+alias box="distrobox enter wolfi_distrobox -- zsh"
+
