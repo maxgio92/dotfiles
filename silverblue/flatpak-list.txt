@@ -1,0 +1,37 @@
+Bitwarden	com.bitwarden.desktop	2024.11.1	stable	flathub	system
+Google Chrome	com.google.Chrome	131.0.6778.69-1	stable	flathub	system
+GoLand	com.jetbrains.GoLand	2024.2.3	stable	flathub	system
+OnePassword	com.onepassword.OnePassword		stable	onepassword-origin	system
+Slack	com.slack.Slack	4.41.97	stable	flathub	system
+Spotify	com.spotify.Client	1.2.48.405.gf2c48e6f	stable	flathub	system
+Visual Studio Code	com.visualstudio.code	1.95.3	stable	flathub	system
+Fedora Media Writer	org.fedoraproject.MediaWriter	5.1.90	stable	fedora	system
+Fedora Platform	org.fedoraproject.Platform	40	f40	fedora	system
+Fedora Platform	org.fedoraproject.Platform	41	f41	fedora	system
+Freedesktop Platform	org.freedesktop.Platform	freedesktop-sdk-23.08.25	23.08	flathub	system
+Freedesktop Platform	org.freedesktop.Platform	freedesktop-sdk-24.08.6	24.08	flathub	system
+Mesa	org.freedesktop.Platform.GL.default	24.2.5	23.08	flathub	system
+Mesa (Extra)	org.freedesktop.Platform.GL.default	24.2.5	23.08-extra	flathub	system
+Mesa	org.freedesktop.Platform.GL.default	24.2.6	24.08	flathub	system
+Mesa (Extra)	org.freedesktop.Platform.GL.default	24.2.6	24.08extra	flathub	system
+openh264	org.freedesktop.Platform.openh264	2.1.0	2.2.0	flathub	system
+openh264	org.freedesktop.Platform.openh264	2.4.1	2.4.1	flathub	system
+Freedesktop SDK	org.freedesktop.Sdk	freedesktop-sdk-23.08.25	23.08	flathub	system
+Freedesktop SDK	org.freedesktop.Sdk	freedesktop-sdk-24.08.6	24.08	flathub	system
+Calculator	org.gnome.Calculator	47.0	stable	fedora	system
+Calendar	org.gnome.Calendar	46.0	stable	fedora	system
+Characters	org.gnome.Characters	47.alpha	stable	fedora	system
+Connections	org.gnome.Connections	47.0	stable	fedora	system
+Contacts	org.gnome.Contacts	47.0	stable	fedora	system
+Document Viewer	org.gnome.Evince	46.3.1	stable	fedora	system
+Extensions	org.gnome.Extensions	47.0	stable	fedora	system
+Logs	org.gnome.Logs	45.0	stable	fedora	system
+Image Viewer	org.gnome.Loupe	47.1	stable	fedora	system
+Maps	org.gnome.Maps	47.1	stable	fedora	system
+Sushi	org.gnome.NautilusPreviewer	46.0	stable	fedora	system
+Camera	org.gnome.Snapshot	47.1	stable	fedora	system
+Text Editor	org.gnome.TextEditor	47.1	stable	fedora	system
+Weather	org.gnome.Weather	47.0	stable	fedora	system
+Disk Usage Analyzer	org.gnome.baobab	47.alpha	stable	fedora	system
+Clocks	org.gnome.clocks	47.0	stable	fedora	system
+Fonts	org.gnome.font-viewer	47.0	stable	fedora	system
