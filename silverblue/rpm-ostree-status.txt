@@ -1,0 +1,32 @@
+State: idle
+Deployments:
+  fedora:fedora/41/x86_64/silverblue
+                  Version: 41.20241113.0 (2024-11-13T00:41:37Z)
+               BaseCommit: 5ea1c06682826d0a54039d4c1744e081fd4d216508d2cacb62c5e01ecda8881b
+             GPGSignature: Valid signature by 466CF2D8B60BC3057AA9453ED0622462E99D6AD1
+                     Diff: 5 added
+          LayeredPackages: alacritty clang containerd.io distrobox docker-buildx-plugin
+                           docker-ce docker-ce-cli docker-compose-plugin
+                           elfutils-libelf-devel kernel-devel libbpf-devel qemu tmux
+                           ulauncher vim xsel zlib-devel zsh
+            LocalPackages: launcher-kolide-k2-1.11.6-1.x86_64
+
+● fedora:fedora/41/x86_64/silverblue
+                  Version: 41.20241113.0 (2024-11-13T00:41:37Z)
+               BaseCommit: 5ea1c06682826d0a54039d4c1744e081fd4d216508d2cacb62c5e01ecda8881b
+             GPGSignature: Valid signature by 466CF2D8B60BC3057AA9453ED0622462E99D6AD1
+          LayeredPackages: alacritty clang containerd.io distrobox docker-buildx-plugin
+                           docker-ce docker-ce-cli docker-compose-plugin
+                           elfutils-libelf-devel libbpf-devel qemu tmux ulauncher vim xsel
+                           zlib-devel zsh
+            LocalPackages: launcher-kolide-k2-1.11.6-1.x86_64
+
+  fedora:fedora/41/x86_64/silverblue
+                  Version: 41.20241113.0 (2024-11-13T00:41:37Z)
+               BaseCommit: 5ea1c06682826d0a54039d4c1744e081fd4d216508d2cacb62c5e01ecda8881b
+             GPGSignature: Valid signature by 466CF2D8B60BC3057AA9453ED0622462E99D6AD1
+          LayeredPackages: alacritty clang containerd.io distrobox docker-buildx-plugin
+                           docker-ce docker-ce-cli docker-compose-plugin
+                           elfutils-libelf-devel qemu tmux ulauncher vim xsel zlib-devel
+                           zsh
+            LocalPackages: launcher-kolide-k2-1.11.6-1.x86_64
