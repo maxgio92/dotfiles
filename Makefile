@@ -114,7 +114,7 @@ tmux-plugin-manager:
 	@git clone https://github.com/tmux-plugins/tpm $(HOME)/.tmux/plugins/tpm
 
 .PHONY: tmux
-tmux: update
+tmux: update tmux-plugin-manager
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 .PHONY: vim
