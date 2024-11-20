@@ -2,7 +2,7 @@
 #
 source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 
-zstyle :compinstall filename '/home/massi/.zshrc'
+zstyle :compinstall filename "${HOME}/.zshrc"
 
 autoload -Uz compinit
 compinit
@@ -49,20 +49,6 @@ path+=($HOME/.git-dclone)
 
 # Direnv
  eval "$(direnv hook zsh)"
-
-# Bare plugins
-
-# Kubectl prompt
-source $HOME/.zsh-kubectl-prompt/kubectl.zsh
-function kubectl_prompt() {
-	local color="blue"
-
-	if [[ "$ZSH_KUBECTL_USER" =~ "admin" ]]; then
-		color=red
-	fi
-
-	echo "%{$fg[$color]%}($ZSH_KUBECTL_PROMPT)%{$reset_color%}"
-}
 
 export WORKSTATION_USER=massimiliano-giovagnoli
 
