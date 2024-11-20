@@ -43,6 +43,10 @@ path+=($HOME/.git-dclone)
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+# Setup Brew bins in PATH
+[ -d /home/linuxbrew ] && \
+	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 # Direnv
  eval "$(direnv hook zsh)"
 
@@ -59,10 +63,6 @@ function kubectl_prompt() {
 
 	echo "%{$fg[$color]%}($ZSH_KUBECTL_PROMPT)%{$reset_color%}"
 }
-
-# Setup Brew bins in PATH
-[ -d /home/linuxbrew ] && \
-	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 export WORKSTATION_USER=massimiliano-giovagnoli
 
