@@ -276,6 +276,14 @@ delve:
 ripgrep:
 	@./bin/install-ospackage.sh ripgrep
 
+# More here:
+# https://neovim.io/doc/user/lsp.html
+# https://github.com/neovim/nvim-lspconfig
+.PHONY: neovim/lsp-client-config:
+neovim/lsp-client-config:
+	test -d "$${HOME}/.config/nvim/pack/nvim/start/nvim-lspconfig" || \
+		git clone https://github.com/neovim/nvim-lspconfig "$${HOME}/.config/nvim/pack/nvim/start/nvim-lspconfig"
+
 .PHONY: neovim/vim-plug
 neovim/vim-plug:
 	@set -x; ls "$${XDG_DATA_HOME:-$$HOME/.local/share}"/nvim/site/autoload/plug.vim >/dev/null || \
