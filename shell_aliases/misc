@@ -2,4 +2,8 @@ alias watch='watch '
 alias vimfzf="vim -o \$(fzf)"
 alias batfzf="fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'"
 alias box="distrobox enter wolfi_distrobox -- zsh"
-
+alias tarcat='tar --extract --to-stdout --file "$@" 2>/dev/null'
+alias tarls='tar --list --file "$@" 2>/dev/null'
+kalias() {
+  alias k="docker exec -it $1 kubectl"
+}
