@@ -1,6 +1,12 @@
+[general]
+import = [
+  "~/.config/alacritty/themes/themes/_active.toml"
+]
+live_config_reload = true
+
 [window]
 decorations = "none"
-opacity = 0.90
+opacity = 0.99
 startup_mode = "Windowed"
 [font]
 size = 12.0

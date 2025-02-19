@@ -29,3 +29,5 @@
 
 [includeif "gitdir:~/src/github.com/chainguard-dev/"]
 	path = ~/.gitconfig-gitsign
+[includeif "gitdir:~/src/github.com/wolfi-dev/"]
+	path = ~/.gitconfig-gitsign
