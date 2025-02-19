@@ -39,6 +39,8 @@ path+=($HOME/.local/bin)
 path+=($HOME/.krew/bin)
 path+=($HOME/go/bin)
 path+=($HOME/.git-dclone)
+path+=($HOME/.local/git-dclone)
+path+=($HOME/.goland/bin)
 
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
@@ -59,3 +61,41 @@ export WORKSTATION_USER=massimiliano-giovagnoli
 # The next line enables shell command completion for gcloud.
 [ -f "$HOME/.local/google-cloud-sdk/completion.zsh.inc" ] && \
 	. '/var/home/massimiliano.giovagnoli/.local/google-cloud-sdk/completion.zsh.inc'
+
+alias vim=nvim
+alias vi=nvim
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/var/home/massimiliano-giovagnoli/src/github.com/chainguard-dev/infra-images/google-cloud-sdk/path.zsh.inc' ]; then . '/var/home/massimiliano-giovagnoli/src/github.com/chainguard-dev/infra-images/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/var/home/massimiliano-giovagnoli/src/github.com/chainguard-dev/infra-images/google-cloud-sdk/completion.zsh.inc' ]; then . '/var/home/massimiliano-giovagnoli/src/github.com/chainguard-dev/infra-images/google-cloud-sdk/completion.zsh.inc'; fi
+
+function make-reg() {
+	cd /Users/jamon/chainguard/images-private
+	docker rm -f k3d-k3d.localhost
+	docker system prune --all --volumes
+	docker network create k3d-k3s-default -d bridge
+	make k3d-registry
+}
+
+function get-apko-config() {
+	cosign verify-attestation  \
+		--type https://apko.dev/image-configuration \
+		--certificate-oidc-issuer https://token.actions.githubusercontent.com  \
+		--certificate-identity https://github.com/chainguard-images/images-private/.github/workflows/release.yaml@refs/heads/main \
+		"cgr.dev/chainguard-private/${1}"  | jq -r .payload | base64 -d | jq .predicate  > "${2}"
+}
+
+function light() {
+	ln -sf "$HOME/.config/alacritty/themes/themes/gruvbox_light.toml" \
+		"$HOME/.config/alacritty/themes/themes/_active.toml"
+	touch ~/.config/alacritty/alacritty.toml
+}
+
+function dark() {
+	ln -sf "$HOME/.config/alacritty/themes/themes/gruvbox_dark.toml" \
+		"$HOME/.config/alacritty/themes/themes/_active.toml"
+	touch ~/.config/alacritty/alacritty.toml
+}
+
