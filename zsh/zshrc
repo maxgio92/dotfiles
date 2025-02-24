@@ -91,11 +91,15 @@ function light() {
 	ln -sf "$HOME/.config/alacritty/themes/themes/gruvbox_light.toml" \
 		"$HOME/.config/alacritty/themes/themes/_active.toml"
 	touch ~/.config/alacritty/alacritty.toml
+	dconf write /org/gnome/desktop/interface/color-scheme "'default'"
+	dconf write /org/gnome/desktop/interface/gtk-theme "'Adwaita'"
 }
 
 function dark() {
 	ln -sf "$HOME/.config/alacritty/themes/themes/gruvbox_dark.toml" \
 		"$HOME/.config/alacritty/themes/themes/_active.toml"
 	touch ~/.config/alacritty/alacritty.toml
+	dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
+	dconf write /org/gnome/desktop/interface/gtk-theme "'Adwaita-dark'"
 }
 
