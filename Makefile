@@ -266,7 +266,7 @@ displaylink/arch: yay
 
 .PHONY: gopls
 gopls:
-	@./bin/install-ospackage.sh gopls
+	@go install golang.org/x/tools/gopls@latest
 
 .PHONY: delve
 delve:
@@ -279,7 +279,7 @@ ripgrep:
 # More here:
 # https://neovim.io/doc/user/lsp.html
 # https://github.com/neovim/nvim-lspconfig
-.PHONY: neovim/lsp-client-config:
+.PHONY: neovim/lsp-client-config
 neovim/lsp-client-config:
 	test -d "$${HOME}/.config/nvim/pack/nvim/start/nvim-lspconfig" || \
 		git clone https://github.com/neovim/nvim-lspconfig "$${HOME}/.config/nvim/pack/nvim/start/nvim-lspconfig"
@@ -291,7 +291,7 @@ neovim/vim-plug:
 		       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 .PHONY: neovim
 neovim: NVIM_CONFIG := $(HOME)/.config/nvim
-neovim: neovim/vim-plug gopls delve ripgrep
+neovim: neovim/vim-plug gopls delve ripgrep neovim/lsp-client-config
 	@hash nvim || ./bin/install-ospackage.sh neovim &>/dev/null
 	@mkdir -p $(NVIM_CONFIG) && \
 		rm -f $(NVIM_CONFIG)/init.lua && \
