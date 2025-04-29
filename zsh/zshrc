@@ -105,3 +105,6 @@ function dark() {
 	dconf write /org/gnome/desktop/interface/gtk-theme "'Adwaita-dark'"
 }
 
+function apkdepends() {
+	wolfictl apk ls https://packages.wolfi.dev/os/x86_64/APKINDEX.tar.gz --latest --json | jq -r "select(.Dependencies) | select(.Dependencies | index(\"$1\")) | .Origin" | sort -u
+}

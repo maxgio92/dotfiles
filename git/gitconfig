@@ -2,7 +2,7 @@
 	editor = vim
 
 [user]
-	email = me@maxgio.it
+	email = maxgio92@pm.me
 	name = "Massimiliano Giovagnoli"
 	signingkey = "maxgio92"
 
@@ -13,7 +13,7 @@
 	submodulesummary = 1
 
 [alias]
-	bra = branch -avv
+	bra = branch --show-current
 	lg = log --all --decorate --oneline --graph
 	sts = status
 	pushu = "!f() { git push -u origin `git branch --show-current`; }; f"
@@ -21,6 +21,7 @@
 	gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
 	credstore = config credential.helper store
 	redo = ! "git commit --amend --no-edit && git push -f"
+	ck = !bash -c 'git checkout $(git branch | sort -r | sed -E \"s,^[ \\*]+,,\" | fzf --query=$1)' --
 
 [commit]
 	gpgsign = true
