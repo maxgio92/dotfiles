@@ -7,3 +7,4 @@ alias tarls='tar --list --file "$@" 2>/dev/null'
 kalias() {
   alias k="docker exec -it $1 kubectl"
 }
+alias apk-reindex='melange index -m -s packages/x86_64/APKINDEX.tar.gz --signing-key local-melange.rsa packages/x86_64/*.apk && mv APKINDEX.tar.gz packages/x86_64/APKINDEX.tar.gz'
