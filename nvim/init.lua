@@ -16,6 +16,9 @@ Plug('hrsh7th/cmp-cmdline')
 Plug('hrsh7th/nvim-cmp')
 Plug('hrsh7th/cmp-vsnip') -- Completion with snippet 
 Plug('ellisonleao/gruvbox.nvim') -- Colorscheme
+Plug('nvim-lua/plenary.nvim')
+Plug('nvim-telescope/telescope.nvim')
+Plug('danobi/prr', {rtp = 'vim'})
 vim.call('plug#end')
 
 
@@ -85,3 +88,38 @@ vim.cmd [[set mouse=]]
 --- Colorscheme
 vim.o.background = "dark" -- or "light" for light mode
 vim.cmd([[colorscheme gruvbox]])
+
+--- Telescope
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader><leader>', builtin.find_files, { desc = 'Telescope find files' })
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+
+--- PRR
+-- Automatically set up highlighting for `.prr` review files
+-- Use `:hi` to see the various definitions we kinda abuse here
+local augroup = vim.api.nvim_create_augroup("Prr", { clear = true })
+
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  group = augroup,
+  pattern = "*.prr",
+  callback = function()
+    vim.cmd("set syntax=on")
+
+    -- Make prr added/deleted highlighting more apparent
+    vim.cmd("hi! link prrAdded Function")
+    vim.cmd("hi! link prrRemoved Keyword")
+    vim.cmd("hi! link prrFile Special")
+
+    -- Make file delimiters more apparent
+    vim.cmd("hi! link prrHeader Directory")
+
+    -- Reduce all the noise from color
+    vim.cmd("hi! link prrIndex Special")
+    vim.cmd("hi! link prrChunk Special")
+    vim.cmd("hi! link prrChunkH Special")
+    vim.cmd("hi! link prrTagName Special")
+    vim.cmd("hi! link prrResult Special")
+  end,
+})
