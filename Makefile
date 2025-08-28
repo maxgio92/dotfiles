@@ -82,8 +82,9 @@ fzf: update
 	@$(HOME)/.fzf/install --all
 
 .PHONY: git
-git: update
+git:
 	@ln -sf $(DOTFILES)/git/gitconfig $(HOME)/.gitconfig
+	@ln -sf $(DOTFILES)/git/gitconfig-gitsign $(HOME)/.gitconfig-gitsign
 
 .PHONY: i3
 i3: update
