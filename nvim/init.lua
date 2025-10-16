@@ -26,7 +26,7 @@ vim.call('plug#end')
 local lspconfig = require("lspconfig")
 
 -- Terraform Language Server
-lspconfig.terraformls.setup{}
+vim.lsp.config("terraformls", {})
 vim.api.nvim_create_autocmd({"BufWritePre"}, {
   pattern = {"*.tf", "*.tfvars"},
   callback = function()
@@ -35,7 +35,7 @@ vim.api.nvim_create_autocmd({"BufWritePre"}, {
 })
 
 -- Go Language Server
-lspconfig.gopls.setup({})
+vim.lsp.config("gopls", {})
 
 -- Go plugin setup
 require('go').setup()
