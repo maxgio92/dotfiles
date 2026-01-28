@@ -299,3 +299,8 @@ neovim: neovim/vim-plug gopls delve ripgrep neovim/lsp-client-config
 		ln -s $(DOTFILES)/nvim/init.lua $(NVIM_CONFIG)/init.lua
 	@nvim +PlugInstall +qall
 
+.PHONY: opencode
+opencode:
+	test -d $(HOME)/.config/opencode || mkdir $(HOME)/.config/opencode
+	ln -sf $(DOTFILES)/opencode/opencode.json $(HOME)/.config/opencode/opencode.json
+
