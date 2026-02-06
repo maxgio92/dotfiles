@@ -41,7 +41,7 @@ alacritty-themes: nerd-fonts
 .PHONY: alacritty
 alacritty: update
 	@mkdir -p $(HOME)/.config/alacritty
-	@ln -sf $(DOTFILES)/terminal-emulators/alacritty/* $(HOME)/.config/alacritty/
+	@ln -sf $(DOTFILES)/alacritty/* $(HOME)/.config/alacritty/
 	@$(MAKE) alacritty-themes
 
 .PHONY: bash
