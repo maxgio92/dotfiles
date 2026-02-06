@@ -304,3 +304,10 @@ opencode:
 	test -d $(HOME)/.config/opencode || mkdir $(HOME)/.config/opencode
 	ln -sf $(DOTFILES)/opencode/opencode.json $(HOME)/.config/opencode/opencode.json
 
+.PHONY: assistants
+assistants:
+	test -L $(HOME)/.config/assistants || \
+		ln -s $(DOTFILES)/assistants $(HOME)/.config/assistants
+	test -f $(HOME)/CLAUDE.md || \
+		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
+
