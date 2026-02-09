@@ -7,5 +7,8 @@ brew-upgrade:
 .PHONY: brew-install
 brew-install:
 	brew bundle install
+
+.PHONY: brew-dump
+brew-dump:
 	brew bundle dump -f
 
