@@ -36,6 +36,7 @@ vim.api.nvim_create_autocmd({"BufWritePre"}, {
 
 -- Go Language Server
 vim.lsp.config("gopls", {})
+vim.lsp.enable("gopls")
 
 -- Go plugin setup
 require('go').setup()
