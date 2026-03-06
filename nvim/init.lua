@@ -1,5 +1,7 @@
 local vim = vim
 
+vim.o.exrc = true
+
 -- Color scheme
 vim.cmd [[set nu rnu]]
 
@@ -19,8 +21,21 @@ Plug('ellisonleao/gruvbox.nvim') -- Colorscheme
 Plug('nvim-lua/plenary.nvim')
 Plug('nvim-telescope/telescope.nvim')
 Plug('danobi/prr', {rtp = 'vim'})
+Plug('nvim-treesitter/nvim-treesitter', {['do'] = ':TSUpdate'}) -- Treesitter
 vim.call('plug#end')
 
+-- Treesitter
+local ok, ts_configs = pcall(require, 'nvim-treesitter.configs')
+if ok then
+  ts_configs.setup({
+    ensure_installed = { "go", "gomod", "gosum", "gowork" },
+    highlight = { enable = true },
+  })
+end
+
+
+-- Diagnostics
+vim.keymap.set('n', '<leader>d', vim.diagnostic.open_float, { desc = 'Show diagnostic' })
 
 -- Language Servers
 local lspconfig = require("lspconfig")
@@ -96,6 +111,7 @@ vim.keymap.set('n', '<leader><leader>', builtin.find_files, { desc = 'Telescope 
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+vim.keymap.set('n', '<leader>D', builtin.diagnostics, { desc = 'Telescope diagnostics' })
 
 --- PRR
 -- Automatically set up highlighting for `.prr` review files
