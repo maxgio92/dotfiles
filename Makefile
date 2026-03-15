@@ -311,3 +311,8 @@ assistants:
 	test -f $(HOME)/CLAUDE.md || \
 		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
 
+.PHONY: hyprland
+hyprland:
+	mkdir -p $(HOME)/.config/hyprland && \
+		ln -s $(DOTFILES)/hyprland/hyprland.conf \
+		$(HOME)/.config/hyprland/hyprland.conf
