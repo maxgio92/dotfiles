@@ -9,6 +9,7 @@ vim.cmd [[set nu rnu]]
 local Plug = vim.fn['plug#']
 
 vim.call('plug#begin')
+Plug 'neovim/nvim-lspconfig'
 Plug('ray-x/go.nvim') -- Go
 Plug('hrsh7th/vim-vsnip') -- Snippet engine
 Plug('hrsh7th/cmp-nvim-lsp') -- Completion
