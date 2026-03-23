@@ -312,7 +312,8 @@ assistants:
 		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
 
 .PHONY: hyprland
+hyprland: CONFIG_DIR := $(HOME)/.config/hypr
 hyprland:
-	mkdir -p $(HOME)/.config/hyprland && \
-		ln -s $(DOTFILES)/hyprland/hyprland.conf \
-		$(HOME)/.config/hyprland/hyprland.conf
+	mkdir -p $(CONFIG_DIR) && \
+		ln -sf $(DOTFILES)/hyprland/hyprland.conf \
+		$(CONFIG_DIR)/hyprland.conf
