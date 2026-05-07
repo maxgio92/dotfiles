@@ -311,6 +311,37 @@ assistants:
 	test -f $(HOME)/CLAUDE.md || \
 		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
 
+.PHONY: claude
+claude: claude-skills claude-agents claude-commands
+
+.PHONY: claude-skills
+claude-skills:
+	@mkdir -p $(HOME)/.claude/skills
+	@for src in $(DOTFILES)/.claude/skills/*; do \
+		name=$$(basename "$$src"); \
+		target=$(HOME)/.claude/skills/$$name; \
+		current=$$(readlink "$$target" 2>/dev/null || true); \
+		if [ -n "$$current" ] && [ "$$current" != "$$src" ]; then \
+			echo "  skip skill $$name (existing symlink: $$current)"; \
+		elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+			echo "  skip skill $$name ($$target exists and is not a symlink)"; \
+		else \
+			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
+		fi; \
+	done
+
+.PHONY: claude-agents
+claude-agents:
+	@mkdir -p $(HOME)/.claude/agents
+	@ln -sf $(DOTFILES)/assistants/agents/*.md $(HOME)/.claude/agents/
+	@echo "  linked $$(ls $(DOTFILES)/assistants/agents/*.md | wc -l) agent(s)"
+
+.PHONY: claude-commands
+claude-commands:
+	@mkdir -p $(HOME)/.claude/commands
+	@ln -sf $(DOTFILES)/assistants/commands/*.md $(HOME)/.claude/commands/
+	@echo "  linked $$(ls $(DOTFILES)/assistants/commands/*.md | wc -l) command(s)"
+
 .PHONY: hyprland
 hyprland: CONFIG_DIR := $(HOME)/.config/hypr
 hyprland:
