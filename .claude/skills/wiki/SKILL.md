@@ -50,7 +50,8 @@ Look at what follows "ingest" in `$ARGUMENTS` to decide scope:
 - **"my daily notes"** or **"all"** or no further args: find all `.md` files in
   `~/src/github.com/maxgio92/cg-notes/notes/` that do NOT already have a corresponding
   source summary in `~/src/github.com/maxgio92/cg-notes/wiki/sources/`. These are the
-  un-ingested notes.
+  un-ingested notes. Exclude `*-sessions.md` files: those are the auto-generated
+  `session-journal` activity logs that feed `/daily`, not journal entries to ingest.
 - **A specific filename or date pattern** (e.g. "2026-04-25" or "meeting-notes.md"):
   find matching files in the notes directory.
 
