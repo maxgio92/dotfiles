@@ -134,8 +134,22 @@ Rules:
 
 From the extracted material, write 1-3 bullets per session: what was worked
 on, notable decisions or fixes, blockers hit. Skip filler (greetings, retries,
-permission chatter). User messages carry the intent; assistant text carries
-outcomes. Group sessions by project (basename of `cwd`).
+permission chatter). Group sessions by project (basename of `cwd`).
+
+**Weight substantive content over the title.** The `ai-title` is generated from
+the opening exchange and often names a throwaway first question, not the real
+work — e.g. a session titled "Enable Fable" whose actual substance was a Linear
+FUL-311 coverage-metric analysis. So:
+
+- Drive the summary from the `USER` prompts and `ASSISTANT` outcomes, not the
+  `TITLE`. A long session usually shifts topic after the first prompt; the later
+  prompts and final assistant texts carry the real work.
+- Prefer the prompt that named a concrete artifact (a PR, a Linear ticket, a
+  file, a metric) and the outcome that resolved it over the first prompt.
+- When prompts span multiple distinct topics, give each its own bullet rather
+  than collapsing everything under the title's framing.
+- Use the `TITLE` only as a fallback label when the prompts are too thin to
+  characterize the work.
 
 ### 6. Merge into today's note
 
