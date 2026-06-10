@@ -27,6 +27,15 @@ Check if `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD.md` already exists
 If it does, read it and ask the user if they want to **append** to it or
 **start fresh**. If it doesn't exist, proceed.
 
+## Prime from the session journal
+
+Check if `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD-sessions.md`
+exists (the auto-generated `session-journal` note of today's Claude Code
+activity). If it does, read it and present a short digest first: "Here's what
+your Claude sessions show for today — [grouped by project]." Use it to seed the
+interview so the user confirms and corrects rather than recalling from scratch.
+It is input only: never edit it, and the daily note format below is unchanged.
+
 ## Interview
 
 Walk through these four sections **one at a time**. For each section, ask the
