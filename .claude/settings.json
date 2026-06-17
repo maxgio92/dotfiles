@@ -3,6 +3,13 @@
     "defaultMode": "auto"
   },
   "model": "claude-opus-4-8",
+  "fileSuggestion": {
+    "type": "command",
+    "command": "/home/massimiliano-giovagnoli/.claude/file-suggestion.sh"
+  },
+  "env": {
+    "USE_BUILTIN_RIPGREP": "0"
+  },
   "hooks": {
     "Notification": [
       {
@@ -88,8 +95,8 @@
           {
             "type": "command",
             "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
-            "statusMessage": "Communication Rules: gate",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Communication Rules: gate"
           }
         ]
       },
@@ -123,8 +130,8 @@
           {
             "type": "command",
             "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
-            "statusMessage": "Communication Rules: reminder",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Communication Rules: reminder"
           }
         ]
       },
@@ -146,8 +153,8 @@
           {
             "type": "command",
             "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code Stop",
-            "statusMessage": "Communication Rules: final-prose check",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Communication Rules: final-prose check"
           }
         ]
       },
@@ -189,8 +196,8 @@
           {
             "type": "command",
             "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
-            "statusMessage": "Communication Rules: final-prose check",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Communication Rules: final-prose check"
           }
         ]
       },
@@ -236,8 +243,8 @@
           {
             "type": "command",
             "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
-            "statusMessage": "Communication Rules: pending re-issue",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Communication Rules: pending re-issue"
           }
         ]
       },
