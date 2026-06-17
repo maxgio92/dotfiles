@@ -1,0 +1,27 @@
+{
+  "detectionPolicy": {
+    "blockedCodepoints": [
+      { "codepoint": "U+2014", "name": "em dash" },
+      { "codepoint": "U+2013", "name": "en dash" }
+    ],
+    "hardGateBannedTerms": [
+      "leverage",
+      "seamless",
+      "pivotal",
+      "delve",
+      "foster",
+      "embark",
+      "realm",
+      "intricate",
+      "meticulous",
+      "holistic",
+      "transformative",
+      "complementary",
+      "it's important to note",
+      "it's worth mentioning",
+      "in essence",
+      "fundamentally",
+      "ultimately"
+    ]
+  }
+}

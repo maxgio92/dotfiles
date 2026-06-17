@@ -1,0 +1,275 @@
+{
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "claude-opus-4-8",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status waiting"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/massimiliano-giovagnoli/.local/share/clorch/hooks/notify_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=PermissionRequest /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=PostToolUse /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=PostToolUseFailure /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=PreCompact /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
+            "statusMessage": "Communication Rules: gate",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=PreToolUse /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=SessionEnd /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
+            "statusMessage": "Communication Rules: reminder",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=SessionStart /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code Stop",
+            "statusMessage": "Communication Rules: final-prose check",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status done"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=Stop /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=SubagentStart /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
+            "statusMessage": "Communication Rules: final-prose check",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=SubagentStop /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=TaskCompleted /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=TeammateIdle /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
+            "statusMessage": "Communication Rules: pending re-issue",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLORCH_EVENT=UserPromptSubmit /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true,
+    "slack@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
+  },
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi",
+  "editorMode": "vim",
+  "skipAutoPermissionPrompt": true
+}
