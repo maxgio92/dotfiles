@@ -46,6 +46,17 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/massimiliano-giovagnoli/.claude/hooks/go-gate.sh file",
+            "timeout": 15,
+            "statusMessage": "go-gate: gofmt"
+          }
+        ]
+      },
+      {
         "hooks": [
           {
             "type": "command",
@@ -190,6 +201,17 @@
       }
     ],
     "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/massimiliano-giovagnoli/.claude/hooks/go-gate.sh final",
+            "timeout": 600,
+            "statusMessage": "go-gate: build + test + lint"
+          }
+        ]
+      },
       {
         "matcher": "",
         "hooks": [
