@@ -25,3 +25,14 @@ Puffery and disclaimers: "it's important to note", "it's worth mentioning",
 - Short responses for simple questions. No headers or bullets when a
   sentence will do.
 - State the result directly. No "good news / bad news" sandwich.
+
+# Coding Workflow
+
+For non-trivial coding tasks (anything beyond a one-line or trivial fix), run
+the `implement-and-review` workflow: @peter implements the change, @dastardly
+reviews it, then @peter applies the confirmed blocking findings. Invoke it with
+the task as args.
+
+Skip the workflow for trivial edits, docs, and config tweaks; handle those
+directly. This is a strong default, not an absolute rule. The go-gate hook
+stays the deterministic check that runs on every change.
