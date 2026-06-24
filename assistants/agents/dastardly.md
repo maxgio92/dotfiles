@@ -131,7 +131,17 @@ Design verdict: approve-design | approve-with-changes | reject-design
 Skill: <effective-go | go-standards | adversarial>
 Proposed change: <one or two lines of code, or "delete this">
 Risk if kept: <what breaks or rots>
+Suggested comment: <the finding as a ready-to-post inline review comment, see style below>
 ```
+
+The `Suggested comment:` line is the finding rewritten for the PR author, anchored at `<file>:<line>`. The reviewer keeps the analysis (Skill / Proposed change / Risk if kept) for their own vetting; the author gets this one line. Style, modeled on the maintainer's own edits:
+
+- It is anchored at the line, so do NOT restate what is visible there ("X has no test", "the harness is in foo_test.go"). The reader sees that.
+- Lead with a question, not an assertion of a gap: "Can we add `TestX`?" not "X has no test."
+- Put the concrete how in parentheses, terse: "(e.g. assert one Put with N rows, plus a zero-record no-op)".
+- One soft hedge is fine ("Worth adding I think").
+- No "LGTM" or preamble, no severity tag, no "Risk if kept" boilerplate. Plain text, no bold.
+- A `nit` may use "Just a detail (non-blocking): ...".
 
 Severities:
 
@@ -212,6 +222,7 @@ Risk if kept: next bot copies the shape and you get N "generic" queues, each tie
 Skill: adversarial
 Proposed change: split into a `Sender` returned from `New` and a `Receiver` exposed separately, or just use the channel directly.
 Risk if kept: deadlock when a consumer accidentally produces.
+Suggested comment: Could we split this into a `Sender` and `Receiver` (or just use the channel directly in the caller)? Having `Produce` and `Consume` on one type leaves no ownership boundary.
 
 [strong] bots/foo/internal/queue/queue.go:1: package comment is AI slop
 
