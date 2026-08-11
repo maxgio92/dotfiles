@@ -60,10 +60,12 @@ Watches:
   anyone other than `$GH_LOGIN` created after `since`.
 - C. PRs mentioning him: `gh search prs --repo $REPO --mentions @me --json number,title,url,updatedAt`.
   Enqueue PRs newly mentioning him or with mention-activity after `since`.
-- E. PRs review-requested: `gh search prs --repo $REPO --review-requested @me --json number,title,url,updatedAt`.
+- E. PRs review-requested: `gh search prs --repo $REPO --review-requested @me --json number,title,url,updatedAt,author`.
   A review request via the reviewers field does not always create a mention, so
   this is distinct from watch C. Enqueue PRs newly requesting his review after
-  `since`.
+  `since`. Skip bot authors (login ending in `[bot]`, or the automation accounts
+  `dependabot`, `chainguard-factory`, `octo-sts*`, `poiana`); a human review
+  request is the signal, the dependency and `[skillup]` bot flood is not.
 - D. Linear assigned: `list_issues assignee $LINEAR_ASSIGNEE orderBy updatedAt`.
   Enqueue tickets created or assigned after `since`, and new comments after
   `since` (`list_comments issueId=...` per assigned ticket updated after
