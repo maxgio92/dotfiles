@@ -56,6 +56,17 @@ bash: update shell-aliases fzf
 bin: update
 	@rsync -avz $(DOTFILES)/bin/ $(HOME)/.local/bin/
 
+.PHONY: personal-watch
+personal-watch: bin
+	@mkdir -p $(HOME)/.config/systemd/user \
+		$(HOME)/.local/state/personal-watch/inbox \
+		$(HOME)/.local/state/personal-watch/archive
+	@ln -sf $(DOTFILES)/systemd/user/personal-watch.service $(HOME)/.config/systemd/user/personal-watch.service
+	@ln -sf $(DOTFILES)/systemd/user/personal-watch.timer $(HOME)/.config/systemd/user/personal-watch.timer
+	@systemctl --user daemon-reload
+	@systemctl --user enable --now personal-watch.timer
+	@echo "personal-watch timer enabled. Set ~/.config/personal-watch.env for identity (SLACK_USER_ID, GH_LOGIN, LINEAR_ASSIGNEE, REPO)."
+
 .PHONY: cobra
 cobra: update
 	@ln -sf $(DOTFILES)/cobra/cobra.yaml $(HOME)/.cobra.yaml
