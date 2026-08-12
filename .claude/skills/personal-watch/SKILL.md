@@ -67,7 +67,10 @@ Watches:
   someone requests his review, directly or through a team he belongs to. For
   each hit resolve the PR (`.subject.url`) and enqueue those seen after `since`;
   skip bot authors (login ending in `[bot]`, or `dependabot`,
-  `chainguard-factory`, `octo-sts*`, `poiana`). Caveat: a request whose
+  `chainguard-factory`, `octo-sts*`, `poiana`). Dedupe across polls: append each
+  enqueued PR number to `$STATE/seen-review-requests` (one per line) and skip any
+  PR already listed, so a notification that keeps reappearing enqueues once, not
+  every run. Caveat: a request whose
   notification is already marked read will not reappear, so this catches new
   requests going forward rather than back-filling history; for a one-time
   backlog check, list open PRs and read each `reviewRequests` directly.
