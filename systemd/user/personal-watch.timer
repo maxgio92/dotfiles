@@ -1,9 +1,9 @@
 [Unit]
-Description=run personal-watch producer every 30 min
+Description=run personal-watch producer every 10 min
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=30min
+OnBootSec=2min
+OnUnitActiveSec=10min
 Persistent=true
 
 [Install]
