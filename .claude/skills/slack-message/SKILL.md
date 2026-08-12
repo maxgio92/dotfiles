@@ -10,7 +10,8 @@ lowercase. Assume the reader has the context; skip setup and background.
 
 ## Shape of a post
 
-- Open with a fitting emoji. Use `:wtb:` when the post proposes a PR to merge.
+- Open with a fitting emoji. Use the workspace's conventional merge-proposal
+  emoji when the post proposes a PR to merge.
 - Say the thing in one sentence. State the result, not the effort.
 - Put the link last, as a bare URL.
 - No headers, no bullet lists, no bold, no sign-off.
@@ -18,7 +19,7 @@ lowercase. Assume the reader has the context; skip setup and background.
 Example, advertising a PR:
 
 ```
-:wtb: small fix so a stuck job stops looping before it times out https://github.com/org/repo/pull/1234
+:rocket: small fix so a stuck job stops looping before it times out https://github.com/org/repo/pull/1234
 ```
 
 ## Thread replies
