@@ -2,7 +2,7 @@
 name: daily
 description: >
   Interactive daily note builder. Prompts you through structured questions about
-  your day — work, decisions, blockers, people — and saves the result to cg-notes.
+  your day — work, decisions, blockers, people — and saves the result to your notes repo.
   Usage: /daily [date]
 ---
 
@@ -14,8 +14,11 @@ markdown note filed in the daily notes repository.
 
 ## Paths
 
-- **Daily notes repo:** `~/src/github.com/maxgio92/cg-notes/`
-- **Notes directory (where daily notes live):** `~/src/github.com/maxgio92/cg-notes/notes/`
+Read `~/.config/notes-repo.env` if present (`NOTES_REPO=<path to the notes
+repo>`); else default `NOTES_REPO` to `~/notes`.
+
+- **Daily notes repo:** `$NOTES_REPO/`
+- **Notes directory (where daily notes live):** `$NOTES_REPO/notes/`
 
 ## Determine the date
 
@@ -23,18 +26,20 @@ markdown note filed in the daily notes repository.
 - If `$ARGUMENTS` is empty, use today's date.
 - The note filename will be `YYYY-MM-DD.md`.
 
-Check if `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD.md` already exists.
+Check if `$NOTES_REPO/notes/YYYY-MM-DD.md` already exists.
 If it does, read it and ask the user if they want to **append** to it or
 **start fresh**. If it doesn't exist, proceed.
 
-## Prime from the session journal
+## Read the session journal (additional source, not a substitute)
 
-Check if `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD-sessions.md`
+Check if `$NOTES_REPO/notes/YYYY-MM-DD-sessions.md`
 exists (the auto-generated `session-journal` note of today's Claude Code
-activity). If it does, read it and present a short digest first: "Here's what
-your Claude sessions show for today — [grouped by project]." Use it to seed the
-interview so the user confirms and corrects rather than recalling from scratch.
-It is input only: never edit it, and the daily note format below is unchanged.
+activity). If it does, read it for your own context — but do NOT let it replace
+the interview. Always ask the user the questions below fresh and capture what
+they tell you first. The session journal is **additional** material: after the
+interview, merge the session-derived activity into the note on top of the
+user's own answers, so the note reflects both. It is input only: never edit it,
+and the daily note format below is unchanged.
 
 ## Interview
 
@@ -127,8 +132,8 @@ Apply any edits they request.
 
 ### Save
 
-Write the final note to `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD.md`.
-Commit it in the cg-notes repo with message `daily: YYYY-MM-DD` and push to
+Write the final note to `$NOTES_REPO/notes/YYYY-MM-DD.md`.
+Commit it in the notes repo with message `daily: YYYY-MM-DD` and push to
 `origin/main`.
 
 ### Suggest ingest

@@ -15,15 +15,17 @@ files that synthesizes knowledge from raw daily notes.
 ## Paths
 
 The wiki and the source notes live in the same repo, in sibling subdirectories.
+Read `~/.config/notes-repo.env` if present (`NOTES_REPO=<path to the notes
+repo>`); else default `NOTES_REPO` to `~/notes`.
 
-- **Source notes (immutable, never modify):** `~/src/github.com/maxgio92/cg-notes/notes/` —
+- **Source notes (immutable, never modify):** `$NOTES_REPO/notes/` —
   daily notes are files matching `YYYY-MM-DD.md`.
-- **Wiki (you own this entirely):** `~/src/github.com/maxgio92/cg-notes/wiki/`
-- **Schema:** `~/src/github.com/maxgio92/cg-notes/wiki/CLAUDE.md`
+- **Wiki (you own this entirely):** `$NOTES_REPO/wiki/`
+- **Schema:** `$NOTES_REPO/wiki/CLAUDE.md`
 
 ## First: read the schema
 
-Before doing anything, read `~/src/github.com/maxgio92/cg-notes/wiki/CLAUDE.md` to
+Before doing anything, read `$NOTES_REPO/wiki/CLAUDE.md` to
 understand the wiki's structure, conventions, and workflows. Follow it precisely.
 
 ## Parse the command
@@ -48,8 +50,8 @@ The user wants to ingest daily notes into the wiki.
 Look at what follows "ingest" in `$ARGUMENTS` to decide scope:
 
 - **"my daily notes"** or **"all"** or no further args: find all `.md` files in
-  `~/src/github.com/maxgio92/cg-notes/notes/` that do NOT already have a corresponding
-  source summary in `~/src/github.com/maxgio92/cg-notes/wiki/sources/`. These are the
+  `$NOTES_REPO/notes/` that do NOT already have a corresponding
+  source summary in `$NOTES_REPO/wiki/sources/`. These are the
   un-ingested notes. Exclude `*-sessions.md` files: those are the auto-generated
   `session-journal` activity logs that feed `/daily`, not journal entries to ingest.
 - **A specific filename or date pattern** (e.g. "2026-04-25" or "meeting-notes.md"):
@@ -61,23 +63,23 @@ If no un-ingested notes are found, tell the user and stop.
 
 For each note to ingest, one at a time:
 
-a. **Read the note** from `~/src/github.com/maxgio92/cg-notes/notes/`
+a. **Read the note** from `$NOTES_REPO/notes/`
 
 b. **Discuss with the user**: briefly summarize key takeaways from the note —
    decisions made, topics discussed, action items, insights, entities mentioned.
    Ask if the user wants to emphasize or de-emphasize anything before you file it.
 
-c. **Create a source summary** in `~/src/github.com/maxgio92/cg-notes/wiki/sources/`.
+c. **Create a source summary** in `$NOTES_REPO/wiki/sources/`.
    Filename should match the source note name. Include:
    - YAML frontmatter (title, type: source, created, updated, sources, tags)
    - A structured summary of the note's content
    - Links to entity/concept pages
 
-d. **Create or update entity pages** in `~/src/github.com/maxgio92/cg-notes/wiki/entities/`
+d. **Create or update entity pages** in `$NOTES_REPO/wiki/entities/`
    for any people, teams, projects, tools, or services mentioned. If a page exists,
    update it with new information from this note. If not, create it.
 
-e. **Create or update concept pages** in `~/src/github.com/maxgio92/cg-notes/wiki/concepts/`
+e. **Create or update concept pages** in `$NOTES_REPO/wiki/concepts/`
    for any ideas, patterns, processes, or methodologies discussed. Same create-or-update
    logic.
 
@@ -93,7 +95,7 @@ h. **Append to `log.md`** — add an entry like:
 
 ### 3. Commit
 
-After processing all notes, commit all wiki changes in the cg-notes repo with a
+After processing all notes, commit all wiki changes in the notes repo with a
 message like `ingest: <brief description of what was ingested>` and push to
 `origin/main`. Source notes themselves are immutable — only `wiki/` files should
 be in the commit.
@@ -110,7 +112,7 @@ Everything after "query" in `$ARGUMENTS` is the question.
 
 ### 2. Search the wiki
 
-- Read `~/src/github.com/maxgio92/cg-notes/wiki/index.md` to find relevant pages
+- Read `$NOTES_REPO/wiki/index.md` to find relevant pages
 - Read the relevant wiki pages
 - If needed, search with grep across the wiki for specific terms
 
@@ -123,7 +125,7 @@ Everything after "query" in `$ARGUMENTS` is the question.
 ### 4. Optionally file the answer
 
 If the answer involves non-trivial synthesis (comparison, analysis, connection),
-offer to file it as a new page in `~/src/github.com/maxgio92/cg-notes/wiki/analyses/`.
+offer to file it as a new page in `$NOTES_REPO/wiki/analyses/`.
 If the user agrees, create the page, update index.md, and append to log.md.
 
 ---

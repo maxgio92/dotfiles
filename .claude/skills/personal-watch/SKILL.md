@@ -30,6 +30,7 @@ SLACK_USER_ID=U0000000000   # your Slack user id
 GH_LOGIN=your-gh-login      # your GitHub login; gh @me must resolve to it
 LINEAR_ASSIGNEE=me
 REPO=owner/repo             # GitHub repo to scope PR searches to
+BOT_LOGINS=                 # space-separated bot logins to skip, besides [bot] suffixes
 ```
 
 `gh @me` must resolve to `GH_LOGIN`; Linear `me` to the same person.
@@ -66,8 +67,8 @@ Watches:
   lags and silently drops recent requests, while a notification fires the moment
   someone requests his review, directly or through a team he belongs to. For
   each hit resolve the PR (`.subject.url`) and enqueue those seen after `since`;
-  skip bot authors (login ending in `[bot]`, or `dependabot`,
-  `chainguard-factory`, `octo-sts*`, `poiana`). Dedupe across polls: append each
+  skip bot authors (login ending in `[bot]`, `dependabot`, or any login in
+  `$BOT_LOGINS`, the org's bot accounts). Dedupe across polls: append each
   enqueued PR number to `$STATE/seen-review-requests` (one per line) and skip any
   PR already listed, so a notification that keeps reappearing enqueues once, not
   every run. Caveat: a request whose

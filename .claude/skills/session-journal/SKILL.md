@@ -2,7 +2,8 @@
 name: session-journal
 description: >
   Scan local Claude Code session transcripts and maintain an auto-generated
-  daily activity note in cg-notes. Designed to run under /loop (self-paced),
+  daily activity note in your notes repo. Designed to run under /loop
+  (self-paced),
   but a single invocation does one full pass. The note feeds /daily as source
   material. Usage: /session-journal (or /loop /session-journal)
 ---
@@ -10,20 +11,23 @@ description: >
 # Session Journal
 
 You maintain an auto-generated summary of today's Claude Code sessions at
-`~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD-sessions.md`. Each run is
+`$NOTES_REPO/notes/YYYY-MM-DD-sessions.md`. Each run is
 one incremental pass ("tick"): find transcripts with new activity, extract only
 the new content, merge bullets into today's note, save state. Stay
 context-frugal: never read whole transcripts into context.
 
 ## Paths
 
+Read `~/.config/notes-repo.env` if present (`NOTES_REPO=<path to the notes
+repo>`); else default `NOTES_REPO` to `~/notes`.
+
 - **Transcripts:** `~/.claude/projects/<munged-cwd>/<session-uuid>.jsonl`
   (one JSON event per line; fields include `type`, `message`, `timestamp`,
   `sessionId`, `cwd`, `gitBranch`)
-- **Output note:** `~/src/github.com/maxgio92/cg-notes/notes/YYYY-MM-DD-sessions.md`
+- **Output note:** `$NOTES_REPO/notes/YYYY-MM-DD-sessions.md`
 - **State file:** `~/.local/state/session-journal/state.json`
 
-If `~/src/github.com/maxgio92/cg-notes/notes/` does not exist, stop and tell
+If `$NOTES_REPO/notes/` does not exist, stop and tell
 the user; do not write anywhere else.
 
 ## Per-tick algorithm
@@ -138,8 +142,8 @@ permission chatter). Group sessions by project (basename of `cwd`).
 
 **Weight substantive content over the title.** The `ai-title` is generated from
 the opening exchange and often names a throwaway first question, not the real
-work — e.g. a session titled "Enable Fable" whose actual substance was a Linear
-FUL-311 coverage-metric analysis. So:
+work: e.g. a session titled after a one-line config tweak whose actual
+substance was a ticket's coverage-metric analysis. So:
 
 - Drive the summary from the `USER` prompts and `ASSISTANT` outcomes, not the
   `TITLE`. A long session usually shifts topic after the first prompt; the later
@@ -179,7 +183,7 @@ If there was no new activity this tick, only refresh the `updated:` field
 ### 7. Save state and report
 
 Write the updated state file (new `lastRun`, advanced `perFile` offsets,
-`date`, `selfSessions`). Do NOT commit or push anything in cg-notes.
+`date`, `selfSessions`). Do NOT commit or push anything in the notes repo.
 
 End your output with a one-line status and the self-exclusion marker, e.g.:
 
@@ -192,7 +196,7 @@ End your output with a one-line status and the self-exclusion marker, e.g.:
 When running under /loop in dynamic (self-paced) mode, schedule the next
 wakeup 1200-1800 seconds out with the same prompt after finishing the tick.
 A quiet tick (no new activity) can stretch toward 1800s; a busy one can use
-1200s. Only end the loop if the user asks or cg-notes is missing.
+1200s. Only end the loop if the user asks or the notes repo is missing.
 
 A bare `/session-journal` invocation (no loop) is a single pass: run the tick
 and stop.
