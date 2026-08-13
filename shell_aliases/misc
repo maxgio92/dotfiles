@@ -8,12 +8,12 @@ kalias() {
   alias k="docker exec -it $1 kubectl"
 }
 alias apk-reindex='melange index -m -s packages/x86_64/APKINDEX.tar.gz --signing-key local-melange.rsa packages/x86_64/*.apk && mv APKINDEX.tar.gz packages/x86_64/APKINDEX.tar.gz'
-# personal-watch: drain the notification inbox in the terminal (read + archive)
-pw() {
-  local d="${XDG_STATE_HOME:-$HOME/.local/state}/personal-watch"
-  shopt -s nullglob 2>/dev/null
-  local f=("$d"/inbox/*)
-  [ ${#f[@]} -eq 0 ] && { echo "inbox empty"; return 0; }
-  cat "${f[@]}"
-  mkdir -p "$d/archive" && mv "${f[@]}" "$d/archive/"
+# telescreen: TUI dashboard over the recdep notification queue (inbox/todo/archive)
+telescreen() {
+  local bin="$HOME/.local/bin/telescreen"
+  if [ ! -x "$bin" ]; then
+    (cd "$HOME/src/github.com/maxgio92/telescreen" && go build -o "$bin" .) || return 1
+  fi
+  "$bin" "$@"
 }
+alias pw=telescreen
