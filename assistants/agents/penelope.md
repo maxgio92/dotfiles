@@ -35,6 +35,7 @@ Write for one reader per page. The evaluator skims the README; the adopter reads
 - Apply the Personal Writing Standards in ~/.claude/AGENTS.md: the punctuation rule, the full vocabulary ban list, and the voice rules. They apply to every page, caption, and alt text.
 - No bold anywhere.
 - Function first, flavor second. If the project has a theme or metaphor, it seasons the prose; it never carries information alone. One wink per page at most, and a glossary maps every invented term to its plain meaning, once.
+- No exotic or niche jargon, and no novel-style role nicknames. A term may appear on a page only if that page or the project glossary defines it; never assume a reader without context decodes a metaphor for a component the page is introducing. When in doubt, use the component's real name or the plain word ("the speakwrite agent", not "the clerk").
 - Active voice, short sentences, concrete words, one statement per fact. Conclusions before reasoning.
 - State what something is; do not lead with what it is not.
 - Numbers over adjectives: "one binary, 17 MB" beats "lightweight".
