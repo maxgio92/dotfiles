@@ -5,7 +5,7 @@
   "model": "claude-opus-4-8",
   "fileSuggestion": {
     "type": "command",
-    "command": "/home/massimiliano-giovagnoli/.claude/file-suggestion.sh"
+    "command": "$HOME/.claude/file-suggestion.sh"
   },
   "env": {
     "USE_BUILTIN_RIPGREP": "0"
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/massimiliano-giovagnoli/.local/share/clorch/hooks/notify_handler.sh",
+            "command": "$HOME/.local/share/clorch/hooks/notify_handler.sh",
             "async": true
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PermissionRequest /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=PermissionRequest $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/massimiliano-giovagnoli/.claude/hooks/go-gate.sh file",
+            "command": "$HOME/.claude/hooks/go-gate.sh file",
             "timeout": 15,
             "statusMessage": "go-gate: gofmt"
           }
@@ -69,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PostToolUse /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=PostToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PostToolUseFailure /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=PostToolUseFailure $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -93,7 +93,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PreCompact /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=PreCompact $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -105,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
+            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
             "timeout": 15,
             "statusMessage": "Communication Rules: gate"
           }
@@ -116,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PreToolUse /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=PreToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -128,7 +128,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SessionEnd /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=SessionEnd $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -140,7 +140,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
+            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
             "timeout": 15,
             "statusMessage": "Communication Rules: reminder"
           }
@@ -151,7 +151,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SessionStart /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=SessionStart $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -163,7 +163,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code Stop",
+            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code Stop",
             "timeout": 15,
             "statusMessage": "Communication Rules: final-prose check"
           }
@@ -182,7 +182,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=Stop /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=Stop $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -194,7 +194,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SubagentStart /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=SubagentStart $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -206,7 +206,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/massimiliano-giovagnoli/.claude/hooks/go-gate.sh final",
+            "command": "$HOME/.claude/hooks/go-gate.sh final",
             "timeout": 600,
             "statusMessage": "go-gate: build + test + lint"
           }
@@ -217,7 +217,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
+            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
             "timeout": 15,
             "statusMessage": "Communication Rules: final-prose check"
           }
@@ -228,7 +228,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SubagentStop /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=SubagentStop $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -240,7 +240,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=TaskCompleted /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=TaskCompleted $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -252,7 +252,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=TeammateIdle /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=TeammateIdle $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -264,7 +264,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/scanner.py --policy-json /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/policy.json --rules /home/massimiliano-giovagnoli/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
+            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
             "timeout": 15,
             "statusMessage": "Communication Rules: pending re-issue"
           }
@@ -283,7 +283,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=UserPromptSubmit /home/massimiliano-giovagnoli/.local/share/clorch/hooks/event_handler.sh",
+            "command": "CLORCH_EVENT=UserPromptSubmit $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
