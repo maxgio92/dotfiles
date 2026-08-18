@@ -312,7 +312,32 @@ assistants:
 		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
 
 .PHONY: claude
-claude: claude-skills claude-agents claude-commands
+claude: claude-config claude-hooks claude-skills claude-agents claude-commands
+
+.PHONY: claude-config
+claude-config:
+	@mkdir -p $(HOME)/.claude/workflows
+	@ln -sfn $(DOTFILES)/.claude/settings.json $(HOME)/.claude/settings.json
+	@ln -sfn $(DOTFILES)/.claude/AGENTS.md $(HOME)/.claude/AGENTS.md
+	@ln -sfn $(DOTFILES)/.claude/file-suggestion.sh $(HOME)/.claude/file-suggestion.sh
+	@ln -sf $(DOTFILES)/.claude/workflows/*.js $(HOME)/.claude/workflows/
+	@echo "  linked settings.json, AGENTS.md, file-suggestion.sh, workflows"
+
+.PHONY: claude-hooks
+claude-hooks:
+	@mkdir -p $(HOME)/.claude/hooks
+	@for src in $(DOTFILES)/.claude/hooks/*; do \
+		name=$$(basename "$$src"); \
+		target=$(HOME)/.claude/hooks/$$name; \
+		current=$$(readlink "$$target" 2>/dev/null || true); \
+		if [ -n "$$current" ] && [ "$$current" != "$$src" ]; then \
+			echo "  skip hook $$name (existing symlink: $$current)"; \
+		elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+			echo "  skip hook $$name ($$target exists and is not a symlink)"; \
+		else \
+			ln -sfn "$$src" "$$target" && echo "  link hook $$name"; \
+		fi; \
+	done
 
 .PHONY: claude-skills
 claude-skills:
