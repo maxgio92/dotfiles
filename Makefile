@@ -130,8 +130,8 @@ vim:
 	@hash node || ./bin/install-ospackage.sh nodejs &> /dev/null
 	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-	@vim +PlugInstall +qall
 	@ln -sf $(DOTFILES)/vim/vimrc $(HOME)/.vimrc
+	@vim +PlugInstall +qall
 	@$(MAKE) coc-settings
 
 .PHONY: coc-settings
