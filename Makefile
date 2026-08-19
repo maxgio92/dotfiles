@@ -93,6 +93,7 @@ i3:
 
 .PHONY: i3status
 i3status:
+	@mkdir -p $(HOME)/.config/i3status
 	@ln -sf $(DOTFILES)/i3/i3status/config $(HOME)/.config/i3status/config
 
 
@@ -117,7 +118,8 @@ workmux:
 
 .PHONY: tmux-plugin-manager
 tmux-plugin-manager:
-	@git clone https://github.com/tmux-plugins/tpm $(HOME)/.tmux/plugins/tpm
+	@test -d $(HOME)/.tmux/plugins/tpm || \
+		git clone https://github.com/tmux-plugins/tpm $(HOME)/.tmux/plugins/tpm
 
 .PHONY: tmux
 tmux: tmux-plugin-manager
