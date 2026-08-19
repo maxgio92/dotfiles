@@ -111,7 +111,7 @@ terminator: update
 	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
 
 .PHONY: workmux
-workmux: update
+workmux:
 	@mkdir -p $(HOME)/.config/workmux
 	@ln -sf $(DOTFILES)/workmux/config.yaml $(HOME)/.config/workmux/config.yaml
 
