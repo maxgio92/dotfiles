@@ -28,6 +28,8 @@
 [tag]
 	gpgsign = true
 
+[includeif "gitdir:~/src/github.com/example-sandbox/"]
+	path = ~/.gitconfig-gitsign
 [includeif "gitdir:~/src/github.com/example-org/"]
 	path = ~/.gitconfig-gitsign
 [includeif "gitdir:~/src/github.com/wolfi-dev/"]
