@@ -1,8 +1,4 @@
 {
-  "permissions": {
-    "defaultMode": "auto"
-  },
-  "model": "claude-opus-4-8",
   "fileSuggestion": {
     "type": "command",
     "command": "$HOME/.claude/file-suggestion.sh"
@@ -10,6 +6,10 @@
   "env": {
     "USE_BUILTIN_RIPGREP": "0"
   },
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "claude-fable-5[1m]",
   "hooks": {
     "Notification": [
       {
@@ -296,8 +296,9 @@
     "slack@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true
   },
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
   "editorMode": "vim",
   "skipAutoPermissionPrompt": true
