@@ -47,10 +47,17 @@ from core.detection import (
 from core.types import ExtractorRecord
 
 
+_READ_VERB_PREFIXES = ("list_", "get_", "search_", "read_", "fetch_")
+
+
 def is_post_capable_mcp_tool(tool_name: str, post_tool_terms: tuple[str, ...]) -> bool:
     if not tool_name.startswith("mcp__"):
         return False
     leaf = tool_name.rsplit("__", 1)[-1].lower()
+    # A read verb emits no outgoing prose, so it is never a post even when its
+    # name contains a post term (e.g. list_comments contains "comments").
+    if leaf.startswith(_READ_VERB_PREFIXES):
+        return False
     return any(term in leaf for term in post_tool_terms)
 
 
