@@ -6,8 +6,8 @@ git := $(shell command -v git 2>/dev/null)
 
 .DEFAULT_GOAL := dotonly
 
-dotonly: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit
-all: init update bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
+dotonly: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit
+all: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
 .PHONY: list
 list:
@@ -39,13 +39,13 @@ alacritty-themes: nerd-fonts
 	@test -d $(HOME)/.config/alacritty/themes || git clone https://github.com/alacritty/alacritty-theme $(HOME)/.config/alacritty/themes
 
 .PHONY: alacritty
-alacritty: update
+alacritty:
 	@mkdir -p $(HOME)/.config/alacritty
 	@ln -sf $(DOTFILES)/alacritty/* $(HOME)/.config/alacritty/
 	@$(MAKE) alacritty-themes
 
 .PHONY: bash
-bash: update shell-aliases fzf
+bash: shell-aliases fzf
 	@ln -sf $(DOTFILES)/bash/bash_profile $(HOME)/.bash_profile && \
 	ln -sf $(DOTFILES)/bash/profile $(HOME)/.profile && \
 	ln -sf $(DOTFILES)/bash/bashrc $(HOME)/.bashrc && \
@@ -53,15 +53,15 @@ bash: update shell-aliases fzf
 	ln -sf $(DOTFILES)/bash/bash_completion $(HOME)/.bash_completion
 
 .PHONY: bin
-bin: update
+bin:
 	@rsync -avz $(DOTFILES)/bin/ $(HOME)/.local/bin/
 
 .PHONY: cobra
-cobra: update
+cobra:
 	@ln -sf $(DOTFILES)/cobra/cobra.yaml $(HOME)/.cobra.yaml
 
 .PHONY: krew
-krew: update
+krew:
 	@test -d $$HOME/.krew || \
 		( \
 		  set -x; cd "$$(mktemp -d)" && \
@@ -75,7 +75,7 @@ krew: update
 		)
 
 .PHONY: fzf
-fzf: update
+fzf:
 	@test -d $(HOME)/.fzf \
 		&& $(git) -C $(HOME)/.fzf pull \
 		|| $(git) clone --depth 1 https://github.com/junegunn/fzf.git $(HOME)/.fzf
@@ -87,26 +87,26 @@ git:
 	@ln -sf $(DOTFILES)/git/gitconfig-gitsign $(HOME)/.gitconfig-gitsign
 
 .PHONY: i3
-i3: update
+i3:
 	@mkdir -p $(HOME)/.config/i3
 	@ln -sf $(DOTFILES)/i3/config $(HOME)/.config/i3/config
 
 .PHONY: i3status
-i3status: update
+i3status:
 	@ln -sf $(DOTFILES)/i3/i3status/config $(HOME)/.config/i3status/config
 
 
 .PHONY: luakit
-luakit: update
+luakit:
 	@ln -sf $(DOTFILES)/luakit/userconf.lua $(HOME)/.config/luakit/userconf.lua
 
 .PHONY: sway
-sway: update
+sway:
 	@mkdir -p $(HOME)/.config/sway
 	@ln -sf $(DOTFILES)/sway/config $(HOME)/.config/sway/config
 
 .PHONY: terminator
-terminator: update
+terminator:
 	@mkdir -p $(HOME)/.config/terminator
 	@ln -sf $(DOTFILES)/terminator/config $(HOME)/.config/terminator/config
 
@@ -120,11 +120,11 @@ tmux-plugin-manager:
 	@git clone https://github.com/tmux-plugins/tpm $(HOME)/.tmux/plugins/tpm
 
 .PHONY: tmux
-tmux: update tmux-plugin-manager
+tmux: tmux-plugin-manager
 	@ln -sf $(DOTFILES)/tmux/tmux.conf $(HOME)/.tmux.conf
 
 .PHONY: vim
-vim: update
+vim:
 	@hash node || ./bin/install-ospackage.sh nodejs &> /dev/null
 	@curl -sfLo $(HOME)/.vim/autoload/plug.vim --create-dirs \
 		    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
@@ -133,32 +133,32 @@ vim: update
 	@$(MAKE) coc-settings
 
 .PHONY: coc-settings
-coc-settings: update
+coc-settings:
 	@mkdir -p $(HOME)/.vim
 	@ln -sf $(DOTFILES)/vim/coc-settings.json $(HOME)/.vim/coc-settings.json
 
 .PHONY: waybar
-waybar: update
+waybar:
 	@ln -sf $(DOTFILES)/sway/waybar $(HOME)/.config
 
 .PHONY: wofi
-wofi: update
+wofi:
 	@ln -sf $(DOTFILES)/sway/wofi $(HOME)/.config
 
 .PHONY: xbindkeys
-xbindkeys: update
+xbindkeys:
 	@ln -sf $(DOTFILES)/xorg/xbindkeys/xbindkeysrc $(HOME)/.xbindkeysrc
 
 .PHONY: xinit
-xinit: update
+xinit:
 	@ln -sf $(DOTFILES)/xorg/xinit/xinitrc $(HOME)/.xinitrc
 
 .PHONY: openresolv
-openresolv: update
+openresolv:
 	@ln -sf $(DOTFILES)/etc/openresolv/resolvconf.conf /etc/resolvconf.conf
 
 .PHONY: dnsmasq
-dnsmasq: openresolv update
+dnsmasq: openresolv
 ifneq ($(shell id -u), 0)
 	@echo "You must be root to perform this action."
 else
@@ -168,7 +168,7 @@ else
 endif
 
 .PHONY: systemd-logind
-systemd-logind: update
+systemd-logind:
 ifneq ($(shell id -u), 0)
 	@echo "You must be root to perform this action."
 else
@@ -178,7 +178,7 @@ else
 endif
 
 .PHONY: systemd-system-suspend
-systemd-system-suspend: update
+systemd-system-suspend:
 ifneq ($(shell id -u), 0)
 	@echo "You must be root to perform this action and set USERNAME variable."
 else
@@ -197,14 +197,14 @@ zsh/plugins:
 			$(kubectl_prompt_home)
 
 .PHONY: zsh
-zsh: update shell-aliases zsh/plugins prezto fzf
+zsh: shell-aliases zsh/plugins prezto fzf
 	@ln -sf $(DOTFILES)/zsh/zshrc $(HOME)/.zshrc
 	@$(MAKE) direnv
 	@chsh -s /usr/bin/zsh
 
 .PHONY: prezto
 prezto: PREZTO_HOME := $(HOME)/.zprezto
-prezto: update
+prezto:
 	@if [ ! -d $(PREZTO_HOME) ]; then \
 		$(git) clone --recursive https://github.com/sorin-ionescu/prezto.git \
 			$(PREZTO_HOME); \
@@ -219,7 +219,7 @@ prezto: update
 	@mkdir -p $(HOME)/.zprezto-contrib
 
 .PHONY: shell-aliases
-shell-aliases: update
+shell-aliases:
 	@test -h $(HOME)/.shell_aliases || \
 		ln -sf $(DOTFILES)/shell_aliases \
 		$(HOME)/.shell_aliases
@@ -229,7 +229,7 @@ direnv:
 	@hash direnv 2>/dev/null || { curl -sfL https://direnv.net/install.sh | $$SHELL; }
 
 .PHONY: bat
-bat: update
+bat:
 	@hash bat || ./bin/install-ospackage.sh bat &> /dev/null
 	@test -d $(HOME)/.config/bat || \
 		mkdir $(HOME)/.config/bat
