@@ -1,9 +1,9 @@
 export const meta = {
   name: 'implement-and-review',
-  description: 'peter implements a coding task, dastardly reviews the diff, peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
+  description: 'peter implements a coding task, dastardly reviews the diff through codex (GPT-5 via MCP), peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
   phases: [
     { title: 'Implement', detail: 'peter writes the smallest correct change' },
-    { title: 'Review', detail: 'dastardly adversarially reviews the change' },
+    { title: 'Review', detail: 'dastardly reviews via codex (GPT-5), vets its findings' },
     { title: 'Fix', detail: 'peter applies confirmed blocking findings' },
   ],
 }
@@ -76,6 +76,18 @@ while (round < MAX_ROUNDS) {
     `Review the change below for the task. Challenge the design and problem framing first, ` +
       `then hunt AI slop, overengineering, leaky abstractions, producer/consumer mixing, ` +
       `and repo-convention breaks. Mark each finding blocking or non-blocking.\n\n` +
+      `MANDATORY: run this review through the codex MCP server (GPT-5) as the reviewing ` +
+      `engine. Load the tools with ToolSearch("select:mcp__codex__codex,mcp__codex__codex-reply"), ` +
+      `then start ONE session: codex with profile "review" and cwd set to the repo root the ` +
+      `task names. Send codex your full review rubric (design challenge, trust boundaries and ` +
+      `cross-system semantics, slop, overengineering, test coverage) together with the task ` +
+      `and the diff. Codex's first answer is usually a survey: push back at least once with ` +
+      `codex-reply where it is generic or hedged. Then vet every codex claim against the ` +
+      `actual code yourself before reporting: drop what you can refute, add what it missed, ` +
+      `and assign severities with your own judgment. Report only vetted findings.\n` +
+      `Fallback: if the codex MCP tools are not available in this session, perform the review ` +
+      `yourself and include one extra non-blocking finding titled "codex-unavailable" so the ` +
+      `operator can see the engine fell back.\n\n` +
       `Task:\n${task}\n\nImplementation summary from peter:\n${implementation}\n\n` +
       `Diff under review (round ${round}):\n${diff}`,
     {
