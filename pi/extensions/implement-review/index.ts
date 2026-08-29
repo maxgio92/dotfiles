@@ -12,6 +12,8 @@ import {
 	withFileMutationQueue,
 } from "@earendil-works/pi-coding-agent";
 import {
+	CODE_REVIEW_COMMAND,
+	IMPLEMENT_REVIEW_COMMANDS,
 	isConverged,
 	parseStructuredReview,
 	parseWorkflowArgs,
@@ -62,6 +64,12 @@ interface WorkflowResult {
 	fixes: string[];
 	converged: boolean;
 	maxRounds: number;
+}
+
+interface StandaloneReviewResult {
+	repoRoot: string;
+	scope: string;
+	output: string;
 }
 
 type AgentFrontmatter = {
@@ -373,7 +381,7 @@ function formatFindings(findings: ReviewFinding[]): string {
 }
 
 export default function implementReviewExtension(pi: ExtensionAPI) {
-	pi.registerCommand("implement-review", {
+	const implementCommand: Parameters<ExtensionAPI["registerCommand"]>[1] = {
 		description: "Peter implements and fixes until Dastardly reports no blocking findings",
 		handler: async (args, ctx) => {
 			if (ctx.mode !== "tui") {
@@ -417,6 +425,57 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 			pi.sendMessage({
 				customType: "implement-review-result",
 				content: formatResult(result),
+				display: true,
+				details: result,
+			});
+		},
+	};
+
+	for (const command of IMPLEMENT_REVIEW_COMMANDS) pi.registerCommand(command, implementCommand);
+	pi.registerCommand(CODE_REVIEW_COMMAND, {
+		description: "Dastardly reviews a PR, diff, files, or the current branch",
+		handler: async (args, ctx) => {
+			if (ctx.mode !== "tui") {
+				ctx.ui.notify("code-review currently requires interactive mode", "error");
+				return;
+			}
+
+			const scope = args.trim() || "Review the current branch against its merge base.";
+			const result = await ctx.ui.custom<StandaloneReviewResult | Error>((tui, theme, _kb, done) => {
+				const loader = new BorderedLoader(tui, theme, "Running Dastardly...");
+				loader.onAbort = () => done(new Error("Review cancelled"));
+				ctx.ui.setStatus("code-review", "Dastardly reviewing");
+				const defaults: DispatchDefaults = {
+					model: ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined,
+					thinkingLevel: ctx.thinkingLevel,
+				};
+
+				(async () => {
+					const repoRoot = (await git(["rev-parse", "--show-toplevel"], ctx.cwd, loader.signal)).trim();
+					const dastardly = { ...loadAgent("dastardly"), model: DASTARDLY_MODEL };
+					const output = await runAgent(
+						dastardly,
+						`Review the scope. Do not modify files or the index. Apply Dastardly's design, evidence, severity, and output rules.\n\nScope:\n${scope}`,
+						repoRoot,
+						defaults,
+						loader.signal,
+					);
+					return { repoRoot, scope, output };
+				})()
+					.then(done)
+					.catch((error) => done(error instanceof Error ? error : new Error(String(error))));
+				return loader;
+			});
+			ctx.ui.setStatus("code-review", undefined);
+
+			if (result instanceof Error) {
+				ctx.ui.notify(result.message, result.message === "Review cancelled" ? "info" : "error");
+				return;
+			}
+
+			pi.sendMessage({
+				customType: "code-review-result",
+				content: result.output,
 				display: true,
 				details: result,
 			});

@@ -1,6 +1,9 @@
 const DEFAULT_MAX_ROUNDS = 3;
 const MAX_ALLOWED_ROUNDS = 10;
 
+export const IMPLEMENT_REVIEW_COMMANDS = ["implement-review", "code-implement"] as const;
+export const CODE_REVIEW_COMMAND = "code-review";
+
 export interface ReviewFinding {
 	title: string;
 	severity: "blocking" | "non-blocking";
