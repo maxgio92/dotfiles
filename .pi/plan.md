@@ -12,7 +12,7 @@ mostly custom to this setup.
 | Go quality gate | Automatically checks `gofmt` after edits and build, test, lint checks before an agent finishes | Ported through the shared checker and Pi lifecycle events |
 | Workmux state reporting | Claude and Codex hooks set tmux window state | Ported for Pi with `working` and `done`; Pi exposes no matching permission-wait event |
 | Clorch lifecycle integration | Notifications and events for tool calls, permissions, compaction, sessions, tasks, and subagents | Missing in Pi |
-| Specialized agent library | 17 authored personas in `assistants/agents` for implementation, review, testing, docs, performance, naming, Nix, OpenSCAD, and other work | Shared source; installed as native agents in Claude and Pi, and as persona skills in Codex |
+| Specialized agent library | 16 authored personas in `assistants/agents` for implementation, review, testing, docs, performance, naming, Nix, OpenSCAD, and other work | Shared source; installed as native agents in Claude and Pi, and as persona skills in Codex |
 | Prompt command library | 24 authored commands for planning, implementation, reviews, commits, onboarding, documentation, and instruction maintenance | Three agent-neutral templates ported; the rest depend on Claude-specific agents or the Task tool |
 | Worktree orchestration | `worktree`, `workmux`, and `coordinator` skills spawn, monitor, message, and merge parallel agents | Shared and installed in Claude, Codex, and Pi |
 | Git lifecycle workflows | Custom merge, rebase, commit, PR creation, and review-response flows | Shared Git and PR skills installed in Claude, Codex, and Pi; Garfield is not required by implement-review |
