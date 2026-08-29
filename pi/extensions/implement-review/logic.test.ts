@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isConverged, parseStructuredReview, parseWorkflowArgs } from "./logic.ts";
+import {
+	CODE_REVIEW_COMMAND,
+	IMPLEMENT_REVIEW_COMMANDS,
+	isConverged,
+	parseStructuredReview,
+	parseWorkflowArgs,
+} from "./logic.ts";
+
+test("defines the code workflow commands", () => {
+	assert.deepEqual(IMPLEMENT_REVIEW_COMMANDS, ["implement-review", "code-implement"]);
+	assert.equal(CODE_REVIEW_COMMAND, "code-review");
+});
 
 test("parseWorkflowArgs uses the default round count", () => {
 	assert.deepEqual(parseWorkflowArgs("add focused tests"), {
