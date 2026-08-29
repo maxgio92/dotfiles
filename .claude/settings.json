@@ -13,7 +13,7 @@
       "mcp__codex__codex-reply"
     ]
   },
-  "model": "claude-fable-5[1m]",
+  "model": "sonnet",
   "hooks": {
     "Notification": [
       {
