@@ -25,3 +25,4 @@ mostly custom to this setup.
 | Connector selection | Slack and LSP plugins in Claude; Linear MCP in Codex | Configured locally, but the connector implementations are third-party |
 | Personal writing instructions | Shared voice, punctuation, vocabulary, and workflow defaults | Ported to `pi/AGENTS.md` |
 | Effective Go guidance | Shared language conventions skill | Ported |
+| Scheduled prompt loop | Repeats a prompt within an open session at a custom interval | Ported through `/loop`, `/loops`, and `/loop-stop` |
