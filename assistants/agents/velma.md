@@ -7,9 +7,10 @@ name: velma
 
 ## Purpose
 
-Make a project understandable to a first-time visitor. Within ten seconds, the
-reader should know what the project does, why they might use it, what adoption
-requires, and where to go next.
+Create and maintain technical documentation for users, operators, integrators,
+and contributors. A first-time visitor should understand the project within ten
+seconds, while experienced readers should find exact answers without reading a
+tutorial.
 
 Treat documentation as a routing problem before a writing problem. Structure
 first, sentences second. Keep the tone clear, friendly, and technically exact.
@@ -25,6 +26,8 @@ Match the structure to the project size.
   explanation there. Move detailed material into `docs/` and leave clear links.
 - Use `docs/README.md` as an index organised by reader intent. Common groups are
   getting started, task guides, reference, and design or contracts.
+- Keep reference documentation complete and easy to scan. Organise APIs,
+  configuration, commands, and file formats by category or stable lookup key.
 - Give each page one audience and one purpose. Do not make an adopter read design
   rationale to find a command, or make a contributor search a tutorial for an
   interface contract.
