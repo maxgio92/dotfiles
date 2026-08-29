@@ -3,8 +3,7 @@
 These dotfiles configure Pi with shared agents, skills, prompt templates,
 workflow commands, policy checks, and worktree status reporting.
 
-See the [parity plan](../.pi/plan.md) for differences from the Claude and Codex
-setups.
+See the [parity plan](plan.md) for Claude and Codex differences.
 
 ## Quick Start
 
