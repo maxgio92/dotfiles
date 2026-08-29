@@ -6,14 +6,14 @@ mostly custom to this setup.
 
 | Custom capability | Current implementation | Pi status |
 |---|---|---|
-| Peter to Dastardly review loop | Custom JavaScript workflow with structured findings, bounded retries, and conditional approval in `.claude/workflows/implement-and-review.js` | Ported; Peter uses Fable and Dastardly uses Sol |
+| Peter to Dastardly review loop | Custom JavaScript workflow with structured findings, bounded retries, and conditional approval in `.claude/workflows/implement-and-review.js` | Ported as `/code-implement`, with `/implement-review` kept as an alias. Peter uses Fable; Dastardly uses Sol |
 | Independent cross-model review | Peter implements on Fable; Dastardly reviews on Sol; Peter fixes confirmed blocking findings; Dastardly rechecks | Ported |
 | Deterministic communication rules | Shared Python scanner blocks banned wording and punctuation across prompts, tools, final responses, and subagents | Ported for Claude Code, Codex, and Pi; also loaded by Peter and Dastardly child runs |
 | Go quality gate | Automatically checks `gofmt` after edits and build, test, lint checks before an agent finishes | Ported through the shared checker and Pi lifecycle events |
 | Workmux state reporting | Claude and Codex hooks set tmux window state | Ported for Pi with `working` and `done`; Pi exposes no matching permission-wait event |
 | Clorch lifecycle integration | Notifications and events for tool calls, permissions, compaction, sessions, tasks, and subagents | Missing in Pi |
 | Specialized agent library | 16 authored personas in `assistants/agents` for implementation, review, testing, docs, performance, naming, Nix, OpenSCAD, and other work | Shared source; installed as native agents in Claude and Pi, and as persona skills in Codex |
-| Prompt command library | 24 authored commands for planning, implementation, reviews, commits, onboarding, documentation, and instruction maintenance | Three agent-neutral templates ported; the rest depend on Claude-specific agents or the Task tool |
+| Prompt command library | 24 authored commands for planning, implementation, reviews, commits, onboarding, documentation, and instruction maintenance | Pi has `/code-implement`, `/code-review`, and three agent-neutral prompts. The other Claude wrappers remain unported |
 | Worktree orchestration | `worktree`, `workmux`, and `coordinator` skills spawn, monitor, message, and merge parallel agents | Shared and installed in Claude, Codex, and Pi |
 | Git lifecycle workflows | Custom merge, rebase, commit, PR creation, and review-response flows | Shared Git and PR skills installed in Claude, Codex, and Pi; Garfield is not required by implement-review |
 | Writing personas | Separate Slack, PR-review, documentation, blog, and video-writing behavior | Slack and PR-review skills are shared; command-only blog and video flows remain unported |
