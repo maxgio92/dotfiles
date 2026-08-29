@@ -1,0 +1,82 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex SessionStart"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex UserPromptSubmit"
+          },
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex PreToolUse"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex Stop"
+          },
+          {
+            "type": "command",
+            "command": "workmux set-window-status done"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex SubagentStart"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex SubagentStop"
+          }
+        ]
+      }
+    ]
+  }
+}
