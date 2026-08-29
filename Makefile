@@ -439,7 +439,8 @@ pi-extension: pi-install
 	@ln -sfn $(DOTFILES)/pi/extensions/communication-rules $(HOME)/.pi/agent/extensions/communication-rules
 	@ln -sfn $(DOTFILES)/pi/extensions/workmux-status $(HOME)/.pi/agent/extensions/workmux-status
 	@ln -sfn $(DOTFILES)/pi/extensions/go-gate $(HOME)/.pi/agent/extensions/go-gate
-	@echo "  linked subagent, implement-review, communication-rules, workmux-status, and go-gate extensions"
+	@ln -sfn $(DOTFILES)/pi/extensions/loop $(HOME)/.pi/agent/extensions/loop
+	@echo "  linked subagent, implement-review, communication-rules, workmux-status, go-gate, and loop extensions"
 
 .PHONY: pi-agents
 pi-agents:
