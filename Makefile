@@ -333,7 +333,9 @@ claude-config:
 .PHONY: claude-hooks
 claude-hooks:
 	@mkdir -p $(HOME)/.claude/hooks
+	@if [ -L "$(HOME)/.claude/hooks/*" ]; then unlink "$(HOME)/.claude/hooks/*"; fi
 	@for src in $(DOTFILES)/.claude/hooks/*; do \
+		[ -e "$$src" ] || continue; \
 		name=$$(basename "$$src"); \
 		target=$(HOME)/.claude/hooks/$$name; \
 		current=$$(readlink "$$target" 2>/dev/null || true); \
@@ -345,17 +347,17 @@ claude-hooks:
 			ln -sfn "$$src" "$$target" && echo "  link hook $$name"; \
 		fi; \
 	done
+	@ln -sfn $(DOTFILES)/assistants/communication-rules $(HOME)/.claude/hooks/communication-rules
+	@ln -sfn $(DOTFILES)/assistants/go-gate/go-gate.sh $(HOME)/.claude/hooks/go-gate.sh
+	@echo "  linked shared communication-rules and go-gate hooks"
 
 .PHONY: claude-skills
 claude-skills:
 	@mkdir -p $(HOME)/.claude/skills
-	@for src in $(DOTFILES)/.claude/skills/*; do \
+	@for src in $(DOTFILES)/assistants/skills/*; do \
 		name=$$(basename "$$src"); \
 		target=$(HOME)/.claude/skills/$$name; \
-		current=$$(readlink "$$target" 2>/dev/null || true); \
-		if [ -n "$$current" ] && [ "$$current" != "$$src" ]; then \
-			echo "  skip skill $$name (existing symlink: $$current)"; \
-		elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+		if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 			echo "  skip skill $$name ($$target exists and is not a symlink)"; \
 		else \
 			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
@@ -373,6 +375,97 @@ claude-commands:
 	@mkdir -p $(HOME)/.claude/commands
 	@ln -sf $(DOTFILES)/assistants/commands/*.md $(HOME)/.claude/commands/
 	@echo "  linked $$(ls $(DOTFILES)/assistants/commands/*.md | wc -l) command(s)"
+
+.PHONY: pi
+pi: pi-install pi-config pi-extension pi-agents pi-skills pi-prompts
+
+.PHONY: codex
+codex: codex-hooks codex-skills codex-agents
+
+.PHONY: codex-hooks
+codex-hooks:
+	@mkdir -p $(HOME)/.codex
+	@ln -sfn $(DOTFILES)/codex/hooks.json $(HOME)/.codex/hooks.json
+	@echo "  linked Codex hooks.json"
+
+.PHONY: codex-skills
+codex-skills:
+	@mkdir -p $(HOME)/.codex/skills
+	@for src in $(DOTFILES)/assistants/skills/*; do \
+		name=$$(basename "$$src"); \
+		target=$(HOME)/.codex/skills/$$name; \
+		if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+			echo "  skip skill $$name ($$target exists and is not a symlink)"; \
+		else \
+			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
+		fi; \
+	done
+
+.PHONY: codex-agents
+codex-agents:
+	@mkdir -p $(HOME)/.codex/skills
+	@for src in $(DOTFILES)/assistants/agents/*.md; do \
+		name=$$(basename "$$src" .md); \
+		target=$(HOME)/.codex/skills/$$name; \
+		if [ -e "$$target" ] && [ ! -d "$$target" ]; then \
+			echo "  skip agent persona $$name ($$target exists and is not a directory)"; \
+		else \
+			mkdir -p "$$target"; \
+			if [ -L "$$target/SKILL.md" ]; then unlink "$$target/SKILL.md"; fi; \
+			cp "$$src" "$$target/SKILL.md" && echo "  install agent persona $$name"; \
+		fi; \
+	done
+
+.PHONY: pi-install
+pi-install:
+	@command -v pi >/dev/null 2>&1 || brew install pi-coding-agent
+
+.PHONY: pi-config
+pi-config:
+	@mkdir -p $(HOME)/.pi/agent
+	@ln -sfn $(DOTFILES)/pi/settings.json $(HOME)/.pi/agent/settings.json
+	@ln -sfn $(DOTFILES)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
+	@echo "  linked settings.json and AGENTS.md"
+
+.PHONY: pi-extension
+pi-extension: pi-install
+	@mkdir -p $(HOME)/.pi/agent/extensions/subagent
+	@prefix=$$(brew --prefix pi-coding-agent); \
+		src="$$prefix/libexec/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/subagent"; \
+		test -f "$$src/index.ts" && test -f "$$src/agents.ts"; \
+		ln -sfn "$$src/index.ts" $(HOME)/.pi/agent/extensions/subagent/index.ts; \
+		ln -sfn "$$src/agents.ts" $(HOME)/.pi/agent/extensions/subagent/agents.ts
+	@ln -sfn $(DOTFILES)/pi/extensions/implement-review $(HOME)/.pi/agent/extensions/implement-review
+	@ln -sfn $(DOTFILES)/pi/extensions/communication-rules $(HOME)/.pi/agent/extensions/communication-rules
+	@ln -sfn $(DOTFILES)/pi/extensions/workmux-status $(HOME)/.pi/agent/extensions/workmux-status
+	@ln -sfn $(DOTFILES)/pi/extensions/go-gate $(HOME)/.pi/agent/extensions/go-gate
+	@echo "  linked subagent, implement-review, communication-rules, workmux-status, and go-gate extensions"
+
+.PHONY: pi-agents
+pi-agents:
+	@mkdir -p $(HOME)/.pi/agent/agents
+	@for src in $(DOTFILES)/assistants/agents/*.md; do \
+		name=$$(basename "$$src"); \
+		ln -sfn "$$src" $(HOME)/.pi/agent/agents/$$name; \
+	done
+	@echo "  linked shared agents"
+
+.PHONY: pi-skills
+pi-skills:
+	@mkdir -p $(HOME)/.pi/agent/skills
+	@for src in $(DOTFILES)/assistants/skills/*; do \
+		name=$$(basename "$$src"); \
+		ln -sfn "$$src" $(HOME)/.pi/agent/skills/$$name; \
+	done
+	@echo "  linked shared skills"
+
+.PHONY: pi-prompts
+pi-prompts:
+	@mkdir -p $(HOME)/.pi/agent/prompts
+	@for name in orientate onboard botsnack; do \
+		ln -sfn $(DOTFILES)/assistants/commands/$$name.md $(HOME)/.pi/agent/prompts/$$name.md; \
+	done
+	@echo "  linked compatible Pi prompt templates"
 
 .PHONY: hyprland
 hyprland: CONFIG_DIR := $(HOME)/.config/hypr
