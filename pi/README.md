@@ -101,29 +101,17 @@ trusted project and `agentScope: "both"` or `"project"`.
 
 | Agent | Role |
 |---|---|
-| `brain` | Finds high-value missing tests and follows local test patterns |
-| `casper` | Writes Linux and open-source articles in the configured British style |
 | `dastardly` | Performs adversarial Go design and correctness reviews |
-| `dexter` | Works on Nix, Nixpkgs, NixOS, Home Manager, and nix-darwin |
-| `donatello` | Applies an existing implementation plan with focused checks |
-| `edison` | Builds conference presentations |
-| `garfield` | Handles Git, Conventional Commits, pull requests, and code explanations |
-| `gonzales` | Finds useful performance changes in measured hot paths |
 | `openscad-agent` | Runs the OpenSCAD modelling, preview, and STL export flow |
-| `penfold` | Researches a topic and prepares a concise brief for later work |
-| `penry` | Reviews code for maintainability, duplication, and simpler structure |
-| `pepe` | Develops LÖVE 2D games with Lua 5.1 |
 | `peter` | Implements small Go changes and runs build, test, and lint checks |
-| `rosey` | Creates and refines agent prompts |
-| `snagglepuss` | Reviews identifier names and naming consistency |
 | `velma` | Creates verified project documentation for users and contributors |
 
 Examples:
 
 ```text
-Use the brain agent to find the three most useful missing tests.
-Run penry and snagglepuss in parallel on the current diff.
-Ask penfold to research the API, then pass its result to velma for documentation.
+Use the dastardly agent to review the current Go diff.
+Use the openscad-agent to create and export a printable model.
+Ask peter to implement the change. Ask velma to document the result.
 ```
 
 Use `/code-implement` for the standard Peter and Dastardly coding flow. It fixes
