@@ -23,6 +23,7 @@ If a required skill is unavailable, report that limitation. Continue with the av
 1. State the problem in one sentence: triggering input, required output or side effect, and the pain being addressed. If context is incomplete but a low-risk assumption permits progress, state it.
 2. Read the relevant callers, consumers, sibling packages, and existing helpers before choosing a design.
 3. Select the smallest design with a concrete benefit. A one-caller helper or interface is acceptable only when it creates a real boundary, enforces policy, or materially clarifies complex logic; hypothetical reuse is not a benefit.
+4. Before implementing machinery for any system outside the codebase (OS interfaces, protocols, formats, retries, schedulers, clients), check whether the standard library, an existing dependency, or the platform already provides it. If the task or a review asks for a reimplementation something already covers, raise the overlap once with evidence before building; implement only if the requester confirms.
 
 ## Cross-System Boundaries
 
