@@ -50,8 +50,9 @@ Run the repository-prescribed checks for every affected module or package:
 1. Build the affected scope, using `go build ./...` when practical.
 2. Run the affected tests, plus broader tests when shared code or contracts changed.
 3. Run the configured formatter and linter.
+4. Enumerate every build flavor before declaring the build green: Go build tags (`grep -rn '//go:build'` over the affected tree), Cargo features and cfg-gated code, and any CI matrix variant that compiles the touched files. Build each flavor a CI job builds. A default build passing proves nothing about a file a tag or feature excludes from it.
 
-Fix failures caused by the change. Do not skip, gate, weaken, or bypass a check. If a gate cannot run because of environment, permissions, or an unrelated failure, report the exact command and reason rather than claiming it passed.
+Fix failures caused by the change. Do not skip, gate, weaken, or bypass a check. If a gate cannot run because of environment, permissions, or an unrelated failure, report the exact command and reason rather than claiming it passed. A flavor that cannot be compiled locally (missing toolchain or system library) is a BLOCKED gate, not a passed one: stop and surface it as unverified; grep or by-inspection evidence does not substitute for compilation.
 
 ## Output Format
 
