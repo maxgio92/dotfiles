@@ -2,6 +2,7 @@ export const meta = {
   name: 'implement-and-review',
   description: 'peter implements a coding task, dastardly reviews the diff through codex (GPT-5 via MCP), peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
   phases: [
+    { title: 'Plan', detail: 'optional: a planner decomposes large tasks into phases (args.plan)' },
     { title: 'Implement', detail: 'peter writes the smallest correct change' },
     { title: 'Review', detail: 'dastardly reviews via codex (GPT-5), vets its findings' },
     { title: 'Fix', detail: 'peter applies confirmed blocking findings' },
@@ -20,16 +21,105 @@ if (!task) {
 // `git diff HEAD` is empty and the review would pass vacuously.
 const baseRef = (args && typeof args === 'object' && args.baseRef) || null
 
+// Optional: planning mode for large tasks (pass {task, plan: true}).
+// One planner decomposes the task, then one fresh peter per phase.
+const planMode = (args && typeof args === 'object' && args.plan === true) || false
+
+const noCommitRule =
+  `Do not commit, stage, or push; leave every change in the working tree. ` +
+  `The orchestrating session commits after the review loop converges.`
+
+let plan = null
+if (planMode) {
+  phase('Plan')
+  const PLAN_SCHEMA = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      phases: {
+        type: 'array',
+        minItems: 2,
+        maxItems: 6,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            title: { type: 'string' },
+            goal: { type: 'string' },
+          },
+          required: ['title', 'goal'],
+        },
+      },
+    },
+    required: ['phases'],
+  }
+  plan = await agent(
+    `Plan this coding task. Decompose it into 2 to 6 sequential phases, each ` +
+      `independently implementable by a fresh agent with no memory of the others. ` +
+      `Order them so each phase builds only on completed ones, and aim for the ` +
+      `smallest total change across all phases. Each phase needs a short title ` +
+      `and a concrete goal stating what must exist and pass when it is done. ` +
+      `Read the repository as needed but do not modify it.\n\n` +
+      `Task:\n${task}`,
+    { label: 'planner:plan', phase: 'Plan', schema: PLAN_SCHEMA },
+  )
+  if (!plan) {
+    log('Plan agent returned nothing; falling back to single-implementer path.')
+  }
+}
+
 phase('Implement')
-const implementation = await agent(
-  `Implement this coding task in the current repository.\n` +
-    `Make the smallest correct change, reuse existing code over new abstractions, ` +
-    `and run the project's tests and lint before finishing.\n` +
-    `Do not commit, stage, or push; leave every change in the working tree. ` +
-    `The orchestrating session commits after the review loop converges.\n\n` +
-    `Task:\n${task}`,
-  { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
-)
+let implementation
+if (plan) {
+  const planOverview = plan.phases
+    .map((p, i) => `${i + 1}. ${p.title}: ${p.goal}`)
+    .join('\n')
+  const phaseSummaries = []
+  for (let i = 0; i < plan.phases.length; i++) {
+    const p = plan.phases[i]
+    const summary = await agent(
+      `Implement one phase of a planned coding task in the current repository.\n` +
+        `Make the smallest correct change for YOUR PHASE ONLY, reuse existing code ` +
+        `over new abstractions, and run the project's tests and lint before finishing.\n` +
+        `${noCommitRule}\n` +
+        `Earlier phases are already applied in the working tree; build on them.\n\n` +
+        `Full task:\n${task}\n\n` +
+        `Full plan:\n${planOverview}\n\n` +
+        `Your phase (${i + 1} of ${plan.phases.length}): ${p.title}\n` +
+        `Goal: ${p.goal}\n` +
+        (phaseSummaries.length
+          ? `\nCompleted phases:\n${phaseSummaries
+              .map((s, j) => `${j + 1}. ${plan.phases[j].title}: ${s.trim().split('\n').filter(Boolean).pop()}`)
+              .join('\n')}\n`
+          : ``) +
+        `\nEnd your report with a one-line summary of what your phase changed.`,
+      {
+        label: `peter:implement:p${i + 1}`,
+        phase: 'Implement',
+        agentType: 'peter',
+      },
+    )
+    const trimmed = summary && summary.trim()
+    phaseSummaries.push(trimmed || '(no summary returned)')
+    log(
+      trimmed
+        ? `Phase ${i + 1}/${plan.phases.length} (${p.title}) done.`
+        : `Phase ${i + 1}/${plan.phases.length} (${p.title}) returned no report; the diff review will verify it.`,
+    )
+  }
+  implementation = plan.phases
+    .map((p, i) => `Phase ${i + 1} (${p.title}):\n${phaseSummaries[i]}`)
+    .join('\n---\n')
+} else {
+  implementation = await agent(
+    `Implement this coding task in the current repository.\n` +
+      `Make the smallest correct change, reuse existing code over new abstractions, ` +
+      `and run the project's tests and lint before finishing.\n` +
+      `${noCommitRule}\n\n` +
+      `Task:\n${task}`,
+    { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
+  )
+}
 
 const REVIEW_SCHEMA = {
   type: 'object',
