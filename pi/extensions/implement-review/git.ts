@@ -3,6 +3,11 @@ import * as path from "node:path";
 
 const MAX_DIFF_BYTES = 1024 * 1024;
 
+/** git's well-known empty tree object; a valid diff base in a repo with no commits. */
+export const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
+export const WORKFLOW_CANCELLED = "Workflow cancelled";
+
 export interface ProcessResult {
 	stdout: string;
 	stderr: string;
@@ -44,7 +49,7 @@ export async function runProcess(
 		child.on("error", reject);
 		child.on("close", (code) => {
 			signal?.removeEventListener("abort", abort);
-			if (aborted) reject(new Error("Workflow cancelled"));
+			if (aborted) reject(new Error(WORKFLOW_CANCELLED));
 			else resolve({ stdout, stderr, exitCode: code ?? 1 });
 		});
 

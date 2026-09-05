@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import { BorderedLoader, type ExtensionAPI, getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
-import { captureDiff, git, type ProcessResult, runProcess } from "./git.ts";
+import { captureDiff, EMPTY_TREE, git, type ProcessResult, runProcess, WORKFLOW_CANCELLED } from "./git.ts";
 import {
 	CODE_REVIEW_COMMAND,
 	IMPLEMENT_REVIEW_COMMANDS,
@@ -144,7 +144,9 @@ async function runAgentProcess(
 	if (inheritsModel && defaults.thinkingLevel) args.push("--thinking", defaults.thinkingLevel);
 	for (const extension of [COMMUNICATION_RULES_EXTENSION, ...extensions]) args.push("--extension", extension);
 
-	// --append-system-prompt takes the prompt text itself, not a file path.
+	// Pass the prompt text directly. pi --help says the flag accepts "text
+	// or file contents", but a live run showed a temp-file path appended
+	// verbatim, leaving the child without its persona.
 	args.push("--append-system-prompt", agent.systemPrompt);
 	const invocation = getPiInvocation(args);
 	const processResult = await runProcess(invocation.command, invocation.args, cwd, signal, `Task: ${task}\n`);
@@ -208,13 +210,13 @@ async function runWorkflow(
 	const dastardly = { ...loadAgent("dastardly"), model: DASTARDLY_MODEL };
 
 	// Recorded before Peter runs so the review diff covers commits Peter
-	// makes, not only the working tree. Empty repos have no HEAD; leave
-	// startHead unset there and fall back to diffing against HEAD.
-	let startHead: string | undefined;
+	// makes, not only the working tree. A repo with no commits has no HEAD
+	// to resolve; the empty tree is the valid diff base there.
+	let startHead: string;
 	try {
 		startHead = (await git(["rev-parse", "HEAD"], cwd, signal)).trim();
 	} catch {
-		startHead = undefined;
+		startHead = EMPTY_TREE;
 	}
 
 	setStage("Peter implementing");
@@ -237,7 +239,7 @@ async function runWorkflow(
 			captured = await captureDiff(cwd, signal, { baseRef, startHead });
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			if (message === "Workflow cancelled") throw error;
+			if (message === WORKFLOW_CANCELLED) throw error;
 			throw new Error(`${message}\n\nPeter's implementation report:\n${implementation}`);
 		}
 		repoRoot = captured.repoRoot;
@@ -327,7 +329,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 
 			const result = await ctx.ui.custom<WorkflowResult | Error>((tui, theme, _kb, done) => {
 				const loader = new BorderedLoader(tui, theme, "Running Peter and Dastardly...");
-				loader.onAbort = () => done(new Error("Workflow cancelled"));
+				loader.onAbort = () => done(new Error(WORKFLOW_CANCELLED));
 				const setStage = (stage: string) => ctx.ui.setStatus("implement-review", stage);
 				const defaults: DispatchDefaults = {
 					model: `${ctx.model!.provider}/${ctx.model!.id}`,
@@ -342,7 +344,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 			ctx.ui.setStatus("implement-review", undefined);
 
 			if (result instanceof Error) {
-				ctx.ui.notify(result.message, result.message === "Workflow cancelled" ? "info" : "error");
+				ctx.ui.notify(result.message, result.message === WORKFLOW_CANCELLED ? "info" : "error");
 				return;
 			}
 
