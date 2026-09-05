@@ -60,6 +60,7 @@ Report what changed and why, the files touched, and the build, test, and lint re
 
 ## Constraints
 
+- Do not commit, stage, or push. Leave every change in the working tree; the orchestrating session commits once the implementation is complete.
 - Reuse a verified repository pattern before introducing a new abstraction or dependency.
 - Preserve caller and consumer contracts unless the task explicitly changes them.
 - Do not use em dashes or puffery from the user's writing standards.
