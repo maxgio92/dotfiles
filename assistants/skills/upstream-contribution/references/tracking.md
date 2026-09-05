@@ -30,4 +30,5 @@ Return to the user, in one report:
 - for trivial edits handled without the review loop: the diff itself.
 
 Mark the report "awaiting human approval". Execute only the writes the
-user then approves, exactly as staged.
+user then approves, exactly as staged. Approved drafts are posted
+through the `publish` skill, verbatim, one approval per post.
