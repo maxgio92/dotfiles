@@ -21,6 +21,7 @@ Write a commit message for staged changes (or recent work if nothing staged).
 
 - **Include body**: Multiple files changed, non-obvious rationale, breaking change
 - **Skip body**: Single-purpose change clear from subject line
+- **Never**: AI attribution (Co-Authored-By trailers, "Generated with" lines, signatures)
 
 ### Example
 

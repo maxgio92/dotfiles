@@ -60,3 +60,6 @@ Guidelines:
    ```bash
    gh pr create --web --title "<title>" --body "<body>"
    ```
+
+No AI attribution in the title or body: no Co-Authored-By trailers, no
+"Generated with" lines, no signatures.

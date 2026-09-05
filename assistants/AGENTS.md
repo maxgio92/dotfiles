@@ -44,9 +44,6 @@ Commit boundaries: subagents (peter included) never commit; the main session
 commits once the implementation converges, without asking the human. Only
 publishing needs human approval: push, PR, issue, comment, reply.
 
-No AI attribution anywhere: no Co-Authored-By trailers, no "Generated with"
-lines, no AI signatures in commits, PRs, issues, comments, or replies.
-
 For contributions to repositories I do not control (upstream issues, PRs,
 review rounds), apply the `upstream-contribution` skill. It sequences the
 loop above and gates every outward write (push, comment, PR, issue) on my

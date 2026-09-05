@@ -15,7 +15,8 @@ that publishes; drafting skills (`pr-review-message`, `slack-message`, the
    channel or thread). Both must come from the human's approval, not from
    inference.
 2. Post the draft exactly as approved. Any edit, even a typo fix, invalidates
-   the approval: go back with the revised draft instead.
+   the approval: go back with the revised draft instead. Never append AI
+   attribution (Co-Authored-By trailers, "Generated with" lines, signatures).
 3. Verify: fetch the posted artifact back (permalink, message timestamp) and
    report it. A post you cannot fetch is not done.
 4. One approval covers one post. A batch approval must name each item.
