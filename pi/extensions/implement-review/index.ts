@@ -273,9 +273,17 @@ async function git(args: string[], cwd: string, signal?: AbortSignal, acceptedEx
 	return result.stdout;
 }
 
-async function captureDiff(cwd: string, signal?: AbortSignal): Promise<{ repoRoot: string; diff: string }> {
+async function captureDiff(
+	cwd: string,
+	signal?: AbortSignal,
+	baseRef?: string,
+): Promise<{ repoRoot: string; diff: string }> {
 	const repoRoot = (await git(["rev-parse", "--show-toplevel"], cwd, signal)).trim();
-	let diff = await git(["diff", "HEAD", "--"], repoRoot, signal);
+	// Diffing against a merge base instead of HEAD covers committed work
+	// (e.g. a rebase), where `git diff HEAD` is empty and a review of the
+	// empty diff would converge vacuously.
+	const diffBase = baseRef ? (await git(["merge-base", baseRef, "HEAD"], repoRoot, signal)).trim() : "HEAD";
+	let diff = await git(["diff", diffBase, "--"], repoRoot, signal);
 	const untracked = (await git(["ls-files", "-z", "--others", "--exclude-standard"], repoRoot, signal))
 		.split("\0")
 		.filter(Boolean);
@@ -284,7 +292,11 @@ async function captureDiff(cwd: string, signal?: AbortSignal): Promise<{ repoRoo
 		const absolutePath = path.join(repoRoot, relativePath);
 		diff += await git(["diff", "--no-index", "--", "/dev/null", absolutePath], repoRoot, signal, [0, 1]);
 	}
-	if (!diff.trim()) throw new Error("Implementation produced no working-tree diff");
+	if (!diff.trim()) {
+		throw new Error(
+			baseRef ? `No diff against the merge base with ${baseRef}` : "Implementation produced no working-tree diff",
+		);
+	}
 	if (Buffer.byteLength(diff, "utf8") > MAX_DIFF_BYTES) {
 		throw new Error(`Working-tree diff exceeds ${MAX_DIFF_BYTES} bytes; narrow the task before reviewing`);
 	}
@@ -298,6 +310,7 @@ async function runWorkflow(
 	defaults: DispatchDefaults,
 	signal: AbortSignal,
 	setStage: (stage: string) => void,
+	baseRef?: string,
 ): Promise<WorkflowResult> {
 	const peter = { ...loadAgent("peter"), model: PETER_MODEL };
 	const dastardly = { ...loadAgent("dastardly"), model: DASTARDLY_MODEL };
@@ -317,14 +330,16 @@ async function runWorkflow(
 
 	for (let round = 1; round <= maxRounds; round++) {
 		setStage(`Capturing diff for review ${round}/${maxRounds}`);
-		const captured = await captureDiff(cwd, signal);
+		const captured = await captureDiff(cwd, signal, baseRef);
 		repoRoot = captured.repoRoot;
 
 		setStage(`Dastardly reviewing ${round}/${maxRounds}`);
-		const priorFix = fixes.at(-1) ?? "No fix round has run yet.";
+		const priorFix = fixes.length
+			? fixes.map((fix, index) => `Round ${index + 1}:\n${fix}`).join("\n---\n")
+			: "No fix round has run yet.";
 		const review = await runReviewAgent(
 			dastardly,
-			`Review the current change for the task below. This is a read-only review: do not modify files or the index. Independently inspect repository context and vet every claim against the code. For this workflow, the submit_review tool contract replaces Dastardly's prose Output Format. Call submit_review exactly once with the complete findings array, then stop. Map Dastardly design and block findings to severity "blocking". Map strong and nit findings to "non-blocking". Submit an empty findings array when no findings exist. Do not report a prose verdict.\n\nTask:\n${task}\n\nInitial implementation report:\n${implementation}\n\nLatest fix report:\n${priorFix}\n\nDiff under review (round ${round}):\n${captured.diff}`,
+			`Review the current change for the task below. This is a read-only review: do not modify files or the index. Independently inspect repository context and vet every claim against the code. For this workflow, the submit_review tool contract replaces Dastardly's prose Output Format. Call submit_review exactly once with the complete findings array, then stop. Map Dastardly design and block findings to severity "blocking". Map strong and nit findings to "non-blocking". Submit an empty findings array when no findings exist. Do not report a prose verdict.\n\nTask:\n${task}\n\nInitial implementation report:\n${implementation}\n\nFix reports from earlier rounds:\n${priorFix}\n\nDiff under review (round ${round}):\n${captured.diff}`,
 			repoRoot,
 			defaults,
 			signal,
@@ -393,7 +408,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 				return;
 			}
 
-			let parsed: { task: string; maxRounds: number };
+			let parsed: { task: string; maxRounds: number; baseRef?: string };
 			try {
 				parsed = parseWorkflowArgs(args);
 			} catch (error) {
@@ -410,7 +425,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 					thinkingLevel: ctx.thinkingLevel,
 				};
 
-				runWorkflow(parsed.task, parsed.maxRounds, ctx.cwd, defaults, loader.signal, setStage)
+				runWorkflow(parsed.task, parsed.maxRounds, ctx.cwd, defaults, loader.signal, setStage, parsed.baseRef)
 					.then(done)
 					.catch((error) => done(error instanceof Error ? error : new Error(String(error))));
 				return loader;

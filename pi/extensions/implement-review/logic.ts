@@ -15,9 +15,10 @@ export interface StructuredReview {
 	findings: ReviewFinding[];
 }
 
-export function parseWorkflowArgs(input: string): { task: string; maxRounds: number } {
+export function parseWorkflowArgs(input: string): { task: string; maxRounds: number; baseRef?: string } {
 	const tokens = input.trim().split(/\s+/).filter(Boolean);
 	let maxRounds = DEFAULT_MAX_ROUNDS;
+	let baseRef: string | undefined;
 	const taskTokens: string[] = [];
 
 	for (let i = 0; i < tokens.length; i++) {
@@ -32,12 +33,23 @@ export function parseWorkflowArgs(input: string): { task: string; maxRounds: num
 			maxRounds = parseRoundCount(token.slice("--max-rounds=".length));
 			continue;
 		}
+		if (token === "--base-ref") {
+			const value = tokens[++i];
+			if (!value) throw new Error("--base-ref requires a value");
+			baseRef = value;
+			continue;
+		}
+		if (token.startsWith("--base-ref=")) {
+			baseRef = token.slice("--base-ref=".length);
+			if (!baseRef) throw new Error("--base-ref requires a value");
+			continue;
+		}
 		taskTokens.push(token);
 	}
 
 	const task = taskTokens.join(" ").trim();
-	if (!task) throw new Error("Usage: /implement-review [--max-rounds N] <coding task>");
-	return { task, maxRounds };
+	if (!task) throw new Error("Usage: /implement-review [--max-rounds N] [--base-ref REF] <coding task>");
+	return { task, maxRounds, ...(baseRef === undefined ? {} : { baseRef }) };
 }
 
 function parseRoundCount(value: string): number {
