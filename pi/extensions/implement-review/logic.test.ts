@@ -31,10 +31,25 @@ test("parseWorkflowArgs accepts both max-rounds forms", () => {
 	});
 });
 
+test("parseWorkflowArgs accepts both base-ref forms", () => {
+	assert.deepEqual(parseWorkflowArgs("--base-ref origin/main rebase cleanup"), {
+		task: "rebase cleanup",
+		maxRounds: 3,
+		baseRef: "origin/main",
+	});
+	assert.deepEqual(parseWorkflowArgs("rebase cleanup --base-ref=upstream/main"), {
+		task: "rebase cleanup",
+		maxRounds: 3,
+		baseRef: "upstream/main",
+	});
+});
+
 test("parseWorkflowArgs rejects missing tasks and invalid limits", () => {
 	assert.throws(() => parseWorkflowArgs(""), /Usage:/);
 	assert.throws(() => parseWorkflowArgs("--max-rounds task"), /integer/);
 	assert.throws(() => parseWorkflowArgs("--max-rounds=11 task"), /1 to 10/);
+	assert.throws(() => parseWorkflowArgs("task --base-ref"), /--base-ref requires a value/);
+	assert.throws(() => parseWorkflowArgs("task --base-ref="), /--base-ref requires a value/);
 });
 
 test("isConverged stops only when blocking findings are absent", () => {
