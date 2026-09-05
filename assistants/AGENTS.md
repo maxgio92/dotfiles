@@ -40,6 +40,10 @@ Skip the loop for trivial edits, docs, and config changes; handle those
 directly. This is a strong default, not an absolute rule. The repository's
 deterministic checks (the go-gate hook) run on every change regardless.
 
+Commit boundaries: subagents (peter included) never commit; the main session
+commits once the implementation converges, without asking the human. Only
+publishing needs human approval: push, PR, issue, comment, reply.
+
 For contributions to repositories I do not control (upstream issues, PRs,
 review rounds), apply the `upstream-contribution` skill. It sequences the
 loop above and gates every outward write (push, comment, PR, issue) on my

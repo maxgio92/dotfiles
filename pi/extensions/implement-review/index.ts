@@ -222,7 +222,7 @@ async function runWorkflow(
 	setStage("Peter implementing");
 	const implementation = await runAgent(
 		peter,
-		`Implement this coding task in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing.\n\nTask:\n${task}`,
+		`Implement this coding task in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing. Do not commit, stage, or push; leave every change in the working tree. The orchestrating session commits after the review loop converges.\n\nTask:\n${task}`,
 		cwd,
 		defaults,
 		signal,
@@ -268,7 +268,7 @@ async function runWorkflow(
 		};
 		const fixOutput = await runAgent(
 			peter,
-			`Vet the structured review below against the current code. Apply every confirmed blocking finding using the smallest correct change. Explicitly reject incorrect findings. Preserve unrelated working-tree changes and rerun focused tests and lint.\n\nOriginal task:\n${task}\n\nBlocking findings from review round ${round}:\n${JSON.stringify(blockingReview, null, 2)}`,
+			`Vet the structured review below against the current code. Apply every confirmed blocking finding using the smallest correct change. Explicitly reject incorrect findings. Preserve unrelated working-tree changes and rerun focused tests and lint. Do not commit, stage, or push; leave every change in the working tree.\n\nOriginal task:\n${task}\n\nBlocking findings from review round ${round}:\n${JSON.stringify(blockingReview, null, 2)}`,
 			repoRoot,
 			defaults,
 			signal,

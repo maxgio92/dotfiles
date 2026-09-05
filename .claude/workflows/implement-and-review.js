@@ -24,7 +24,9 @@ phase('Implement')
 const implementation = await agent(
   `Implement this coding task in the current repository.\n` +
     `Make the smallest correct change, reuse existing code over new abstractions, ` +
-    `and run the project's tests and lint before finishing.\n\n` +
+    `and run the project's tests and lint before finishing.\n` +
+    `Do not commit, stage, or push; leave every change in the working tree. ` +
+    `The orchestrating session commits after the review loop converges.\n\n` +
     `Task:\n${task}`,
   { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
 )
@@ -141,7 +143,8 @@ while (round < MAX_ROUNDS) {
     .join('\n')
   const fixSummary = await agent(
     `Apply fixes for these confirmed blocking review findings. ` +
-      `Smallest correct change; re-run the project's tests and lint after.\n\n${fixList}`,
+      `Smallest correct change; re-run the project's tests and lint after. ` +
+      `Do not commit, stage, or push; leave every change in the working tree.\n\n${fixList}`,
     { label: `peter:fix:r${round}`, phase: 'Fix', agentType: 'peter' },
   )
   if (fixSummary) fixSummaries.push(`Round ${round}:\n${fixSummary}`)
