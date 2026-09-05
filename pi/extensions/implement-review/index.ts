@@ -1,16 +1,9 @@
-import { spawn } from "node:child_process";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
-import {
-	BorderedLoader,
-	type ExtensionAPI,
-	getAgentDir,
-	parseFrontmatter,
-	withFileMutationQueue,
-} from "@earendil-works/pi-coding-agent";
+import { BorderedLoader, type ExtensionAPI, getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
+import { captureDiff, git, type ProcessResult, runProcess } from "./git.ts";
 import {
 	CODE_REVIEW_COMMAND,
 	IMPLEMENT_REVIEW_COMMANDS,
@@ -21,7 +14,6 @@ import {
 	type StructuredReview,
 } from "./logic.ts";
 
-const MAX_DIFF_BYTES = 1024 * 1024;
 const PETER_MODEL = "anthropic/claude-fable-5";
 const DASTARDLY_MODEL = "openai-codex/gpt-5.6-sol";
 const REVIEW_OUTPUT_EXTENSION = path.join(path.dirname(fileURLToPath(import.meta.url)), "review-output.ts");
@@ -77,12 +69,6 @@ type AgentFrontmatter = {
 	model?: unknown;
 };
 
-interface ProcessResult {
-	stdout: string;
-	stderr: string;
-	exitCode: number;
-}
-
 function loadAgent(name: string): AgentDefinition {
 	const filePath = path.join(getAgentDir(), "agents", `${name}.md`);
 	let content: string;
@@ -113,58 +99,6 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	const execName = path.basename(process.execPath).toLowerCase();
 	if (!/^(node|bun)(\.exe)?$/.test(execName)) return { command: process.execPath, args };
 	return { command: "pi", args };
-}
-
-async function runProcess(
-	command: string,
-	args: string[],
-	cwd: string,
-	signal?: AbortSignal,
-	stdin?: string,
-): Promise<ProcessResult> {
-	return new Promise((resolve, reject) => {
-		const child = spawn(command, args, {
-			cwd,
-			shell: false,
-			stdio: [stdin === undefined ? "ignore" : "pipe", "pipe", "pipe"],
-		});
-		let stdout = "";
-		let stderr = "";
-		let aborted = false;
-
-		const abort = () => {
-			aborted = true;
-			child.kill("SIGTERM");
-			const timer = setTimeout(() => child.kill("SIGKILL"), 5000);
-			timer.unref();
-		};
-		if (signal?.aborted) abort();
-		else signal?.addEventListener("abort", abort, { once: true });
-
-		child.stdout.on("data", (data) => {
-			stdout += data.toString();
-		});
-		child.stderr.on("data", (data) => {
-			stderr += data.toString();
-		});
-		child.on("error", reject);
-		child.on("close", (code) => {
-			signal?.removeEventListener("abort", abort);
-			if (aborted) reject(new Error("Workflow cancelled"));
-			else resolve({ stdout, stderr, exitCode: code ?? 1 });
-		});
-
-		if (stdin !== undefined) child.stdin.end(stdin);
-	});
-}
-
-async function writePromptToTempFile(agentName: string, prompt: string): Promise<{ dir: string; filePath: string }> {
-	const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pi-implement-review-"));
-	const filePath = path.join(dir, `${agentName}.md`);
-	await withFileMutationQueue(filePath, async () => {
-		await fs.promises.writeFile(filePath, prompt, { encoding: "utf8", mode: 0o600 });
-	});
-	return { dir, filePath };
 }
 
 async function runAgent(
@@ -210,21 +144,17 @@ async function runAgentProcess(
 	if (inheritsModel && defaults.thinkingLevel) args.push("--thinking", defaults.thinkingLevel);
 	for (const extension of [COMMUNICATION_RULES_EXTENSION, ...extensions]) args.push("--extension", extension);
 
-	const temp = await writePromptToTempFile(agent.name, agent.systemPrompt);
-	try {
-		args.push("--append-system-prompt", temp.filePath);
-		const invocation = getPiInvocation(args);
-		const processResult = await runProcess(invocation.command, invocation.args, cwd, signal, `Task: ${task}\n`);
-		const result = parseChildOutput(processResult);
-		if (result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted") {
-			throw new Error(
-				`${agent.name} failed: ${result.errorMessage || result.stderr.trim() || result.output || "unknown error"}`,
-			);
-		}
-		return result;
-	} finally {
-		await fs.promises.rm(temp.dir, { recursive: true, force: true });
+	// --append-system-prompt takes the prompt text itself, not a file path.
+	args.push("--append-system-prompt", agent.systemPrompt);
+	const invocation = getPiInvocation(args);
+	const processResult = await runProcess(invocation.command, invocation.args, cwd, signal, `Task: ${task}\n`);
+	const result = parseChildOutput(processResult);
+	if (result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted") {
+		throw new Error(
+			`${agent.name} failed: ${result.errorMessage || result.stderr.trim() || result.output || "unknown error"}`,
+		);
 	}
+	return result;
 }
 
 function parseChildOutput(result: ProcessResult): ChildResult {
@@ -265,44 +195,6 @@ function parseChildOutput(result: ProcessResult): ChildResult {
 	return { output, review, reviewSubmissions, stderr: result.stderr, exitCode: result.exitCode, stopReason, errorMessage };
 }
 
-async function git(args: string[], cwd: string, signal?: AbortSignal, acceptedExitCodes = [0]): Promise<string> {
-	const result = await runProcess("git", args, cwd, signal);
-	if (!acceptedExitCodes.includes(result.exitCode)) {
-		throw new Error(`git ${args.join(" ")} failed: ${result.stderr.trim() || `exit ${result.exitCode}`}`);
-	}
-	return result.stdout;
-}
-
-async function captureDiff(
-	cwd: string,
-	signal?: AbortSignal,
-	baseRef?: string,
-): Promise<{ repoRoot: string; diff: string }> {
-	const repoRoot = (await git(["rev-parse", "--show-toplevel"], cwd, signal)).trim();
-	// Diffing against a merge base instead of HEAD covers committed work
-	// (e.g. a rebase), where `git diff HEAD` is empty and a review of the
-	// empty diff would converge vacuously.
-	const diffBase = baseRef ? (await git(["merge-base", baseRef, "HEAD"], repoRoot, signal)).trim() : "HEAD";
-	let diff = await git(["diff", diffBase, "--"], repoRoot, signal);
-	const untracked = (await git(["ls-files", "-z", "--others", "--exclude-standard"], repoRoot, signal))
-		.split("\0")
-		.filter(Boolean);
-
-	for (const relativePath of untracked) {
-		const absolutePath = path.join(repoRoot, relativePath);
-		diff += await git(["diff", "--no-index", "--", "/dev/null", absolutePath], repoRoot, signal, [0, 1]);
-	}
-	if (!diff.trim()) {
-		throw new Error(
-			baseRef ? `No diff against the merge base with ${baseRef}` : "Implementation produced no working-tree diff",
-		);
-	}
-	if (Buffer.byteLength(diff, "utf8") > MAX_DIFF_BYTES) {
-		throw new Error(`Working-tree diff exceeds ${MAX_DIFF_BYTES} bytes; narrow the task before reviewing`);
-	}
-	return { repoRoot, diff };
-}
-
 async function runWorkflow(
 	task: string,
 	maxRounds: number,
@@ -314,6 +206,16 @@ async function runWorkflow(
 ): Promise<WorkflowResult> {
 	const peter = { ...loadAgent("peter"), model: PETER_MODEL };
 	const dastardly = { ...loadAgent("dastardly"), model: DASTARDLY_MODEL };
+
+	// Recorded before Peter runs so the review diff covers commits Peter
+	// makes, not only the working tree. Empty repos have no HEAD; leave
+	// startHead unset there and fall back to diffing against HEAD.
+	let startHead: string | undefined;
+	try {
+		startHead = (await git(["rev-parse", "HEAD"], cwd, signal)).trim();
+	} catch {
+		startHead = undefined;
+	}
 
 	setStage("Peter implementing");
 	const implementation = await runAgent(
@@ -330,7 +232,14 @@ async function runWorkflow(
 
 	for (let round = 1; round <= maxRounds; round++) {
 		setStage(`Capturing diff for review ${round}/${maxRounds}`);
-		const captured = await captureDiff(cwd, signal, baseRef);
+		let captured: { repoRoot: string; diff: string };
+		try {
+			captured = await captureDiff(cwd, signal, { baseRef, startHead });
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (message === "Workflow cancelled") throw error;
+			throw new Error(`${message}\n\nPeter's implementation report:\n${implementation}`);
+		}
 		repoRoot = captured.repoRoot;
 
 		setStage(`Dastardly reviewing ${round}/${maxRounds}`);
