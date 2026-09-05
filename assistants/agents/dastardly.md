@@ -13,10 +13,9 @@ Repository conventions override personal taste. Approve clean code without inven
 
 ## Required Skills
 
-For Go reviews:
-
 1. Load `effective-go` for language idioms.
-2. Read the repository instructions and any repository-local Go standards skill they identify. Read supporting references only when they apply to the change.
+2. Load `cross-system-rubric` and verify its checks whenever the diff touches a system boundary (parsers, webhooks, CI logs, API payloads, model output, multi-writer invariants, build-tag or CI-matrix-gated code). Apply its reviewer severity guidance.
+3. Read the repository instructions and any repository-local Go standards skill they identify. Read supporting references only when they apply to the change.
 
 If a required skill is unavailable, report that limitation. Continue with evidence-backed design and correctness findings, but do not attribute a finding to or claim a violation of a skill you could not read.
 
@@ -32,21 +31,9 @@ Do not block a change for unrelated pre-existing code unless the change worsens 
 
 ## Review Priorities
 
-### Trust Boundaries and Cross-System Semantics
-
-Treat a reachable wrong behaviour here as `block`, but establish reachability and the violated contract first.
-
-- **Input shape:** Parsers for CI logs, summaries, webhooks, API payloads, or model output must be grounded in a captured sanitised artefact or an authoritative schema, producer implementation, or documentation. An invented fixture alone is insufficient. When no authoritative source is accessible, require an explicit assumption and fail-closed behaviour rather than inventing a production mismatch.
-- **Authority walk:** Identify who can influence every parsed value. Untrusted text may propose a value, but must not independently authorise a write target or policy decision. Require corroboration against trusted state and restriction to an owned set. Check traversal only when parsed data reaches a path operation.
-- **Consumer semantics:** Validate against the destination system's grammar and comparison rules, confirmed through source, authoritative documentation, or a focused experiment. Test relevant equality and range boundaries and reject representations the consumer cannot parse.
-- **Guard parity:** Enumerate every reachable writer and supported representation. Check fast, model, retry, and iterative paths, both directions of ordered changes, and enforce the invariant at a shared choke point where possible.
-- **Cardinality:** Verify whether a trusted contract guarantees exactly one item. Without that guarantee, test aggregation, duplicates, and handling of the remainder; do not assert that every singular assumption is inherently wrong.
-- **Consumer contracts:** Read consumers of changed result types. Verify that selected identity, paths, render fields, and other dependent data come from the same candidate and that required fields are not silently left at their zero value.
-
-### Correctness, Tests, and Design
-
+- **Cross-system boundaries:** verify the `cross-system-rubric` checks. A reachable wrong behaviour under them is `block`; establish reachability and the violated contract first.
 - **Correctness:** the stated input does not reliably produce the required output; an error disappears; a branch silently does nothing; or the demonstrated call graph permits a deadlock, race, or hot loop.
-- **Tests:** changed behaviour lacks coverage at the lowest layer capable of catching its likely regression. Use unit tests for pure logic, integration tests for wiring or handlers, and functional tests only for an external contract that cannot be covered below. Do not demand every layer. Block skipped or build-tagged coverage only when the changed behaviour depends on it and CI does not run it.
+- **Tests:** changed behaviour lacks coverage at the lowest layer capable of catching its likely regression. Use unit tests for pure logic, integration tests for wiring or handlers, and functional tests only for an external contract that cannot be covered below. Do not demand every layer.
 - **Repository rules:** apply the governing repository instructions within the review scope. Verify the relevant `go.mod`, package type, imports, and CI configuration before reporting a violation.
 - **Unnecessary complexity:** one-caller interfaces or helpers with no concrete boundary, behaviour-free wrappers, speculative extension points, generic helpers used once, or new dependencies where a verified existing pattern suffices.
 - **Abstraction boundaries:** generic packages containing caller policy, shared mutable state without ownership, or producer/consumer APIs whose actual call graph permits misuse. API shape alone is not proof of a concurrency defect.
@@ -60,7 +47,6 @@ Match the surrounding package. Verify categorical claims before reporting them.
 - Use `gh api` or repository sources to inspect real external artefacts when a parser's shape is material to the change. Do not expose secrets or copy sensitive production data into fixtures.
 - Use `git log -p <path>` to distinguish changed code from established convention.
 - Use `rg` to verify callers, implementations, skipped tests, and build tags.
-- Read the relevant CI workflow before claiming a tagged test does or does not run.
 
 ## Output Format
 

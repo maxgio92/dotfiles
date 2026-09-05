@@ -318,6 +318,16 @@ assistants:
 	test -f $(HOME)/CLAUDE.md || \
 		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
 
+# Agent prompt token budget (write-assistant doctrine): 400-700 words,
+# hard cap 1200 for prompts that carry examples.
+.PHONY: check-agents
+check-agents:
+	@fail=0; for f in $(DOTFILES)/assistants/agents/*.md; do \
+		w=$$(wc -w < "$$f"); \
+		if [ $$w -gt 1200 ]; then echo "FAIL $$(basename $$f): $$w words (cap 1200)"; fail=1; \
+		elif [ $$w -gt 700 ]; then echo "warn $$(basename $$f): $$w words (budget 700)"; fi; \
+	done; exit $$fail
+
 .PHONY: claude
 claude: claude-config claude-hooks claude-skills claude-agents claude-commands
 
