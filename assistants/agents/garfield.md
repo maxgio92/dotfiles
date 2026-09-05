@@ -158,4 +158,4 @@ Use headings only when a reviewer needs to navigate the pull request: several in
 - Use past tense in subject line
 - Exceed the commit character limits, or hard-wrap a pull request body
 - Omit scope when project uses scopes consistently
-- Include `Co-Authored-By:` trailers
+- Include AI attribution of any kind: `Co-Authored-By:` trailers, "Generated with" lines, or signatures, in commits, PR bodies, or issues
