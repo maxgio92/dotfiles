@@ -7,13 +7,23 @@
     "USE_BUILTIN_RIPGREP": "0"
   },
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "mcp__codex__codex",
       "mcp__codex__codex-reply"
-    ]
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue comment:*)"
+    ],
+    "defaultMode": "auto"
   },
-  "model": "sonnet",
+  "model": "fable",
   "hooks": {
     "Notification": [
       {
