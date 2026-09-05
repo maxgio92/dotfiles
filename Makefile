@@ -325,7 +325,7 @@ claude: claude-config claude-hooks claude-skills claude-agents claude-commands
 claude-config:
 	@mkdir -p $(HOME)/.claude/workflows
 	@ln -sfn $(DOTFILES)/.claude/settings.json $(HOME)/.claude/settings.json
-	@ln -sfn $(DOTFILES)/.claude/AGENTS.md $(HOME)/.claude/AGENTS.md
+	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.claude/AGENTS.md
 	@ln -sfn $(DOTFILES)/.claude/file-suggestion.sh $(HOME)/.claude/file-suggestion.sh
 	@ln -sf $(DOTFILES)/.claude/workflows/*.js $(HOME)/.claude/workflows/
 	@echo "  linked settings.json, AGENTS.md, file-suggestion.sh, workflows"
@@ -386,7 +386,8 @@ codex: codex-hooks codex-skills codex-agents
 codex-hooks:
 	@mkdir -p $(HOME)/.codex
 	@ln -sfn $(DOTFILES)/codex/hooks.json $(HOME)/.codex/hooks.json
-	@echo "  linked Codex hooks.json"
+	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.codex/AGENTS.md
+	@echo "  linked Codex hooks.json and AGENTS.md"
 
 .PHONY: codex-skills
 codex-skills:
@@ -424,7 +425,7 @@ pi-install:
 pi-config:
 	@mkdir -p $(HOME)/.pi/agent
 	@ln -sfn $(DOTFILES)/pi/settings.json $(HOME)/.pi/agent/settings.json
-	@ln -sfn $(DOTFILES)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
+	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	@echo "  linked settings.json and AGENTS.md"
 
 .PHONY: pi-extension
