@@ -5,6 +5,9 @@ description: "Draft replies to pull request review comments in Massimiliano's vo
 
 # pr-review-message
 
+This skill produces a draft and stops; it never posts. Posting happens through
+the `publish` skill after human approval.
+
 Review replies are short, factual, and settle the thread. Lead with the
 verdict, then the substance. Reply in the thread the comment lives in, one
 reply per finding, and reply to every finding: addressed or not.

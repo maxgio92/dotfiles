@@ -5,6 +5,9 @@ description: "Draft a Slack message in Massimiliano's voice. Use for anything go
 
 # slack-message
 
+This skill produces a draft and stops; it never posts. Posting happens through
+the `publish` skill after human approval.
+
 Slack is terse and understated. One idea, one or two sentences, plain words,
 lowercase. Assume the reader has the context; skip setup and background.
 
