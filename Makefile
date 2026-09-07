@@ -405,7 +405,14 @@ claude-commands:
 pi: pi-install pi-config pi-extension pi-agents pi-skills pi-prompts
 
 .PHONY: codex
-codex: codex-hooks codex-skills codex-agents
+codex: codex-hooks codex-skills codex-agents codex-prompts
+
+.PHONY: codex-prompts
+codex-prompts:
+	@mkdir -p $(HOME)/.codex/prompts
+	$(call prune_links,$(HOME)/.codex/prompts,$(DOTFILES)/codex/prompts)
+	@ln -sf $(DOTFILES)/codex/prompts/*.md $(HOME)/.codex/prompts/
+	@echo "  linked Codex prompts"
 
 .PHONY: codex-hooks
 codex-hooks:
