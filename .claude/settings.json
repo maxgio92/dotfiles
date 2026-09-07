@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status waiting"
+            "command": "! command -v workmux >/dev/null 2>&1 || workmux set-window-status waiting"
           }
         ]
       },
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.local/share/clorch/hooks/notify_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/notify_handler.sh ] || $HOME/.local/share/clorch/hooks/notify_handler.sh",
             "async": true
           }
         ]
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PermissionRequest $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=PermissionRequest $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/go-gate.sh file",
+            "command": "[ ! -x $HOME/.claude/hooks/go-gate.sh ] || $HOME/.claude/hooks/go-gate.sh file",
             "timeout": 15,
             "statusMessage": "go-gate: gofmt"
           }
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status working"
+            "command": "! command -v workmux >/dev/null 2>&1 || workmux set-window-status working"
           }
         ]
       },
@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PostToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=PostToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -96,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PostToolUseFailure $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=PostToolUseFailure $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PreCompact $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=PreCompact $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -120,7 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
+            "command": "[ ! -f $HOME/.claude/hooks/communication-rules/scanner.py ] || python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code PreToolUse",
             "timeout": 15,
             "statusMessage": "Communication Rules: gate"
           }
@@ -131,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=PreToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=PreToolUse $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -143,7 +143,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SessionEnd $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=SessionEnd $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -155,7 +155,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
+            "command": "[ ! -f $HOME/.claude/hooks/communication-rules/scanner.py ] || python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SessionStart",
             "timeout": 15,
             "statusMessage": "Communication Rules: reminder"
           }
@@ -166,7 +166,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SessionStart $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=SessionStart $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -178,7 +178,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code Stop",
+            "command": "[ ! -f $HOME/.claude/hooks/communication-rules/scanner.py ] || python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code Stop",
             "timeout": 15,
             "statusMessage": "Communication Rules: final-prose check"
           }
@@ -188,7 +188,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status done"
+            "command": "! command -v workmux >/dev/null 2>&1 || workmux set-window-status done"
           }
         ]
       },
@@ -197,7 +197,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=Stop $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=Stop $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -209,7 +209,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SubagentStart $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=SubagentStart $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -221,7 +221,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/go-gate.sh final",
+            "command": "[ ! -x $HOME/.claude/hooks/go-gate.sh ] || $HOME/.claude/hooks/go-gate.sh final",
             "timeout": 600,
             "statusMessage": "go-gate: build + test + lint"
           }
@@ -232,7 +232,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
+            "command": "[ ! -f $HOME/.claude/hooks/communication-rules/scanner.py ] || python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code SubagentStop",
             "timeout": 15,
             "statusMessage": "Communication Rules: final-prose check"
           }
@@ -243,7 +243,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=SubagentStop $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=SubagentStop $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -255,7 +255,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=TaskCompleted $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=TaskCompleted $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -267,7 +267,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=TeammateIdle $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=TeammateIdle $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
@@ -279,7 +279,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
+            "command": "[ ! -f $HOME/.claude/hooks/communication-rules/scanner.py ] || python3 $HOME/.claude/hooks/communication-rules/scanner.py --policy-json $HOME/.claude/hooks/communication-rules/policy.json --rules $HOME/.claude/hooks/communication-rules/rules.md claude-code UserPromptSubmit",
             "timeout": 15,
             "statusMessage": "Communication Rules: pending re-issue"
           }
@@ -289,7 +289,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status working"
+            "command": "! command -v workmux >/dev/null 2>&1 || workmux set-window-status working"
           }
         ]
       },
@@ -298,7 +298,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLORCH_EVENT=UserPromptSubmit $HOME/.local/share/clorch/hooks/event_handler.sh",
+            "command": "[ ! -x $HOME/.local/share/clorch/hooks/event_handler.sh ] || CLORCH_EVENT=UserPromptSubmit $HOME/.local/share/clorch/hooks/event_handler.sh",
             "async": true
           }
         ]
