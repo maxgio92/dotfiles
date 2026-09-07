@@ -328,6 +328,18 @@ check-agents:
 		elif [ $$w -gt 700 ]; then echo "warn $$(basename $$f): $$w words (budget 700)"; fi; \
 	done; exit $$fail
 
+# Remove dangling symlinks in $(1) that point into source root $(2), so
+# deleting a source file uninstalls it on the next run. Entries that are
+# not symlinks, or that link outside $(2), are left alone.
+define prune_links
+@for target in $(1)/*; do \
+	[ -L "$$target" ] || continue; \
+	case "$$(readlink "$$target")" in $(2)/*) ;; *) continue ;; esac; \
+	[ -e "$$target" ] && continue; \
+	rm "$$target" && echo "  prune $$(basename "$$target")"; \
+done
+endef
+
 .PHONY: claude
 claude: claude-config claude-hooks claude-skills claude-agents claude-commands
 
@@ -373,17 +385,20 @@ claude-skills:
 			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
 		fi; \
 	done
+	$(call prune_links,$(HOME)/.claude/skills,$(DOTFILES)/assistants/skills)
 
 .PHONY: claude-agents
 claude-agents:
 	@mkdir -p $(HOME)/.claude/agents
 	@ln -sf $(DOTFILES)/assistants/agents/*.md $(HOME)/.claude/agents/
+	$(call prune_links,$(HOME)/.claude/agents,$(DOTFILES)/assistants/agents)
 	@echo "  linked $$(ls $(DOTFILES)/assistants/agents/*.md | wc -l) agent(s)"
 
 .PHONY: claude-commands
 claude-commands:
 	@mkdir -p $(HOME)/.claude/commands
 	@ln -sf $(DOTFILES)/assistants/commands/*.md $(HOME)/.claude/commands/
+	$(call prune_links,$(HOME)/.claude/commands,$(DOTFILES)/assistants/commands)
 	@echo "  linked $$(ls $(DOTFILES)/assistants/commands/*.md | wc -l) command(s)"
 
 .PHONY: pi
@@ -411,6 +426,7 @@ codex-skills:
 			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
 		fi; \
 	done
+	$(call prune_links,$(HOME)/.codex/skills,$(DOTFILES)/assistants/skills)
 
 .PHONY: codex-agents
 codex-agents:
@@ -425,6 +441,17 @@ codex-agents:
 			if [ -L "$$target/SKILL.md" ]; then unlink "$$target/SKILL.md"; fi; \
 			cp "$$src" "$$target/SKILL.md" && echo "  install agent persona $$name"; \
 		fi; \
+	done
+	@for dir in $(HOME)/.codex/skills/*/; do \
+		dir="$${dir%/}"; \
+		[ -d "$$dir" ] || continue; \
+		[ -L "$$dir" ] && continue; \
+		name=$$(basename "$$dir"); \
+		[ -e "$(DOTFILES)/assistants/agents/$$name.md" ] && continue; \
+		[ -d "$(DOTFILES)/assistants/skills/$$name" ] && continue; \
+		[ "$$(ls -A "$$dir")" = "SKILL.md" ] || continue; \
+		[ -f "$$dir/SKILL.md" ] && [ ! -L "$$dir/SKILL.md" ] || continue; \
+		rm -r "$$dir" && echo "  prune agent persona $$name"; \
 	done
 
 .PHONY: pi-install
@@ -461,6 +488,7 @@ pi-agents:
 		name=$$(basename "$$src"); \
 		ln -sfn "$$src" $(HOME)/.pi/agent/agents/$$name; \
 	done
+	$(call prune_links,$(HOME)/.pi/agent/agents,$(DOTFILES)/assistants/agents)
 	@echo "  linked shared agents"
 
 .PHONY: pi-skills
@@ -470,6 +498,7 @@ pi-skills:
 		name=$$(basename "$$src"); \
 		ln -sfn "$$src" $(HOME)/.pi/agent/skills/$$name; \
 	done
+	$(call prune_links,$(HOME)/.pi/agent/skills,$(DOTFILES)/assistants/skills)
 	@echo "  linked shared skills"
 
 .PHONY: pi-prompts
