@@ -480,6 +480,10 @@ pi-extension: pi-install
 		test -f "$$src/index.ts" && test -f "$$src/agents.ts"; \
 		ln -sfn "$$src/index.ts" $(HOME)/.pi/agent/extensions/subagent/index.ts; \
 		ln -sfn "$$src/agents.ts" $(HOME)/.pi/agent/extensions/subagent/agents.ts
+	@prefix=$$(brew --prefix pi-coding-agent); \
+		src="$$prefix/libexec/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/modal-editor.ts"; \
+		test -f "$$src"; \
+		ln -sfn "$$src" $(HOME)/.pi/agent/extensions/modal-editor.ts
 	@ln -sfn $(DOTFILES)/pi/extensions/implement-review $(HOME)/.pi/agent/extensions/implement-review
 	@ln -sfn $(DOTFILES)/pi/extensions/communication-rules $(HOME)/.pi/agent/extensions/communication-rules
 	@ln -sfn $(DOTFILES)/pi/extensions/workmux-status $(HOME)/.pi/agent/extensions/workmux-status
