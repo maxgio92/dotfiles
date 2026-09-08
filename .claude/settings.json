@@ -25,6 +25,11 @@
   },
   "model": "fable",
   "includeCoAuthoredBy": false,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "hooks": {
     "Notification": [
       {
