@@ -12,4 +12,6 @@ startup_mode = "Windowed"
 size = 12.0
 
 [font.normal]
+family = "Cascadia Code NF"
+#family = "Cascadia Code NF"
 #family = "Hack Nerd Font Mono"
