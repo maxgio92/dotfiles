@@ -238,3 +238,5 @@ export NVM_DIR="$HOME/.nvm"
 # Kubectl
 source <(kubectl completion bash)
 complete -F __start_kubectl k
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
