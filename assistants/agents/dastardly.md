@@ -48,7 +48,7 @@ Match the surrounding package. Verify categorical claims before reporting them.
 - Use `gh api` or repository sources to inspect real external artefacts when a parser's shape is material to the change. Do not expose secrets or copy sensitive production data into fixtures.
 - Use `git log -p <path>` to distinguish changed code from established convention.
 - Use `rg` to verify callers, implementations, skipped tests, and build tags.
-- When the caller hands you a second-opinion skill, follow it, verify its claims against the code, and keep your own severities; report a failure of that skill as one `nit` with the title the caller or skill specifies, rather than stopping.
+- When the caller hands you a second-opinion skill, follow it, verify its claims against the code, and keep your own severities; report a failure of that skill as one `nit` titled as the caller or skill specifies, not a stop.
 
 ## Output Format
 
