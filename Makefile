@@ -405,7 +405,20 @@ claude-commands:
 pi: pi-install pi-config pi-extension pi-agents pi-skills pi-prompts
 
 .PHONY: codex
-codex: codex-hooks codex-skills codex-agents codex-prompts
+codex: codex-hooks codex-skills codex-agents codex-legacy-skills codex-prompts
+
+.PHONY: codex-legacy-skills
+codex-legacy-skills:
+	@[ -d $(CODEX_LEGACY_SKILLS) ] || exit 0; \
+	for entry in $(CODEX_LEGACY_SKILLS)/*; do \
+		[ -e "$$entry" ] || [ -L "$$entry" ] || continue; \
+		name=$$(basename "$$entry"); \
+		if [ -L "$$entry" ]; then \
+			case "$$(readlink "$$entry")" in $(DOTFILES)/assistants/skills/*) rm "$$entry" && echo "  remove legacy skill link $$name";; esac; \
+		elif [ -d "$$entry" ] && [ -e "$(DOTFILES)/assistants/agents/$$name.md" ] && [ -f "$$entry/SKILL.md" ] && [ ! -L "$$entry/SKILL.md" ]; then \
+			rm -r "$$entry" && echo "  remove legacy agent persona $$name"; \
+		fi; \
+	done
 
 .PHONY: codex-prompts
 codex-prompts:
@@ -423,6 +436,11 @@ codex-hooks:
 
 # Codex reads user skills from ~/.agents/skills; $CODEX_HOME/skills is deprecated since 0.154.
 CODEX_SKILLS := $(HOME)/.agents/skills
+# Codex still loads the deprecated root; a duplicate skill name there makes a
+# `$name` mention resolve to nothing, so dotfiles-owned entries are removed.
+CODEX_LEGACY_SKILLS := $(HOME)/.codex/skills
+# Marks persona dirs this Makefile copied, so pruning never touches user skills.
+PERSONA_MARKER := .dotfiles-persona
 
 .PHONY: codex-skills
 codex-skills:
@@ -449,18 +467,16 @@ codex-agents:
 		else \
 			mkdir -p "$$target"; \
 			if [ -L "$$target/SKILL.md" ]; then unlink "$$target/SKILL.md"; fi; \
-			cp "$$src" "$$target/SKILL.md" && echo "  install agent persona $$name"; \
+			cp "$$src" "$$target/SKILL.md" && : > "$$target/$(PERSONA_MARKER)" && echo "  install agent persona $$name"; \
 		fi; \
 	done
 	@for dir in $(CODEX_SKILLS)/*/; do \
 		dir="$${dir%/}"; \
 		[ -d "$$dir" ] || continue; \
 		[ -L "$$dir" ] && continue; \
+		[ -f "$$dir/$(PERSONA_MARKER)" ] || continue; \
 		name=$$(basename "$$dir"); \
 		[ -e "$(DOTFILES)/assistants/agents/$$name.md" ] && continue; \
-		[ -d "$(DOTFILES)/assistants/skills/$$name" ] && continue; \
-		[ "$$(ls -A "$$dir")" = "SKILL.md" ] || continue; \
-		[ -f "$$dir/SKILL.md" ] && [ ! -L "$$dir/SKILL.md" ] || continue; \
 		rm -r "$$dir" && echo "  prune agent persona $$name"; \
 	done
 
