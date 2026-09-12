@@ -2,6 +2,7 @@ export const meta = {
   name: 'implement-and-review',
   description: 'peter implements a coding task, dastardly reviews the diff through Codex (official plugin) and vets its findings, peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
   phases: [
+    { title: 'Research', detail: 'optional: one agent researches the domain, prior art, and pitfalls before planning (args.research)' },
     { title: 'Plan', detail: 'optional: a planner decomposes large tasks into phases (args.plan)' },
     { title: 'Implement', detail: 'peter writes the smallest correct change' },
     { title: 'Review', detail: 'dastardly reviews through Codex and vets its findings; reviewer "claude" reviews in Claude only' },
@@ -34,9 +35,93 @@ const planMode = (args && typeof args === 'object' && args.plan === true) || fal
 const reviewer =
   (args && typeof args === 'object' && args.reviewer === 'claude') ? 'claude' : 'codex'
 
+// Optional: research before planning (pass {task, research}).
+// true: always run one research agent first.
+// false: never run it.
+// 'auto' (default): run it when planning mode is set or the task text names a
+// new dependency, an external API contract, an unfamiliar domain, or a
+// security-sensitive surface.
+// A non-empty string is pre-existing research (e.g. from a task tracker); it
+// is injected as-is and the phase is skipped.
+const rawResearch =
+  (args && typeof args === 'object' && args.research !== undefined && args.research !== null)
+    ? args.research
+    : 'auto'
+// A blank string (e.g. an empty tracker field) means "no research supplied",
+// not "skip research"; anything else unrecognised falls back to 'auto'.
+const research =
+  typeof rawResearch === 'boolean' || rawResearch === 'auto'
+    ? rawResearch
+    : typeof rawResearch === 'string'
+      ? (rawResearch.trim() ? rawResearch : 'auto')
+      : (log(`Unrecognised research value ${JSON.stringify(rawResearch)}; using 'auto'.`), 'auto')
+// Matched on word boundaries so "author" does not trigger on "auth" and
+// "tokenizer" does not trigger on "token".
+const RESEARCH_SIGNALS = [
+  'new dependency', 'new library', 'protocol', 'external api', 'third-party api',
+  'webhook', 'unfamiliar', 'security', 'auth', 'authentication', 'authorization',
+  'credential', 'token', 'secret', 'crypto',
+]
+const taskLower = String(task).toLowerCase()
+const mentionsSignal = (signal) =>
+  new RegExp(`\\b${signal.replace(/[-\s]/g, '[-\\s]')}(s|es)?\\b`).test(taskLower)
+const runResearch =
+  research === true ||
+  (research === 'auto' && (planMode || RESEARCH_SIGNALS.some(mentionsSignal)))
+
 const noCommitRule =
   `Do not commit, stage, or push; leave every change in the working tree. ` +
   `The orchestrating session commits after the review loop converges.`
+
+let researchResult = null
+if (runResearch) {
+  phase('Research')
+  const RESEARCH_SCHEMA = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      findings: { type: 'array', items: { type: 'string' } },
+      priorArt: { type: 'array', items: { type: 'string' } },
+      pitfalls: { type: 'array', items: { type: 'string' } },
+      sources: { type: 'array', items: { type: 'string' }, description: 'URLs or file paths' },
+      verdict: { type: 'string', description: 'one line on whether the task as stated should change' },
+    },
+    required: ['findings', 'priorArt', 'pitfalls', 'sources', 'verdict'],
+  }
+  researchResult = await agent(
+    `Research this coding task before anyone plans or implements it. Apply the ` +
+      `\`deep-research\` skill at ${planMode ? 'Standard' : 'Quick'} depth. Cover the ` +
+      `task's domain, prior art in this repository and upstream, known pitfalls, and ` +
+      `existing helpers the implementer should reuse. Read the repository read-only; ` +
+      `do not modify it. Keep any disposable research plan outside the repository and ` +
+      `name its path in sources if you create one. Every source is a URL or a file path. ` +
+      `The verdict is one line on whether the task as stated should change.\n\n` +
+      `Task:\n${task}`,
+    { label: 'research:research', phase: 'Research', schema: RESEARCH_SCHEMA },
+  )
+  if (!researchResult) {
+    log('Research agent returned nothing; continuing without research.')
+  }
+}
+
+// Research text for the planner and peter prompts: the phase result, the
+// string arg, or empty. Sections start with 'Research:' and end before 'Task:'.
+const researchList = (title, items) =>
+  items && items.length ? `${title}:\n${items.map((item) => `- ${item}`).join('\n')}\n` : ``
+const researchBlock = researchResult
+  ? `Research:\n` +
+    researchList('Findings', researchResult.findings) +
+    researchList('Prior art', researchResult.priorArt) +
+    researchList('Pitfalls', researchResult.pitfalls) +
+    researchList('Sources', researchResult.sources) +
+    `Verdict: ${researchResult.verdict}\n\n`
+  : typeof research === 'string' && research !== 'auto' && research.trim()
+    ? `Research:\n${research.trim()}\n\n`
+    : ``
+
+const topicSweep =
+  `Before designing, check repository history and related issues or pull requests ` +
+  `for an existing solution, and state in one line what you found.`
 
 let plan = null
 if (planMode) {
@@ -62,18 +147,23 @@ if (planMode) {
     },
     required: ['phases'],
   }
+  PLAN_SCHEMA.properties.sweep = { type: 'string' }
   plan = await agent(
     `Plan this coding task. Decompose it into 2 to 6 sequential phases, each ` +
       `independently implementable by a fresh agent with no memory of the others. ` +
       `Order them so each phase builds only on completed ones, and aim for the ` +
       `smallest total change across all phases. Each phase needs a short title ` +
       `and a concrete goal stating what must exist and pass when it is done. ` +
-      `Read the repository as needed but do not modify it.\n\n` +
+      `Read the repository as needed but do not modify it.\n` +
+      `${topicSweep}\n\n` +
+      researchBlock +
       `Task:\n${task}`,
     { label: 'planner:plan', phase: 'Plan', schema: PLAN_SCHEMA },
   )
   if (!plan) {
     log('Plan agent returned nothing; falling back to single-implementer path.')
+  } else if (plan.sweep) {
+    log(`Topic sweep: ${plan.sweep}`)
   }
 }
 
@@ -92,6 +182,7 @@ if (plan) {
         `over new abstractions, and run the project's tests and lint before finishing.\n` +
         `${noCommitRule}\n` +
         `Earlier phases are already applied in the working tree; build on them.\n\n` +
+        researchBlock +
         `Full task:\n${task}\n\n` +
         `Full plan:\n${planOverview}\n\n` +
         `Your phase (${i + 1} of ${plan.phases.length}): ${p.title}\n` +
@@ -124,7 +215,9 @@ if (plan) {
     `Implement this coding task in the current repository.\n` +
       `Make the smallest correct change, reuse existing code over new abstractions, ` +
       `and run the project's tests and lint before finishing.\n` +
-      `${noCommitRule}\n\n` +
+      `${noCommitRule}\n` +
+      `${topicSweep}\n\n` +
+      researchBlock +
       `Task:\n${task}`,
     { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
   )
@@ -268,4 +361,5 @@ return {
   engineFellBack,
   fixed: fixedAny,
   findings: allFindings,
+  research: researchResult || (typeof research === 'string' && research !== 'auto' ? research : null),
 }
