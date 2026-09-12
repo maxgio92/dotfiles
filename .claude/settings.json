@@ -1,5 +1,9 @@
 {
   "outputStyle": "house-style",
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/statusline.sh"
+  },
   "fileSuggestion": {
     "type": "command",
     "command": "$HOME/.claude/file-suggestion.sh"
