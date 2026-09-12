@@ -421,26 +421,29 @@ codex-hooks:
 	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.codex/AGENTS.md
 	@echo "  linked Codex hooks.json and AGENTS.md"
 
+# Codex reads user skills from ~/.agents/skills; $CODEX_HOME/skills is deprecated since 0.154.
+CODEX_SKILLS := $(HOME)/.agents/skills
+
 .PHONY: codex-skills
 codex-skills:
-	@mkdir -p $(HOME)/.codex/skills
+	@mkdir -p $(CODEX_SKILLS)
 	@for src in $(DOTFILES)/assistants/skills/*; do \
 		name=$$(basename "$$src"); \
-		target=$(HOME)/.codex/skills/$$name; \
+		target=$(CODEX_SKILLS)/$$name; \
 		if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 			echo "  skip skill $$name ($$target exists and is not a symlink)"; \
 		else \
 			ln -sfn "$$src" "$$target" && echo "  link skill $$name"; \
 		fi; \
 	done
-	$(call prune_links,$(HOME)/.codex/skills,$(DOTFILES)/assistants/skills)
+	$(call prune_links,$(CODEX_SKILLS),$(DOTFILES)/assistants/skills)
 
 .PHONY: codex-agents
 codex-agents:
-	@mkdir -p $(HOME)/.codex/skills
+	@mkdir -p $(CODEX_SKILLS)
 	@for src in $(DOTFILES)/assistants/agents/*.md; do \
 		name=$$(basename "$$src" .md); \
-		target=$(HOME)/.codex/skills/$$name; \
+		target=$(CODEX_SKILLS)/$$name; \
 		if [ -e "$$target" ] && [ ! -d "$$target" ]; then \
 			echo "  skip agent persona $$name ($$target exists and is not a directory)"; \
 		else \
@@ -449,7 +452,7 @@ codex-agents:
 			cp "$$src" "$$target/SKILL.md" && echo "  install agent persona $$name"; \
 		fi; \
 	done
-	@for dir in $(HOME)/.codex/skills/*/; do \
+	@for dir in $(CODEX_SKILLS)/*/; do \
 		dir="$${dir%/}"; \
 		[ -d "$$dir" ] || continue; \
 		[ -L "$$dir" ] && continue; \
