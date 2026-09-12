@@ -21,6 +21,16 @@ that publishes; drafting skills (`pr-review-message`, `slack-message`, the
    report it. A post you cannot fetch is not done.
 4. One approval covers one post. A batch approval must name each item.
 
+## Not publishing
+
+Bookkeeping on the user's own task record is not publishing and does not pass
+through this skill: creating the task, editing its body, assignee, status,
+estimate, or labels, and posting the durable-record comment on it. The
+`task-tracker` skill owns those writes and they need no per-write approval.
+Anything that reaches other people stays here: a PR, a review, a comment on
+another person's thread, a Slack message, or an issue on a repository the
+user does not own goes through this skill after the human approves it.
+
 ## Destinations
 
 - PR comment or reply: `gh pr comment` / `gh api` on the review thread; reply
