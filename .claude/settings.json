@@ -1,4 +1,5 @@
 {
+  "outputStyle": "house-style",
   "fileSuggestion": {
     "type": "command",
     "command": "$HOME/.claude/file-suggestion.sh"

@@ -311,12 +311,16 @@ opencode:
 	test -d $(HOME)/.config/opencode || mkdir $(HOME)/.config/opencode
 	ln -sf $(DOTFILES)/opencode/opencode.json $(HOME)/.config/opencode/opencode.json
 
+# Role-neutral global rules and the canonical Communication Rules. Every
+# harness loads both; see the claude-config, codex-hooks, and pi-config targets.
+INSTRUCTIONS := $(DOTFILES)/assistants/instructions/global.md
+RULES := $(DOTFILES)/assistants/communication-rules/rules.md
+
 .PHONY: assistants
 assistants:
 	test -L $(HOME)/.config/assistants || \
 		ln -s $(DOTFILES)/assistants $(HOME)/.config/assistants
-	test -f $(HOME)/CLAUDE.md || \
-		cp $(HOME)/.config/assistants/CLAUDE.template.md $(HOME)/CLAUDE.md
+	@[ ! -f $(HOME)/CLAUDE.md ] || echo "  remove $(HOME)/CLAUDE.md if it is the old template copy; every harness under $(HOME) loads it"
 
 # Agent prompt token budget (write-assistant doctrine): 400-700 words,
 # hard cap 1200 for prompts that carry examples.
@@ -327,6 +331,17 @@ check-agents:
 		if [ $$w -gt 1200 ]; then echo "FAIL $$(basename $$f): $$w words (cap 1200)"; fail=1; \
 		elif [ $$w -gt 700 ]; then echo "warn $$(basename $$f): $$w words (budget 700)"; fi; \
 	done; exit $$fail
+
+# global.md is always loaded, so it stays under 400 words and passes its own
+# Communication Rules gate.
+.PHONY: check-instructions
+check-instructions:
+	@w=$$(wc -w < $(INSTRUCTIONS)); \
+		[ $$w -le 400 ] || { echo "FAIL global.md: $$w words (cap 400)"; exit 1; }
+	@python3 $(DOTFILES)/assistants/communication-rules/scanner.py \
+		--policy-json $(DOTFILES)/assistants/communication-rules/policy.json \
+		--rules $(RULES) scan-file $(INSTRUCTIONS) >/dev/null \
+		|| { echo "FAIL global.md: Communication Rules breach"; exit 1; }
 
 # Remove dangling symlinks in $(1) that point into source root $(2), so
 # deleting a source file uninstalls it on the next run. Entries that are
@@ -345,12 +360,19 @@ claude: claude-config claude-hooks claude-skills claude-agents claude-commands
 
 .PHONY: claude-config
 claude-config:
-	@mkdir -p $(HOME)/.claude/workflows
+	@mkdir -p $(HOME)/.claude/workflows $(HOME)/.claude/output-styles
 	@ln -sfn $(DOTFILES)/.claude/settings.json $(HOME)/.claude/settings.json
-	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.claude/AGENTS.md
+	@if [ -e $(HOME)/.claude/CLAUDE.md ] && [ ! -L $(HOME)/.claude/CLAUDE.md ]; then \
+		echo "  skip ~/.claude/CLAUDE.md (exists and is not a symlink)"; \
+	else \
+		ln -sfn $(INSTRUCTIONS) $(HOME)/.claude/CLAUDE.md; \
+	fi
+	@if [ -L $(HOME)/.claude/AGENTS.md ]; then rm $(HOME)/.claude/AGENTS.md && echo "  removed dead AGENTS.md link"; fi
+	@{ printf -- '---\nname: house-style\ndescription: Communication Rules for every response\nkeep-coding-instructions: true\n---\n\n'; cat $(RULES); } \
+		> $(HOME)/.claude/output-styles/house-style.md
 	@ln -sfn $(DOTFILES)/.claude/file-suggestion.sh $(HOME)/.claude/file-suggestion.sh
 	@ln -sf $(DOTFILES)/.claude/workflows/*.js $(HOME)/.claude/workflows/
-	@echo "  linked settings.json, AGENTS.md, file-suggestion.sh, workflows"
+	@echo "  linked settings.json, CLAUDE.md, file-suggestion.sh, workflows; generated output-styles/house-style.md"
 
 .PHONY: claude-hooks
 claude-hooks:
@@ -431,8 +453,9 @@ codex-prompts:
 codex-hooks:
 	@mkdir -p $(HOME)/.codex
 	@ln -sfn $(DOTFILES)/codex/hooks.json $(HOME)/.codex/hooks.json
-	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.codex/AGENTS.md
-	@echo "  linked Codex hooks.json and AGENTS.md"
+	@if [ -L $(HOME)/.codex/AGENTS.md ]; then rm $(HOME)/.codex/AGENTS.md; fi
+	@{ cat $(INSTRUCTIONS) && echo && cat $(RULES); } > $(HOME)/.codex/AGENTS.md
+	@echo "  linked Codex hooks.json; generated AGENTS.md from global.md and rules.md"
 
 # Codex reads user skills from ~/.agents/skills; $CODEX_HOME/skills is deprecated since 0.154.
 CODEX_SKILLS := $(HOME)/.agents/skills
@@ -494,8 +517,9 @@ pi-install:
 pi-config:
 	@mkdir -p $(HOME)/.pi/agent
 	@ln -sfn $(DOTFILES)/pi/settings.json $(HOME)/.pi/agent/settings.json
-	@ln -sfn $(DOTFILES)/assistants/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
-	@echo "  linked settings.json and AGENTS.md"
+	@ln -sfn $(INSTRUCTIONS) $(HOME)/.pi/agent/AGENTS.md
+	@ln -sfn $(RULES) $(HOME)/.pi/agent/APPEND_SYSTEM.md
+	@echo "  linked settings.json, AGENTS.md, and APPEND_SYSTEM.md"
 
 .PHONY: pi-extension
 pi-extension: pi-install

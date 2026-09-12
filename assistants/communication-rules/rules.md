@@ -13,6 +13,7 @@ Banned words and phrases:
 
 - LLM tells: leverage, seamless, pivotal, delve, foster, embark, realm, intricate, meticulous, holistic, transformative, complementary.
 - Puffery: it's important to note, it's worth mentioning, in essence, fundamentally, ultimately.
+- Advisory, not gated because they appear in code comments: comprehensive, robust, ensure, journey, landscape, paramount, ships (as in "ships with"), wires (as in "wires up").
 
 Enforcement:
 
