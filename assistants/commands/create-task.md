@@ -14,7 +14,7 @@ Turn an outcome into one tracked task, or a parent with ordered children, and fi
 - `owner/repo` for a GitHub issue
 - a filesystem path for a local task file
 
-A blank target follows the `task-tracker` blank-creation-target rule: the tracker the session already named or the team visible in Linear, stated in the same confirmation as the body, so the run still asks once.
+A blank target follows the `task-tracker` blank-creation-target rule, read from the repository's `origin` remote (work-organisation remote: Linear; other GitHub remote: GitHub issue on that repository; any other or no remote: local file), stated in the same confirmation as the body, so the run still asks once.
 
 ### Setup
 

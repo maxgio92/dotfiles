@@ -6,7 +6,7 @@ Mechanics for the `task-tracker` roles on Linear. Section order matches `github.
 
 A key such as `FUL-123` or a `linear.app` URL resolves here. Linear tools exist only when the harness provides them (Claude Code today); otherwise report the source as unreachable and ask the user for the issue body.
 
-Workspace guard: write only when `get_team` resolves the key `FUL` (`list_teams` returns names, not keys). Do not use an email-domain check; the Git identity in this repository is a personal address. When the team is not visible, report that and stop.
+Workspace guard: write only when `get_team` resolves the key `FUL` (`list_teams` returns names, not keys). A blank creation target resolves here only when the repository's `origin` remote is under the work organisation named in SKILL.md; an explicit Linear target (a team name, a key, a URL) is honoured anywhere. Do not use an email-domain check; the Git identity in this repository is a personal address. When the team is not visible, report that and stop.
 
 Links: use `https://linear.app/<workspace>/issue/<KEY>`. Never use the slugged URL that carries the title.
 

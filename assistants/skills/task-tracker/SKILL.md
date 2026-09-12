@@ -10,7 +10,7 @@ One vocabulary for task work across three trackers. This file resolves the track
 
 ## Resolution
 
-Resolve from the argument alone. Never infer the tracker from the current repository or its remote.
+Resolve an existing task from the argument alone. Never infer an existing task's tracker from the current repository or its remote; the remote inference below applies to blank creation targets only.
 
 | Argument | Reference |
 | --- | --- |
@@ -21,7 +21,17 @@ Resolve from the argument alone. Never infer the tracker from the current reposi
 
 Read exactly one reference per task. Text after the argument is extra context, not a second target.
 
-Creation targets, for commands that file a new task: a Linear team or project name resolves to `references/linear.md`; `owner/repo` with no `#N` resolves to `references/github.md`; a directory resolves to `references/local.md`. A blank creation target is the one inference allowed: take the tracker the session already named or the team visible in Linear, and state the choice in the same confirmation as the body.
+Creation targets, for commands that file a new task: a Linear team or project name resolves to `references/linear.md`; `owner/repo` with no `#N` resolves to `references/github.md`; a directory resolves to `references/local.md`. An explicit target always wins.
+
+Work organisation: `github.com/chainguard-dev/`. Edit this line to change it. The Linear team key `FUL` also appears in `references/linear.md` and `sizing`.
+
+A blank creation target is the one inference allowed, and it reads the current repository's `origin` remote (`git remote get-url origin`):
+
+- a remote under the work organisation resolves to `references/linear.md` with the work team
+- any other GitHub remote resolves to `references/github.md` with `owner/repo` taken from that remote
+- any other remote, or no remote, resolves to `references/local.md` with the file in the repository root, or in the current directory outside Git
+
+State the resolved target in the same confirmation as the body, so the run still asks once. Example: `git@github.com:maxgio92/dotfiles.git` resolves to a GitHub issue on `maxgio92/dotfiles`.
 
 Ownership: a task is the user's own when the current user created it or is assigned to it, resolved at run time, or when it is a local file. Commands that write without approval check this before the first write; on someone else's task they stop and ask.
 
