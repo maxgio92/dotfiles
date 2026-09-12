@@ -1,5 +1,13 @@
 # Progression: CI, review rounds, rebases
 
+## Push verification
+
+- Push with an explicit refspec (`git push origin HEAD:<branch>`), never
+  bare `git push`.
+- Then `git fetch origin <branch>` and compare `git rev-parse HEAD` with
+  `git rev-parse FETCH_HEAD`. Stop and report on mismatch: a push whose
+  refspec matches nothing reports success.
+
 ## CI watching
 
 - After an approved push, poll the PR checks (`gh pr checks`) until

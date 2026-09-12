@@ -20,6 +20,14 @@ that publishes; drafting skills (`pr-review-message`, `slack-message`, the
 3. Verify: fetch the posted artifact back (permalink, message timestamp) and
    report it. A post you cannot fetch is not done.
 4. One approval covers one post. A batch approval must name each item.
+5. SHA guard. For a PR review or PR comment drafted from a review, read the
+   `Head:` line from the saved report file's header (the `review-pr` skill
+   keeps it outside the publishable block) and compare it with `gh pr view
+   <pr> --json headRefOid`. If they differ, the author pushed during the review: stop,
+   report both shas, and do not post. For a reply that cites a commit sha,
+   confirm that sha is in `gh pr view <pr> --json commits` on the pushed head.
+   The reviewed head sha never goes into a review body; an approved reply
+   that cites a fix commit (`fixed in <sha>`) keeps that citation.
 
 ## Not publishing
 
@@ -33,9 +41,14 @@ user does not own goes through this skill after the human approves it.
 
 ## Destinations
 
-- PR comment or reply: `gh pr comment` / `gh api` on the review thread; reply
-  in the thread the comment lives in.
-- Issue: `gh issue create` or `gh issue comment`.
+- PR review-thread reply: `gh-review-reply <review-comment-url> --body-file
+  <file>`, so the reply lands in the thread the comment lives in.
+- Top-level PR comment: `gh pr comment --body-file <file>`.
+- Never a raw `gh api` call for a write; the two commands above are the only
+  PR paths.
+- Issue: `gh issue create --title <line one> --body-file <rest>` for a
+  `draft-issue` block, whose first line is the title and whose remaining
+  lines are the body; `gh issue comment --body-file <file>` for a comment.
 - Another person's Linear issue: `save_comment`, or `save_issue` for a body or status change the owner asked for.
 - Slack: the Slack send tools, or the repository's posting helper if one
   exists.

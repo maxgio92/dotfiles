@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Reply in a pull request review thread from a body file.
+#
+# Usage: gh-review-reply <review-comment-url> --body-file PATH
+#
+# The URL must be https://github.com/OWNER/REPO/pull/N#discussion_r<id>
+# (or the short #r<id> form). Owner, repo, PR number, and comment id are
+# derived only from that URL. The body comes only from the file, encoded
+# with jq so quotes and newlines survive. Every other input shape is a
+# policy violation and exits 64; a bare or --help call exits 2. A URL that
+# names a nested reply also exits 64, since GitHub only accepts replies to a
+# thread's root comment; the message points at that root.
+#
+# Endpoint: POST repos/OWNER/REPO/pulls/N/comments/ID/replies on github.com.
+# The hostname is pinned so GH_HOST cannot redirect the write away from the
+# host the URL was validated against.
+# https://docs.github.com/en/rest/pulls/comments#create-a-reply-for-a-review-comment
+
+set -euo pipefail
+
+readonly EX_USAGE=2
+readonly EX_POLICY=64
+
+usage() {
+  echo "usage: gh-review-reply <review-comment-url> --body-file PATH" >&2
+  exit "$EX_USAGE"
+}
+
+policy() {
+  echo "gh-review-reply: $*" >&2
+  exit "$EX_POLICY"
+}
+
+[ $# -eq 0 ] && usage
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage ;;
+  esac
+done
+
+url=""
+body_file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --body-file)
+      [ $# -ge 2 ] || policy "--body-file needs a path"
+      [ -z "$body_file" ] || policy "--body-file given twice"
+      body_file="$2"
+      shift 2
+      ;;
+    --body-file=*)
+      policy "use '--body-file PATH', not '--body-file=PATH'"
+      ;;
+    -*)
+      policy "unknown flag '$1'; only --body-file is accepted"
+      ;;
+    *)
+      [ -z "$url" ] || policy "extra argument '$1'; one review comment URL only"
+      url="$1"
+      shift
+      ;;
+  esac
+done
+
+[ -n "$url" ] || policy "missing review comment URL"
+[ -n "$body_file" ] || policy "missing --body-file PATH"
+[ "$body_file" != "-" ] || policy "body must be a file, not stdin ('-')"
+[ -f "$body_file" ] && [ -r "$body_file" ] || policy "body file '$body_file' is missing or unreadable"
+[ -s "$body_file" ] || policy "body file '$body_file' is empty"
+
+if [[ "$url" == *'#issuecomment-'* ]]; then
+  policy "'$url' is a top-level PR comment, not a review thread; use 'gh pr comment --body-file' instead"
+fi
+
+# Owner and repo follow GitHub's name grammar, so nothing else can reach
+# the API path; the fragment must name a review comment id.
+url_re='^https://github\.com/([A-Za-z0-9-]+)/([A-Za-z0-9._-]+)/pull/([0-9]+)(/files)?#(discussion_r|r)([0-9]+)$'
+if [[ ! "$url" =~ $url_re ]]; then
+  policy "'$url' is not a review comment URL (expected https://github.com/OWNER/REPO/pull/N#discussion_r<id>)"
+fi
+owner="${BASH_REMATCH[1]}"
+repo="${BASH_REMATCH[2]}"
+case "$repo" in
+  .|..) policy "'$url' is not a review comment URL (repository name '$repo')" ;;
+esac
+pr="${BASH_REMATCH[3]}"
+comment_id="${BASH_REMATCH[6]}"
+
+for tool in gh jq; do
+  command -v "$tool" >/dev/null 2>&1 || policy "$tool is required but not on PATH"
+done
+
+endpoint="repos/${owner}/${repo}/pulls/${pr}/comments/${comment_id}/replies"
+
+out="$(jq -Rs '{body: .}' < "$body_file" |
+  gh api --hostname github.com --method POST "$endpoint" --input - --jq '.html_url' 2>&1)" && status=0 || status=$?
+
+if [ "$status" -ne 0 ]; then
+  # GitHub rejects a reply to a reply with 422 on in_reply_to_id. Resolve the
+  # thread root so the caller can retry with the URL the API accepts.
+  if grep -q -e 'HTTP 422' -e 'in_reply_to_id' <<< "$out"; then
+    root="$(gh api --hostname github.com "repos/${owner}/${repo}/pulls/comments/${comment_id}" \
+      --jq '.in_reply_to_id // empty' 2>/dev/null || true)"
+    if [[ "$root" =~ ^[0-9]+$ ]]; then
+      policy "'$url' is a nested reply; GitHub only accepts replies to the thread's root comment: https://github.com/${owner}/${repo}/pull/${pr}#discussion_r${root}"
+    fi
+    policy "'$url' was rejected (HTTP 422); if the comment is itself a reply, use the thread's root comment URL"
+  fi
+  printf '%s\n' "$out" >&2
+  exit "$status"
+fi
+printf '%s\n' "$out"
