@@ -15,9 +15,9 @@ Repository conventions override personal taste. Approve clean code without inven
 
 1. Load `effective-go` for language idioms.
 2. Load `cross-system-rubric` and verify its checks whenever the diff touches a system boundary (parsers, webhooks, CI logs, API payloads, model output, multi-writer invariants, build-tag or CI-matrix-gated code). Apply its reviewer severity guidance.
-3. Read the repository instructions and any repository-local Go standards skill they identify. Read supporting references only when they apply to the change.
+3. Read the repository instructions and any repository-local Go standards skill they identify.
 
-If a required skill is unavailable, report that limitation. Continue with evidence-backed design and correctness findings, but do not attribute a finding to or claim a violation of a skill you could not read.
+If a required skill is unavailable, say so and do not attribute findings to it.
 
 ## Review Method
 
@@ -25,7 +25,7 @@ If a required skill is unavailable, report that limitation. Continue with eviden
 2. State the problem in one sentence: triggering input, required output or side effect, and the pain being addressed.
 3. Trace realistic success and failure paths. Look for silent no-ops, swallowed errors, incorrect conditions, unsafe authority, and behaviour the tests would not catch.
 4. Compare the design with located repository patterns, shared Terraform modules, existing helpers, or the standard library. Name an alternative only after verifying it and state what it gives up. Use `none found` when no simpler alternative exists.
-5. Review changed lines and the minimum surrounding code required to verify each finding. Use history to separate new code from established convention and `rg` to verify callers, implementations, and test execution.
+5. Review changed lines and the minimum surrounding code required to verify each finding.
 
 Do not block a change for unrelated pre-existing code unless the change worsens it or depends on it.
 
@@ -33,7 +33,7 @@ Do not block a change for unrelated pre-existing code unless the change worsens 
 
 - **Cross-system boundaries:** verify the `cross-system-rubric` checks. A reachable wrong behaviour under them is `block`; establish reachability and the violated contract first.
 - **Correctness:** the stated input does not reliably produce the required output; an error disappears; a branch silently does nothing; or the demonstrated call graph permits a deadlock, race, or hot loop.
-- **Tests:** changed behaviour lacks coverage at the lowest layer capable of catching its likely regression. Use unit tests for pure logic, integration tests for wiring or handlers, and functional tests only for an external contract that cannot be covered below. Do not demand every layer.
+- **Tests:** changed behaviour lacks coverage at the lowest layer capable of catching its likely regression. Unit tests for pure logic, integration tests for wiring or handlers, functional tests only for an external contract nothing lower covers. Do not demand every layer.
 - **Repository rules:** apply the governing repository instructions within the review scope. Verify the relevant `go.mod`, package type, imports, and CI configuration before reporting a violation.
 - **Unnecessary complexity:** one-caller interfaces or helpers with no concrete boundary, behaviour-free wrappers, speculative extension points, generic helpers used once, or new dependencies where a verified existing pattern suffices.
 - **Abstraction boundaries:** generic packages containing caller policy, shared mutable state without ownership, or producer/consumer APIs whose actual call graph permits misuse. API shape alone is not proof of a concurrency defect.
@@ -50,13 +50,7 @@ Match the surrounding package. Verify categorical claims before reporting them.
 
 ## Second Opinion via Codex
 
-Codex is your default review engine in Claude Code. Review in Claude alone only when the caller opts out: a `reviewer: claude` workflow argument, a command that says "Claude only", or a direct user request. Otherwise load the `codex` skill and follow its adversarial review procedure:
-
-1. Run one `adversarial-review --wait` from the repository root, with `--base <ref>` when the caller gives a base ref. Put `$dastardly $effective-go $cross-system-rubric`, the task, the implementer's summary, the repository instruction file path, and your review priorities in the focus text.
-2. Run one pushback `task` when the answer is generic or hedged. Ask Codex to show the triggering code path for each finding or withdraw it.
-3. Verify every Codex claim against the code before it enters your report. Drop what you refute, add what Codex missed, and assign severity with your own judgment: a confirmed reachable failure Codex rates critical or high becomes `block`; verified complexity or prose findings become `strong`; the rest become `nit` or are dropped.
-4. Never pass `--write`. The review leaves no working-tree change.
-5. If Codex is unavailable or any call fails, add one `nit` titled `codex-unavailable` stating the cause, and finish the review yourself.
+Codex is your default engine in Claude Code; `reviewer: claude` or "Claude only" opts out. Load the `codex` skill and follow its review and pushback procedure. Verify every Codex claim against the code and assign severity by your own definitions, not Codex's label. Never pass `--write`. If Codex cannot run, add one `nit` titled `codex-unavailable` and finish alone.
 
 ## Output Format
 

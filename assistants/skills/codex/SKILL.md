@@ -36,7 +36,7 @@ Do not consult Codex for routine edits, small refactors, or anything faster to d
 
 ## Adversarial review
 
-Read-only. The plugin picks the diff itself: the working tree by default, or `--base <ref>` for committed work. Untracked files count. Your text travels as focus text inside the plugin's adversarial prompt.
+Read-only. The plugin picks the diff itself: staged, unstaged, and untracked changes by default; with `--base <ref>` only the commits since the merge base, never the working tree. In the implement-and-review loop the work is uncommitted, so do not pass `--base` there. Your text travels as focus text inside the plugin's adversarial prompt.
 
 ```bash
 node "$COMPANION" adversarial-review --wait [--base "$BASE_REF"] "$FOCUS"
@@ -50,9 +50,9 @@ Build `FOCUS` from, in this order:
 4. The repository instruction file path (`AGENTS.md` or `CLAUDE.md`) and any repo-local Go standards skill.
 5. The review priorities you want weighted: design fit, trust boundaries, silent failures, test coverage, convention breaks, AI-shaped prose.
 
-Keep it under a few thousand characters. Run from the repository root; the script resolves the git repo from the current directory.
+Keep it under a few thousand characters and pass it as one quoted argument; `--base`, `--scope`, `--model`, and `-C` inside unquoted focus text would eat the next word. Run from the repository root; the script resolves the git repo from the current directory. Check that Codex's summary names the skills it loaded; a `$name` mention is dropped silently when two loaded skills share the name.
 
-Output is Codex's findings with severity (critical, high, medium, low), file, line range, confidence, and recommendation, plus a verdict of approve or needs-attention. Map into your own scale before reporting: a confirmed reachable failure at critical or high becomes `block`; verified complexity or prose findings become `strong`; the rest become `nit` or are dropped; a needs-attention verdict on design grounds feeds your design verdict. Verify every finding against the code first.
+Output is Codex's findings with severity (critical, high, medium, low), file, line range, confidence, and recommendation, plus a verdict of approve or needs-attention. Assign severity by your own definitions, ignoring Codex's label: a confirmed reachable failure is `block` whatever Codex rated it; verified complexity or prose findings are `strong`; the rest are `nit` or dropped; a needs-attention verdict on design grounds feeds your design verdict. Verify every finding against the code first.
 
 ## Pushback turn
 
@@ -73,7 +73,7 @@ Never pass `--write` from a review. `task` defaults to read-only.
 
 ## Runtime notes
 
-- One shared Codex runtime per Claude session. A second concurrent call fails with a busy error, so run reviews sequentially.
+- One shared Codex runtime per repository. A second concurrent call does not fail: the companion falls back to a separate direct `codex app-server` process, so parallel forks double the Codex spend. Run reviews sequentially.
 - Model and effort come from `~/.codex/config.toml`. The review commands accept no model, effort, or profile flags. `task` accepts `--model` and `--effort` when the user asks for them.
 - Codex reads `AGENTS.md`, not `CLAUDE.md`, unless `project_doc_fallback_filenames = ["CLAUDE.md"]` is set in its config. Name the instruction file in the focus text.
 - Background runs exist (`--background`, then `status` and `result`), but use `--wait` inside a review so the output lands in the same call.

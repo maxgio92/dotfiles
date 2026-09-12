@@ -14,7 +14,7 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(node *codex-companion.mjs*)"
+      "Bash(node:*)"
     ],
     "ask": [
       "Bash(git push:*)",

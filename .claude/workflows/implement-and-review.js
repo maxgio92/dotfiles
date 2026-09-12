@@ -198,9 +198,9 @@ while (round < MAX_ROUNDS) {
       (reviewer === 'codex'
         ? `Second opinion REQUIRED: follow your "Second Opinion via Codex" section. Run ONE ` +
           `adversarial review through the official Codex plugin from the repo root the task ` +
-          `names` +
-          (baseRef ? `, passing --base ${baseRef}` : ``) +
-          `, with the skill mentions, the task, peter's summary, and your priorities in the ` +
+          `names. Do not pass --base: peter's work is uncommitted and the plugin's default ` +
+          `scope reviews the dirty working tree, while --base would review commits only. ` +
+          `Put the skill mentions, the task, peter's summary, and your priorities in the ` +
           `focus text. Push back once where Codex is generic or hedged. Then vet every Codex ` +
           `claim against the actual code yourself before reporting: drop what you can refute, ` +
           `add what it missed, and assign severities with your own judgment. Report only ` +
