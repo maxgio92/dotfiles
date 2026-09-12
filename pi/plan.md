@@ -23,6 +23,6 @@ mostly custom to this setup.
 | File completion UI | Custom file-suggestion command in `.claude/file-suggestion.sh` | Missing |
 | Permissions and execution policy | Claude auto mode, Codex automatic approval review, prefix rules, trust settings, model profiles, retry policy, and sandbox choices | Pi has only an initial trust/tool/retry policy |
 | Connector selection | Slack and LSP plugins in Claude; Linear MCP in Codex | Configured locally, but the connector implementations are third-party |
-| Personal writing instructions | Shared voice, punctuation, vocabulary, and workflow defaults | Ported to `pi/AGENTS.md` |
+| Personal writing instructions | Shared voice, punctuation, vocabulary, and workflow defaults | Delivered through `~/.pi/agent/AGENTS.md` and `~/.pi/agent/APPEND_SYSTEM.md` |
 | Effective Go guidance | Shared language conventions skill | Ported |
 | Scheduled prompt loop | Repeats a prompt within an open session at a custom interval | Ported through `/loop`, `/loops`, and `/loop-stop` |

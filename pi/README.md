@@ -193,7 +193,8 @@ ephemeral run.
 | Source | Live path | Purpose |
 |---|---|---|
 | `pi/settings.json` | `~/.pi/agent/settings.json` | Models, tools, trust, retries, telemetry, and theme |
-| `pi/AGENTS.md` | `~/.pi/agent/AGENTS.md` | Personal writing rules and the default coding workflow |
+| `assistants/instructions/global.md` | `~/.pi/agent/AGENTS.md` | Shared global rules: delegation, artefacts, tools, outward writes |
+| `assistants/communication-rules/rules.md` | `~/.pi/agent/APPEND_SYSTEM.md` | Communication Rules appended to the system prompt |
 | `pi/extensions/` | `~/.pi/agent/extensions/` | Custom commands and lifecycle behaviour |
 | `assistants/agents/` | `~/.pi/agent/agents/` | Shared agent definitions |
 | `assistants/skills/` | `~/.pi/agent/skills/` | Shared skills, except Claude-only ones (`CLAUDE_ONLY_SKILLS` in the Makefile) |
