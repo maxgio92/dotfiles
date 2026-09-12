@@ -19,7 +19,7 @@ mostly custom to this setup.
 | Writing personas | Separate Slack, PR-review, documentation, blog, and video-writing behavior | Slack and PR-review skills are shared; command-only blog and video flows remain unported |
 | Session knowledge flows | `daily`, `session-journal`, `wiki`, onboarding, offboarding, and orientation prompts | Daily, wiki, and a three-format session journal are shared; command-only flows remain unported |
 | OpenSCAD pipeline | Agent plus preview, comparison, STL export, and geometry validation skills | Shared skills and persona installed in Claude, Codex, and Pi |
-| Claude-to-Codex consultation | Custom consultation skill with `review` and `deep` profiles, multi-turn pushback, and directory handling | Shared skill installed in Claude, Codex, and Pi; available tools still differ by runtime |
+| Claude-to-Codex consultation | Consultation skill over the official Codex plugin, with a pushback turn and directory handling | Claude-only; pi and Codex run dastardly on a GPT model directly |
 | File completion UI | Custom file-suggestion command in `.claude/file-suggestion.sh` | Missing |
 | Permissions and execution policy | Claude auto mode, Codex automatic approval review, prefix rules, trust settings, model profiles, retry policy, and sandbox choices | Pi has only an initial trust/tool/retry policy |
 | Connector selection | Slack and LSP plugins in Claude; Linear MCP in Codex | Configured locally, but the connector implementations are third-party |
