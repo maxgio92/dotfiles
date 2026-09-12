@@ -21,6 +21,10 @@ Resolve from the argument alone. Never infer the tracker from the current reposi
 
 Read exactly one reference per task. Text after the argument is extra context, not a second target.
 
+Creation targets, for commands that file a new task: a Linear team or project name resolves to `references/linear.md`; `owner/repo` with no `#N` resolves to `references/github.md`; a directory resolves to `references/local.md`. A blank creation target is the one inference allowed: take the tracker the session already named or the team visible in Linear, and state the choice in the same confirmation as the body.
+
+Ownership: a task is the user's own when the current user created it or is assigned to it, resolved at run time, or when it is a local file. Commands that write without approval check this before the first write; on someone else's task they stop and ask.
+
 ## Roles
 
 Every task command speaks in these roles. The reference maps each role to its tracker.

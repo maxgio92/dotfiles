@@ -36,6 +36,7 @@ user does not own goes through this skill after the human approves it.
 - PR comment or reply: `gh pr comment` / `gh api` on the review thread; reply
   in the thread the comment lives in.
 - Issue: `gh issue create` or `gh issue comment`.
+- Another person's Linear issue: `save_comment`, or `save_issue` for a body or status change the owner asked for.
 - Slack: the Slack send tools, or the repository's posting helper if one
   exists.
 

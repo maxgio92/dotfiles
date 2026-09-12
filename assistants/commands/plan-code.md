@@ -77,4 +77,3 @@ The plan is disposable: never commit it and never write it inside the repository
 - Include test file in scope when adding/modifying functionality
 - Flag tasks requiring decisions before implementation
 - Note when scope may challenge context limits
-- The plan file lives only at the Plan Location; never write it inside the repository
