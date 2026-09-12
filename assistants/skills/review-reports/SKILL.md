@@ -6,10 +6,11 @@ description: "Where review and audit reports live: durable per-user storage with
 # Review Reports
 
 Write reports to durable per-user storage, never into the repository under
-review:
+review. Reports are data the user reads and acts on later, so they live under
+the XDG data home, not state, cache, or runtime:
 
 ```
-~/reports/<repo>/<YYYY-MM-DD>-<agent>-<slug>.md
+${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports/<repo>/<YYYY-MM-DD>-<agent>-<slug>.md
 ```
 
 - `<repo>`: the repository directory name (e.g. `dotfiles`, `mono`).
