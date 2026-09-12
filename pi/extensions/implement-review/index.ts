@@ -236,7 +236,7 @@ async function runWorkflow(
 	setStage("Peter implementing");
 	const implementation = await runAgent(
 		peter,
-		`Implement this coding task in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing. Do not commit, stage, or push; leave every change in the working tree. The orchestrating session commits after the review loop converges.\n\nTask:\n${task}`,
+		`Implement this coding task in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing. Do not commit, stage, or push; leave every change in the working tree. The orchestrating session commits after the review loop converges. Before designing, check repository history and related issues or pull requests for an existing solution, and state in one line what you found.\n\nTask:\n${task}`,
 		cwd,
 		defaults,
 		signal,
