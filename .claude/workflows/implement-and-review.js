@@ -26,6 +26,21 @@ const baseRef = (args && typeof args === 'object' && args.baseRef) || null
 // One planner decomposes the task, then one fresh peter per phase.
 const planMode = (args && typeof args === 'object' && args.plan === true) || false
 
+// Optional: plan file (pass {task, plan: true, planPath}).
+// When planning runs and returns phases, the plan is written there as Markdown
+// so the caller can read or delete it. The path must lie outside the repository
+// the task names; a path inside it is skipped with a warning.
+const planPath =
+  (args && typeof args === 'object' && typeof args.planPath === 'string' && args.planPath.trim()) || null
+
+// Optional: repository root (pass {task, plan: true, planPath, repoRoot}).
+// The planPath guard compares against this path. Guessing the root from the
+// task text is unsafe: the first absolute path in a task body is usually a
+// Scope or Evidence file, not the repository. Without it the guard is skipped
+// with a warning.
+const repoRootArg =
+  (args && typeof args === 'object' && typeof args.repoRoot === 'string' && args.repoRoot.trim()) || null
+
 // Optional: review engine (pass {task, reviewer: 'claude'} to opt out).
 // 'codex' (default): dastardly runs one adversarial review through the
 // official Codex plugin, with its rubric loaded as a Codex skill, and vets the
@@ -168,6 +183,68 @@ if (planMode) {
     log('Plan agent returned nothing; falling back to single-implementer path.')
   } else if (plan.sweep) {
     log(`Topic sweep: ${plan.sweep}`)
+  }
+}
+
+// Resolve `.` and `..` segments and collapse repeated slashes without the
+// `path` module, which the workflow runtime may not provide.
+const normalizePath = (p) => {
+  const out = []
+  for (const seg of String(p).split('/')) {
+    if (seg === '' || seg === '.') continue
+    if (seg === '..') out.pop()
+    else out.push(seg)
+  }
+  return '/' + out.join('/')
+}
+
+let writtenPath = null
+// Workflow args are JSON, not shell: an unexpanded `${TMPDIR:-/tmp}` or a
+// relative path would be root-anchored by normalizePath and written somewhere
+// the caller did not intend.
+const planPathUsable = planPath && planPath.startsWith('/') && !planPath.includes('$')
+if (planPath && !planPathUsable) {
+  log(`Warning: planPath ${planPath} must be an absolute path with shell variables already expanded; plan not written.`)
+}
+if (planPathUsable && !plan) {
+  log(`planPath ${planPath} given but no plan was produced (plan mode off or planner returned nothing); nothing written.`)
+}
+if (plan && planPathUsable) {
+  const planMarkdown =
+    `# Plan\n\n` +
+    plan.phases.map((p, i) => `## ${i + 1}. ${p.title}\n\n${p.goal}\n`).join('\n') +
+    (plan.sweep ? `\nTopic sweep: ${plan.sweep}\n` : ``)
+  const repoRoot = repoRootArg && repoRootArg.startsWith('/') ? normalizePath(repoRootArg) : null
+  const target = normalizePath(planPath)
+  if (!repoRoot) {
+    log(`Warning: no absolute repoRoot given; cannot verify that planPath ${planPath} lies outside the repository; plan not written.`)
+  } else if (target === repoRoot || target.startsWith(repoRoot + '/')) {
+    log(`Warning: planPath ${planPath} lies inside the repository ${repoRoot}; plan not written.`)
+  } else {
+    const dir = target.slice(0, target.lastIndexOf('/')) || '/'
+    if (typeof require === 'function') {
+      // The plan file is a convenience, not the deliverable: a write failure
+      // must not abort the run after research and planning already happened.
+      try {
+        const fs = require('fs')
+        fs.mkdirSync(dir, { recursive: true })
+        fs.writeFileSync(target, planMarkdown)
+        writtenPath = target
+      } catch (err) {
+        log(`Warning: could not write plan to ${target}: ${err && err.message ? err.message : err}`)
+      }
+    } else {
+      const ack = await agent(
+        `Create the directory ${dir} (and any missing parents), then write the ` +
+          `Markdown below to ${target} exactly as given, replacing any existing file. ` +
+          `Do not touch any other path. Return the single word DONE.\n\n` +
+          planMarkdown,
+        { label: 'plan:write', phase: 'Plan' },
+      )
+      if (ack && ack.trim() === 'DONE') writtenPath = target
+      else log(`Plan write agent returned ${JSON.stringify(ack)}; plan may not be on disk.`)
+    }
+    if (writtenPath) log(`Plan written to ${writtenPath}`)
   }
 }
 
@@ -366,4 +443,5 @@ return {
   fixed: fixedAny,
   findings: allFindings,
   research: researchResult || (typeof research === 'string' && research !== 'auto' ? research : null),
+  planPath: writtenPath || null,
 }
