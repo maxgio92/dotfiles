@@ -441,6 +441,9 @@ CODEX_SKILLS := $(HOME)/.agents/skills
 CODEX_LEGACY_SKILLS := $(HOME)/.codex/skills
 # Marks persona dirs this Makefile copied, so pruning never touches user skills.
 PERSONA_MARKER := .dotfiles-persona
+# Skills that drive a Claude Code plugin; pi and Codex run the same agents
+# natively and must not see them.
+CLAUDE_ONLY_SKILLS := codex
 
 .PHONY: codex-skills
 codex-skills:
@@ -448,6 +451,9 @@ codex-skills:
 	@for src in $(DOTFILES)/assistants/skills/*; do \
 		name=$$(basename "$$src"); \
 		target=$(CODEX_SKILLS)/$$name; \
+		case " $(CLAUDE_ONLY_SKILLS) " in *" $$name "*) \
+			if [ -L "$$target" ]; then rm "$$target" || exit 1; echo "  remove Claude-only skill $$name"; fi; continue;; \
+		esac; \
 		if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 			echo "  skip skill $$name ($$target exists and is not a symlink)"; \
 		else \
@@ -526,7 +532,11 @@ pi-skills:
 	@mkdir -p $(HOME)/.pi/agent/skills
 	@for src in $(DOTFILES)/assistants/skills/*; do \
 		name=$$(basename "$$src"); \
-		ln -sfn "$$src" $(HOME)/.pi/agent/skills/$$name; \
+		target=$(HOME)/.pi/agent/skills/$$name; \
+		case " $(CLAUDE_ONLY_SKILLS) " in *" $$name "*) \
+			if [ -L "$$target" ]; then rm "$$target" || exit 1; echo "  remove Claude-only skill $$name"; fi; continue;; \
+		esac; \
+		ln -sfn "$$src" "$$target"; \
 	done
 	$(call prune_links,$(HOME)/.pi/agent/skills,$(DOTFILES)/assistants/skills)
 	@echo "  linked shared skills"

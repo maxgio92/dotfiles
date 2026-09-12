@@ -33,6 +33,13 @@ interface DispatchDefaults {
 	thinkingLevel?: ThinkingLevel;
 }
 
+interface ChildOptions {
+	extensions?: string[];
+	// Drops the edit and write tools from a review child. bash remains, so
+	// the prompt still carries the no-writes rule.
+	readOnly?: boolean;
+}
+
 interface ChildResult {
 	output: string;
 	review?: StructuredReview;
@@ -107,8 +114,9 @@ async function runAgent(
 	cwd: string,
 	defaults: DispatchDefaults,
 	signal?: AbortSignal,
+	options: ChildOptions = {},
 ): Promise<string> {
-	const result = await runAgentProcess(agent, task, cwd, defaults, signal);
+	const result = await runAgentProcess(agent, task, cwd, defaults, signal, options);
 	if (!result.output.trim()) throw new Error(`${agent.name} returned no output`);
 	return result.output.trim();
 }
@@ -120,7 +128,10 @@ async function runReviewAgent(
 	defaults: DispatchDefaults,
 	signal?: AbortSignal,
 ): Promise<StructuredReview> {
-	const result = await runAgentProcess(agent, task, cwd, defaults, signal, [REVIEW_OUTPUT_EXTENSION]);
+	const result = await runAgentProcess(agent, task, cwd, defaults, signal, {
+		extensions: [REVIEW_OUTPUT_EXTENSION],
+		readOnly: true,
+	});
 	if (!result.review || result.reviewSubmissions !== 1) {
 		throw new Error(
 			`${agent.name} must call submit_review exactly once; received ${result.reviewSubmissions} valid submission(s)`,
@@ -135,14 +146,17 @@ async function runAgentProcess(
 	cwd: string,
 	defaults: DispatchDefaults,
 	signal?: AbortSignal,
-	extensions: string[] = [],
+	options: ChildOptions = {},
 ): Promise<ChildResult> {
 	const args = ["--mode", "json", "-p", "--no-session", "--no-context-files", "--no-extensions"];
+	if (options.readOnly) args.push("--exclude-tools", "edit,write");
 	const inheritsModel = !agent.model;
 	const model = agent.model ?? defaults.model;
 	if (model) args.push("--model", model);
 	if (inheritsModel && defaults.thinkingLevel) args.push("--thinking", defaults.thinkingLevel);
-	for (const extension of [COMMUNICATION_RULES_EXTENSION, ...extensions]) args.push("--extension", extension);
+	for (const extension of [COMMUNICATION_RULES_EXTENSION, ...(options.extensions ?? [])]) {
+		args.push("--extension", extension);
+	}
 
 	// Pass the prompt text directly. pi --help says the flag accepts "text
 	// or file contents", but a live run showed a temp-file path appended
@@ -385,6 +399,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 						repoRoot,
 						defaults,
 						loader.signal,
+						{ readOnly: true },
 					);
 					return { repoRoot, scope, output };
 				})()

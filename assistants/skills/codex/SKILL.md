@@ -5,6 +5,8 @@ description: "Get a second opinion from Codex (OpenAI) on a diff, a design, or a
 
 # codex
 
+This is a Claude Code skill: it reaches Codex through the Claude Code plugin. Other harnesses (pi, Codex itself) run dastardly on a GPT model directly and do not use this skill.
+
 Codex is a **second opinion**, not an authority. You are the primary agent; Codex is a consultant. Check every claim against the code, disagree when the evidence says so, and form your own view before reporting. The user wants your judgment informed by Codex, not a pass-through.
 
 ## Transport
@@ -44,10 +46,10 @@ node "$COMPANION" adversarial-review --wait [--base "$BASE_REF"] "$FOCUS"
 
 Build `FOCUS` from, in this order:
 
-1. Skill mentions so Codex loads the shared rubric from its own skills directory: `$dastardly $effective-go $cross-system-rubric`.
+1. Skill mentions so Codex loads the shared rubric from its own skills directory: `$dastardly $cross-system-rubric`, plus `$effective-go` only when the diff contains Go files.
 2. The task in one or two sentences.
 3. The implementer's summary, if any.
-4. The repository instruction file path (`AGENTS.md` or `CLAUDE.md`) and any repo-local Go standards skill.
+4. The repository instruction file path (`AGENTS.md` or `CLAUDE.md`) and any repo-local standards skill the instructions name for the languages in the diff.
 5. The review priorities you want weighted: design fit, trust boundaries, silent failures, test coverage, convention breaks, AI-shaped prose.
 
 Keep it under a few thousand characters and pass it as one quoted argument; `--base`, `--scope`, `--model`, and `-C` inside unquoted focus text would eat the next word. Run from the repository root; the script resolves the git repo from the current directory. Check that Codex's summary names the skills it loaded; a `$name` mention is dropped silently when two loaded skills share the name.
