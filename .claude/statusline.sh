@@ -5,7 +5,8 @@
 set -u
 input=$(cat)
 
-read -r model cwd worktree pct in_tok cache_tok out_tok cost mode < <(
+# Tab-separated so names with spaces (model display names, paths) stay whole.
+IFS=$'\t' read -r model cwd worktree pct in_tok cache_tok out_tok cost mode < <(
   printf '%s' "$input" | jq -r '
     .context_window.current_usage as $u
     | (($u.input_tokens // 0) + ($u.cache_creation_input_tokens // 0) + ($u.cache_read_input_tokens // 0)) as $in
@@ -19,7 +20,7 @@ read -r model cwd worktree pct in_tok cache_tok out_tok cost mode < <(
         ($u.output_tokens // 0),
         (.cost.total_cost_usd // 0),
         (.permission_mode // "-")
-      ] | map(tostring) | join(" ")'
+      ] | map(tostring) | join("\t")'
 )
 
 k() { # tokens -> compact "12k" / "1.2M"
