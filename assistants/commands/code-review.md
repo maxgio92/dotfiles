@@ -2,7 +2,9 @@
 description: Dastardly adversarially reviews a scope (working-tree diff by default; or a PR, branch, files) without modifying anything
 ---
 
-Use the Agent tool to launch the dastardly agent for this review.
+Use the Agent tool to launch the dastardly agent for this review; send the
+packet per the `delegate-task` skill (Task, Scope, Validation, Output as a
+report with a length budget).
 
 Scope: $ARGUMENTS
 
@@ -20,5 +22,6 @@ pushback turn, every Codex claim vetted against the code, and a
 `codex-unavailable` nit instead of a failure when Codex cannot run). Only
 when the scope text says "Claude only" does dastardly review in Claude alone.
 
-Relay dastardly's verdict and findings to the user. Do not apply fixes: that
-is /implement-review's job, or the user's call.
+Relay dastardly's verdict and findings to the user as a report, per
+`delegate-task`. Do not apply fixes: that is /implement-review's job, or the
+user's call.
