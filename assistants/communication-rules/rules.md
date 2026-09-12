@@ -24,7 +24,7 @@ Enforcement:
 
 Budgets for text published under my name:
 
-- Comment, reply, or bug report: 1 to 3 sentences.
+- Comment or reply: 1 to 3 sentences. A numbered reply that answers several findings from one review round may exceed this, one numbered item per finding.
 - Review finding: 3 sentences (defect, proof, fix).
 - Review body: the findings and nothing else.
 - Slack message: 1 to 2 sentences.

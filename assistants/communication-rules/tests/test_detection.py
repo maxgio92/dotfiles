@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.config import Config
-from core.detection import extract_post_texts, has_api_post_signal, is_bash_gh_post, is_known_post_command
+from core.detection import extract_post_texts, has_api_post_signal, is_bash_gh_post, is_known_post_command, scan_bash
 from core.extractors.claude_code import external_target
 
 
@@ -107,6 +107,26 @@ class GhApiWriteFormsTest(unittest.TestCase):
         for command in self.READS:
             with self.subTest(command=command):
                 self.assertFalse(is_bash_gh_post(command))
+
+
+class ScanBashPipeTest(unittest.TestCase):
+    """The body scan reaches a gh post behind a pipe, as the classifier does."""
+
+    def test_piped_gh_post_body_is_scanned(self) -> None:
+        config = Config(
+            rules_text="",
+            reminder_prompt=None,
+            block_message=None,
+            policy={"hardGateBannedTerms": ["delve"]},
+        )
+        self.assertTrue(scan_bash("true | gh pr comment 1 --body 'we delve into it'", config))
+        self.assertFalse(scan_bash("true | gh pr comment 1 --body 'fixed in a1b2c3d'", config))
+        self.assertFalse(scan_bash("cat notes.md | gh pr view 1", config))
+        # A quoted '|' argument is a bare token after shlex; it must not cut a
+        # gh api post off its body.
+        self.assertTrue(
+            scan_bash("gh api repos/a/b/issues/1/comments --template '|' -f body='we delve into it'", config)
+        )
 
 
 class ExternalTargetTest(unittest.TestCase):

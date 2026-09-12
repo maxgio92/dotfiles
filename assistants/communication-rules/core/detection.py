@@ -1,8 +1,7 @@
-"""Detection and Bash side-effect scanning, moved as-is from scanner.py.
+"""Detection and Bash side-effect scanning.
 
-This module holds the prose detection and Bash scan logic byte-identical to
-its original home in ``scanner.py``. No detection rule changes here; this is a
-relocation only. The ``Config`` type lives in ``core.config``.
+This module holds the prose detection and Bash scan logic that started life in
+``scanner.py``. The ``Config`` type lives in ``core.config``.
 """
 
 from __future__ import annotations
@@ -560,8 +559,8 @@ def _argv_is_gh_post(argv: list[str]) -> bool:
 
 
 def is_bash_gh_post(command: Any) -> bool:
-    # A Bash command is external (B2) when its first token is gh/gh-api-safe and
-    # it carries a post signal. A shell ``-c`` wrapper hides the gh post inside
+    # A Bash command is external (B2) when its first token is one of
+    # GH_POST_COMMANDS and it carries a post signal. A shell ``-c`` wrapper hides the gh post inside
     # one token, so also unwrap the wrapper and test the inner script's argv: a
     # wrapped ``gh issue create --body ...`` must classify as external too.
     if not isinstance(command, str):
@@ -846,12 +845,23 @@ def scan_bash(command_text: str, config: Config, _depth: int = 0) -> bool:
                     blocked = blocked or scan_bash(inner, config, _depth + 1)
                     continue
 
-            if is_known_post_command(segment):
-                texts, unresolved = extract_post_texts(segment, body_files)
-                if unresolved or not texts:
-                    return True
-                for text in texts:
-                    blocked = blocked or scan_prose(text, config, strip_fences=True)
+            # A pipe keeps its stages in one segment (the redirect collector
+            # below needs the sink), so the post check also runs on the stages
+            # after the first, the same way ``is_bash_gh_post`` classifies
+            # ``true | gh pr comment ...``. The whole segment is still checked
+            # first: shlex turns a quoted ``'|'`` argument into a bare ``|``
+            # token, and a split alone would let it cut a gh api post off its
+            # body (``gh api ... --template '|' -f body=...``).
+            candidates = [segment]
+            if "|" in segment:
+                candidates.extend(strip_env_assignments(stage) for stage in _split_on_pipe(segment)[1:])
+            for candidate in candidates:
+                if candidate and is_known_post_command(candidate):
+                    texts, unresolved = extract_post_texts(candidate, body_files)
+                    if unresolved or not texts:
+                        return True
+                    for text in texts:
+                        blocked = blocked or scan_prose(text, config, strip_fences=True)
 
             texts, unresolved = extract_redirect_texts(segment, heredocs)
             if unresolved:

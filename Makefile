@@ -333,12 +333,12 @@ check-agents:
 	done; exit $$fail
 
 # Every agent needs a routing row in the delegate-task skill, or an orchestrator
-# cannot pick it. The skill is written in another worktree: skip until it lands.
+# cannot pick it.
 ROUTING := $(DOTFILES)/assistants/skills/delegate-task/SKILL.md
 
 .PHONY: check-routing
 check-routing:
-	@[ -f $(ROUTING) ] || { echo "skip check-routing: delegate-task skill absent"; exit 0; }; \
+	@[ -f $(ROUTING) ] || { echo "FAIL: delegate-task skill absent"; exit 1; }; \
 	fail=0; for f in $(DOTFILES)/assistants/agents/*.md; do \
 		name=$$(basename "$$f" .md); \
 		grep -Eq "^(- |\| *)\`$$name\`" $(ROUTING) || { echo "FAIL $$name: no row in delegate-task/SKILL.md"; fail=1; }; \

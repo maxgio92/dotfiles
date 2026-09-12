@@ -17,13 +17,31 @@ cat > "$tmp/bin/gh" <<'SHIM'
 #!/usr/bin/env bash
 # GH_SHIM_NESTED=<root id> makes the POST fail like GitHub does for a reply
 # to a reply, and answers the follow-up comment GET with that root id.
+# GH_SHIM_422=1 makes the POST fail with an unrelated 422 and answers the
+# follow-up GET with no in_reply_to_id. GH_SHIM_NOISE=1 adds a warning on
+# stderr before the URL, as gh does for an update notice. Like gh, the shims
+# put the one-line status on stderr and GitHub's JSON error body on stdout.
+if [ -n "${GH_SHIM_422:-}" ]; then
+  case " $* " in
+    *" --method POST "*)
+      printf '%s\n' "$@" > "$GH_SHIM_ARGV"
+      cat > "$GH_SHIM_STDIN"
+      echo 'gh: Validation Failed (HTTP 422)' >&2
+      echo '{"message":"Validation Failed","errors":[{"resource":"PullRequestReviewComment","field":"body","code":"too_long"}]}'
+      exit 1
+      ;;
+    *)
+      exit 0
+      ;;
+  esac
+fi
 if [ -n "${GH_SHIM_NESTED:-}" ]; then
   case " $* " in
     *" --method POST "*)
       printf '%s\n' "$@" > "$GH_SHIM_ARGV"
       cat > "$GH_SHIM_STDIN"
       echo 'gh: Validation Failed (HTTP 422)' >&2
-      echo '{"message":"Validation Failed","errors":[{"resource":"PullRequestReviewComment","field":"in_reply_to_id","code":"custom"}]}' >&2
+      echo '{"message":"Validation Failed","errors":[{"resource":"PullRequestReviewComment","field":"in_reply_to_id","code":"custom"}]}'
       exit 1
       ;;
     *)
@@ -34,6 +52,7 @@ if [ -n "${GH_SHIM_NESTED:-}" ]; then
 fi
 printf '%s\n' "$@" > "$GH_SHIM_ARGV"
 cat > "$GH_SHIM_STDIN"
+[ -z "${GH_SHIM_NOISE:-}" ] || echo 'A new release of gh is available' >&2
 echo "https://github.com/o/r/pull/7#discussion_r999"
 SHIM
 chmod +x "$tmp/bin/gh"
@@ -114,7 +133,25 @@ if [ "$status" -eq 64 ] && grep -q -- "root comment: $good#discussion_r555" <<< 
 else
   fail "nested reply names the thread root" "exit $status: $out"
 fi
+# A 422 with no nested root keeps GitHub's own message ahead of the generic one.
+reset_shim
+out="$(GH_SHIM_422=1 "$script" "$good#discussion_r123456" --body-file "$body" 2>&1)"; status=$?
+if [ "$status" -eq 64 ] && grep -q -- 'too_long' <<< "$out" && grep -q -- 'rejected (HTTP 422)' <<< "$out"; then
+  pass "generic 422 keeps GitHub's message"
+else
+  fail "generic 422 keeps GitHub's message" "exit $status: $out"
+fi
+
+# gh's stderr noise stays off stdout, so the caller's captured URL is clean.
+reset_shim
+out="$(GH_SHIM_NOISE=1 "$script" "$good#r123456" --body-file "$body" 2>"$tmp/stderr")"; status=$?
+if [ "$status" -eq 0 ] && [ "$out" = "https://github.com/o/r/pull/7#discussion_r999" ] && grep -q -- 'new release' "$tmp/stderr"; then
+  pass "stderr noise stays off stdout"
+else
+  fail "stderr noise stays off stdout" "exit $status: stdout '$out', stderr '$(cat "$tmp/stderr")'"
+fi
 expect_policy "missing --body-file" "missing --body-file" -- "$good#r1"
+expect_policy "empty --body-file path" "path is empty" -- "$good#r1" --body-file ''
 expect_policy "extra argument" "extra argument" -- "$good#r1" "$good#r2" --body-file "$body"
 expect_policy "no fragment" "not a review comment URL" -- "$good" --body-file "$body"
 expect_policy "path traversal in repo" "not a review comment URL" -- "https://github.com/octo/../pull/42#r1" --body-file "$body"
