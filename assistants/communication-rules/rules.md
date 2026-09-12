@@ -21,3 +21,20 @@ Enforcement:
 - The first breach is blocked. Revise it to comply.
 - A later write may land with a request to revise the file in place. Treat that as a requirement to fix the file, not as approval.
 - Fix an external post body to comply before it goes out.
+
+Budgets for text published under my name:
+
+- Comment, reply, or bug report: 1 to 3 sentences.
+- Review finding: 3 sentences (defect, proof, fix).
+- Review body: the findings and nothing else.
+- Slack message: 1 to 2 sentences.
+- PR body: 1 paragraph plus 1 sentence of validation.
+- Commit: subject plus a short paragraph or up to 5 bullets.
+- Issue body: the template's sections, each in prose.
+- Over budget is a defect.
+
+Cut pass before publishing:
+
+- Remove a second example of the same defect.
+- Remove statements that something is fine.
+- Remove asides nobody asked for.

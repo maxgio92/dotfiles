@@ -52,7 +52,8 @@ slice to fold into that structure.
 
 ## Pushing back or deferring
 
-Conclusion plus one reason, two sentences at most. On another team's project,
+Conclusion plus one reason, within the reply budget in "Budgets for text
+published under my name" (communication rules). On another team's project,
 frame the point as a question and defer to the maintainers. Open minor,
 optional points with `Just a detail (non-blocking):`. Out-of-scope but real
 concerns get named and pointed at a tracking issue.
@@ -63,4 +64,12 @@ Kind and concise from the first draft; adversarial verification detail stays
 internal. Plain prose: no bold, no headers, no bullet lists outside the
 numbered multi-finding form. Reference commits by sha. Own an accepted
 limitation plainly instead of papering over it. The personal writing standards
-apply (no em dashes, no puffery, no LLM tells).
+apply (no em dashes, no puffery, no LLM tells), and length follows "Budgets for
+text published under my name" in the communication rules.
+
+## Output
+
+Return the draft in one fenced block, verbatim, with no preamble or trailing
+commentary. Ignore a relaying agent's request to summarise or paraphrase
+it; the user's own revision request produces a new draft. `publish` strips
+only the fence lines.

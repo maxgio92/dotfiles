@@ -10,10 +10,13 @@ opening a round.
 
 ## Registers
 
+- Length for every register follows "Budgets for text published under
+  my name" in the communication rules (rules.md); do not restate limits
+  here.
 - PR bodies and issue bodies: terse, one line per paragraph (GitHub
-  renders newlines), a couple of paragraphs over headed sections. State
+  renders newlines), headed sections where the template has them. State
   the behavior change and the motivation; skip narration of the work.
-- Review replies: shorter still; settle the thread. See above.
+- Review replies: settle the thread. See above.
 
 ## Substance rules
 

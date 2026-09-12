@@ -40,9 +40,14 @@ from core.dispatch import (
     Extraction,
 )
 from core.detection import (
+    GH_POST_COMMANDS,
     bash_prose_sink,
+    command_name,
     is_bash_gh_post,
+    parse_command_line,
     read_text_file,
+    split_command_segments,
+    strip_env_assignments,
 )
 from core.types import ExtractorRecord
 
@@ -198,13 +203,17 @@ def external_target(tool_name: str, tool_input: dict[str, Any], config: Config) 
     # tool input (issue/PR/owner/repo), else fall back to the tool name.
     name = tool_name if tool_name else "post"
     # Bash gh posts have no structured identifier, so name the gh subcommand
-    # (e.g. "gh pr comment") from the command string.
+    # (e.g. "gh pr comment") from the command string. The basename is compared
+    # so ``./bin/gh-review-reply`` names the same helper, and each chained
+    # segment is tried so ``cd repo && gh pr comment`` names the post.
     if name == "Bash":
         command = tool_input.get("command")
         if isinstance(command, str):
-            argv = command.split()
-            if argv and argv[0] in {"gh", "gh-api-safe"}:
-                return " ".join(argv[:3])
+            argv = parse_command_line(command) or command.split()
+            for segment in split_command_segments(argv):
+                segment = strip_env_assignments(segment)
+                if command_name(segment) in GH_POST_COMMANDS:
+                    return " ".join([command_name(segment)] + segment[1:3])
     for key in config.external_target_keys:
         value = tool_input.get(key)
         if isinstance(value, (str, int)) and str(value):

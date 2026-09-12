@@ -57,6 +57,13 @@ POST_COMMANDS = {
     ("release", "create"),
     ("release", "edit"),
 }
+# Leading tokens that can post to GitHub. gh-review-reply wraps the review
+# thread reply endpoint and takes its body only via --body-file.
+GH_POST_COMMANDS = {
+    "gh",
+    "gh-api-safe",
+    "gh-review-reply",
+}
 REDIRECT_HEREDOC_COMMANDS = {
     "cat",
     "tee",
@@ -363,6 +370,12 @@ def option_value(argv: list[str], index: int) -> tuple[str | None, int]:
     token = argv[index]
     if "=" in token and token.startswith("--"):
         return token.split("=", 1)[1], index
+    # pflag also accepts the value attached to a short flag (``-fbody=x``,
+    # ``-XPOST``) or joined with ``=`` (``-X=DELETE``, ``-f=body=x``), so the
+    # value is the remainder of the token with one leading ``=`` dropped.
+    if token.startswith("-") and not token.startswith("--") and len(token) > 2:
+        value = token[2:]
+        return (value[1:] if value.startswith("=") else value), index
     if index + 1 >= len(argv):
         return None, index
     return argv[index + 1], index + 1
@@ -459,6 +472,8 @@ def is_known_post_command(argv: list[str]) -> bool:
         return any(has_body_flag(argv, index) for index in range(len(argv)))
     if name == "gh-api-safe":
         return has_api_post_signal(argv[1:])
+    if name == "gh-review-reply":
+        return any(has_body_flag(argv, index) for index in range(len(argv)))
     return False
 
 
@@ -466,15 +481,45 @@ def is_help_command(argv: list[str]) -> bool:
     return any(token in {"-h", "--help"} for token in argv[1:])
 
 
+def is_api_field_flag(token: str) -> bool:
+    # The unambiguous spellings of a gh api request field: bare (``-f``,
+    # ``--field``) and equals (``--field=body=x``).
+    if token in API_FIELD_FLAGS:
+        return True
+    return token.startswith("--field=") or token.startswith("--raw-field=")
+
+
+def is_attached_api_field_flag(token: str) -> bool:
+    # pflag also accepts the value attached to the short flag (``-fbody=x``,
+    # ``-Fbody=@file``). This spelling is only a field flag inside a ``gh api``
+    # argv: elsewhere a ``-f...`` token is usually an option value such as a
+    # negated search qualifier (``gh pr list --search '-flaky'``).
+    return (token.startswith("-f") or token.startswith("-F")) and not token.startswith("--") and len(token) > 2
+
+
+def is_api_argv(argv: list[str]) -> bool:
+    name = command_name(argv)
+    return name == "gh-api-safe" or (name == "gh" and len(argv) >= 2 and argv[1] == "api")
+
+
+def is_api_method_flag(token: str) -> bool:
+    # ``-X POST``, ``-XPOST``, ``--method POST``, ``--method=POST``.
+    if token in {"-X", "--method"} or token.startswith("--method="):
+        return True
+    return token.startswith("-X") and len(token) > 2
+
+
+def is_api_input_flag(token: str) -> bool:
+    return token == "--input" or token.startswith("--input=")
+
+
 def has_body_flag(argv: list[str], index: int) -> bool:
     token = argv[index]
-    if token in BODY_FLAGS or token in BODY_FILE_FLAGS or token in API_FIELD_FLAGS:
+    if token in BODY_FLAGS or token in BODY_FILE_FLAGS or is_api_field_flag(token):
         return True
     if token.startswith("--body=") or token.startswith("--message="):
         return True
     if token.startswith("--notes=") or token.startswith("--title="):
-        return True
-    if token.startswith("--field=") or token.startswith("--raw-field="):
         return True
     # The ``=`` forms of the body-file flags (``--body-file=`` and
     # ``--notes-file=``) must count too, so both the surface classifier and the
@@ -484,36 +529,34 @@ def has_body_flag(argv: list[str], index: int) -> bool:
     return False
 
 
-def has_api_post_signal(argv: list[str]) -> bool:
+def has_api_post_signal(argv: list[str], attached_fields: bool = True) -> bool:
+    # ``attached_fields`` admits the ``-fbody=x`` spelling; pass it only for a
+    # ``gh api`` argv, where a ``-f...`` token cannot be an option value.
     index = 0
     while index < len(argv):
         token = argv[index]
-        value = None
-        if token in {"-X", "--method"}:
+        if is_api_method_flag(token):
             value, index = option_value(argv, index)
-            if value and value.upper() in {"POST", "PATCH", "PUT"}:
+            if value and value.upper() in {"POST", "PATCH", "PUT", "DELETE"}:
                 return True
-        elif token.startswith("--method="):
-            if token.split("=", 1)[1].upper() in {"POST", "PATCH", "PUT"}:
-                return True
-        elif token in API_FIELD_FLAGS or token.startswith("--field=") or token.startswith("--raw-field="):
+        elif is_api_field_flag(token) or is_api_input_flag(token):
             return True
-        elif token == "--input" or token.startswith("--input="):
+        elif attached_fields and is_attached_api_field_flag(token):
             return True
         index += 1
     return False
 
 
 def _argv_is_gh_post(argv: list[str]) -> bool:
-    # Test a parsed argv for a gh/gh-api-safe leading token carrying a post
+    # Test a parsed argv for a GH_POST_COMMANDS leading token carrying a post
     # signal. The signal is judged by the SAME canonical helpers the body
     # scanner uses (``has_body_flag`` and ``has_api_post_signal``), so the
     # surface choice and the body scan can never drift on which flags count.
-    if not argv or argv[0] not in {"gh", "gh-api-safe"}:
+    if not argv or command_name(argv) not in GH_POST_COMMANDS:
         return False
     if any(has_body_flag(argv, index) for index in range(len(argv))):
         return True
-    return has_api_post_signal(argv)
+    return has_api_post_signal(argv, attached_fields=is_api_argv(argv))
 
 
 def is_bash_gh_post(command: Any) -> bool:
@@ -529,14 +572,41 @@ def is_bash_gh_post(command: Any) -> bool:
         return True
     # The wrapper unwrap needs a shell-aware parse so the quoted inner script is
     # one token; the naive split above keeps the cheap direct path unchanged.
-    argv = parse_command_line(command)
-    if argv is not None:
-        inner = shell_c_inner_script(strip_env_assignments(argv))
-        if inner is not None:
-            inner_argv = parse_command_line(inner)
-            if inner_argv is not None and _argv_is_gh_post(strip_env_assignments(inner_argv)):
-                return True
+    # A chained line (``cd repo && gh pr comment ...``) is tested per segment
+    # so the leading command cannot hide the post. shlex collapses newlines and
+    # ``split_command_segments`` keeps a pipe inside its segment (the redirect
+    # collector needs the sink), so here each line is parsed on its own and a
+    # segment is further split on ``|``: ``cat reply.md | gh pr comment 1 -F -``
+    # is the common way to post a file. Operators glued to a word
+    # (``true;gh ...``) stay one token under shlex and are not split.
+    for line in command.splitlines():
+        argv = parse_command_line(line)
+        if argv is None:
+            continue
+        for segment in split_command_segments(argv):
+            for stage in _split_on_pipe(segment):
+                stage = strip_env_assignments(stage)
+                if _argv_is_gh_post(stage):
+                    return True
+                inner = shell_c_inner_script(stage)
+                if inner is not None and is_bash_gh_post(inner):
+                    return True
     return False
+
+
+def _split_on_pipe(argv: list[str]) -> list[list[str]]:
+    stages: list[list[str]] = []
+    current: list[str] = []
+    for token in argv:
+        if token == "|":
+            if current:
+                stages.append(current)
+            current = []
+            continue
+        current.append(token)
+    if current:
+        stages.append(current)
+    return stages
 
 
 def read_post_body_file(value: str, heredoc_files: dict[str, str]) -> tuple[str | None, bool]:
@@ -551,6 +621,7 @@ def read_post_body_file(value: str, heredoc_files: dict[str, str]) -> tuple[str 
 def extract_post_texts(argv: list[str], heredoc_files: dict[str, str]) -> tuple[list[str], bool]:
     texts: list[str] = []
     unresolved = False
+    api_argv = is_api_argv(argv)
     index = 0
 
     while index < len(argv):
@@ -571,13 +642,13 @@ def extract_post_texts(argv: list[str], heredoc_files: dict[str, str]) -> tuple[
                 unresolved = unresolved or failed
                 if text is not None:
                     texts.append(text)
-        elif token in API_FIELD_FLAGS or token.startswith("--field=") or token.startswith("--raw-field="):
+        elif is_api_field_flag(token) or (api_argv and is_attached_api_field_flag(token)):
             value, index = option_value(argv, index)
             text, failed = extract_api_field_text(value, heredoc_files)
             unresolved = unresolved or failed
             if text is not None:
                 texts.append(text)
-        elif token == "--input" or token.startswith("--input="):
+        elif is_api_input_flag(token):
             value, index = option_value(argv, index)
             if value is None:
                 unresolved = True

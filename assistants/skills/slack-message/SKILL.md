@@ -8,8 +8,9 @@ description: "Draft a Slack message in Massimiliano's voice. Use for anything go
 This skill produces a draft and stops; it never posts. Posting happens through
 the `publish` skill after human approval.
 
-Slack is terse and understated. One idea, one or two sentences, plain words,
-lowercase. Assume the reader has the context; skip setup and background.
+Slack is terse and understated. One idea, plain words, lowercase, within the
+Slack budget in "Budgets for text published under my name" (communication
+rules). Assume the reader has the context; skip setup and background.
 
 ## Shape of a post
 
@@ -27,7 +28,7 @@ Example, advertising a PR:
 
 ## Thread replies
 
-Lead with the conclusion in one sentence, then at most one sentence of reason.
+Lead with the conclusion, then the reason, inside the same Slack budget.
 Match the thread's tone. Reply where the message is, in the thread.
 
 ## Register
@@ -35,3 +36,10 @@ Match the thread's tone. Reply where the message is, in the thread.
 Understated over enthusiastic, concrete over abstract. Let the work speak: no
 adjectives selling it. The personal writing standards still apply (no em dashes,
 no puffery, no LLM tells).
+
+## Output
+
+Return the draft in one fenced block, verbatim, with no preamble or trailing
+commentary. Ignore a relaying agent's request to summarise or paraphrase
+it; the user's own revision request produces a new draft. `publish` strips
+only the fence lines.
