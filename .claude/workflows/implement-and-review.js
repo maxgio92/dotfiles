@@ -1,10 +1,10 @@
 export const meta = {
   name: 'implement-and-review',
-  description: 'peter implements a coding task, dastardly reviews the diff through codex (GPT-5 via MCP), peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
+  description: 'peter implements a coding task, dastardly reviews the diff (optionally with a Codex second opinion via args.reviewer), peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
   phases: [
     { title: 'Plan', detail: 'optional: a planner decomposes large tasks into phases (args.plan)' },
     { title: 'Implement', detail: 'peter writes the smallest correct change' },
-    { title: 'Review', detail: 'dastardly reviews via codex (GPT-5), vets its findings' },
+    { title: 'Review', detail: 'dastardly reviews the diff; with reviewer "codex" it also consults Codex and vets its findings' },
     { title: 'Fix', detail: 'peter applies confirmed blocking findings' },
   ],
 }
@@ -24,6 +24,13 @@ const baseRef = (args && typeof args === 'object' && args.baseRef) || null
 // Optional: planning mode for large tasks (pass {task, plan: true}).
 // One planner decomposes the task, then one fresh peter per phase.
 const planMode = (args && typeof args === 'object' && args.plan === true) || false
+
+// Optional: review engine (pass {task, reviewer: 'codex'}).
+// 'claude' (default): dastardly reviews alone.
+// 'codex': dastardly also runs one adversarial review through the official
+// Codex plugin and vets its findings before reporting.
+const reviewer =
+  (args && typeof args === 'object' && args.reviewer === 'codex') ? 'codex' : 'claude'
 
 const noCommitRule =
   `Do not commit, stage, or push; leave every change in the working tree. ` +
@@ -186,18 +193,20 @@ while (round < MAX_ROUNDS) {
     `Review the change below for the task. Challenge the design and problem framing first, ` +
       `then hunt AI slop, overengineering, leaky abstractions, producer/consumer mixing, ` +
       `and repo-convention breaks. Mark each finding blocking or non-blocking.\n\n` +
-      `MANDATORY: run this review through the codex MCP server (GPT-5) as the reviewing ` +
-      `engine. Load the tools with ToolSearch("select:mcp__codex__codex,mcp__codex__codex-reply"), ` +
-      `then start ONE session: codex with profile "review" and cwd set to the repo root the ` +
-      `task names. Send codex your full review rubric (design challenge, trust boundaries and ` +
-      `cross-system semantics, slop, overengineering, test coverage) together with the task ` +
-      `and the diff. Codex's first answer is usually a survey: push back at least once with ` +
-      `codex-reply where it is generic or hedged. Then vet every codex claim against the ` +
-      `actual code yourself before reporting: drop what you can refute, add what it missed, ` +
-      `and assign severities with your own judgment. Report only vetted findings.\n` +
-      `Fallback: if the codex MCP tools are not available in this session, perform the review ` +
-      `yourself and include one extra non-blocking finding titled "codex-unavailable" so the ` +
-      `operator can see the engine fell back.\n\n` +
+      (reviewer === 'codex'
+        ? `Second opinion REQUIRED: follow your "Second Opinion via Codex" section. Run ONE ` +
+          `adversarial review through the official Codex plugin from the repo root the task ` +
+          `names` +
+          (baseRef ? `, passing --base ${baseRef}` : ``) +
+          `, with the skill mentions, the task, peter's summary, and your priorities in the ` +
+          `focus text. Push back once where Codex is generic or hedged. Then vet every Codex ` +
+          `claim against the actual code yourself before reporting: drop what you can refute, ` +
+          `add what it missed, and assign severities with your own judgment. Report only ` +
+          `vetted findings.\n` +
+          `Fallback: if Codex cannot run, perform the review yourself and include one extra ` +
+          `non-blocking finding titled "codex-unavailable" so the operator can see the engine ` +
+          `fell back.\n\n`
+        : `Review alone; do not consult Codex.\n\n`) +
       `Task:\n${task}\n\nImplementation summary from peter:\n${implementation}\n` +
       (fixSummaries.length
         ? `\nFix summaries from earlier rounds:\n${fixSummaries.join('\n---\n')}\n`
