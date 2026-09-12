@@ -6,10 +6,15 @@
   "env": {
     "USE_BUILTIN_RIPGREP": "0"
   },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "mcp__codex__codex",
-      "mcp__codex__codex-reply"
+      "Bash(node *codex-companion.mjs*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -24,12 +29,6 @@
     "defaultMode": "auto"
   },
   "model": "fable",
-  "includeCoAuthoredBy": false,
-  "attribution": {
-    "commit": "",
-    "pr": "",
-    "sessionUrl": false
-  },
   "hooks": {
     "Notification": [
       {
@@ -315,7 +314,16 @@
     "gopls-lsp@claude-plugins-official": true,
     "slack@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "codex@openai-codex": true
+  },
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
   },
   "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
