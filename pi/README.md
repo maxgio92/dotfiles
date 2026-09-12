@@ -64,7 +64,6 @@ Pi to load a matching skill, but the command form makes the choice explicit.
 
 | Command | Purpose |
 |---|---|
-| `/skill:codex` | Ask Codex for a code review, deeper investigation, or second opinion |
 | `/skill:coordinator` | Run and combine work from several worktree agents |
 | `/skill:daily [date]` | Build and save an interactive daily note |
 | `/skill:effective-go` | Apply Effective Go guidance while writing or reviewing Go |
@@ -197,7 +196,7 @@ ephemeral run.
 | `pi/AGENTS.md` | `~/.pi/agent/AGENTS.md` | Personal writing rules and the default coding workflow |
 | `pi/extensions/` | `~/.pi/agent/extensions/` | Custom commands and lifecycle behaviour |
 | `assistants/agents/` | `~/.pi/agent/agents/` | Shared agent definitions |
-| `assistants/skills/` | `~/.pi/agent/skills/` | Shared skills |
+| `assistants/skills/` | `~/.pi/agent/skills/` | Shared skills, except Claude-only ones (`CLAUDE_ONLY_SKILLS` in the Makefile) |
 | `assistants/commands/{orientate,onboard,botsnack}.md` | `~/.pi/agent/prompts/` | Pi prompt templates |
 
 Run `make pi` after adding a managed agent, skill, prompt, or extension. Run
