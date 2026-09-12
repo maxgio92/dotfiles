@@ -371,8 +371,9 @@ claude-config:
 	@{ printf -- '---\nname: house-style\ndescription: Communication Rules for every response\nkeep-coding-instructions: true\n---\n\n'; cat $(RULES); } \
 		> $(HOME)/.claude/output-styles/house-style.md
 	@ln -sfn $(DOTFILES)/.claude/file-suggestion.sh $(HOME)/.claude/file-suggestion.sh
+	@ln -sfn $(DOTFILES)/.claude/statusline.sh $(HOME)/.claude/statusline.sh
 	@ln -sf $(DOTFILES)/.claude/workflows/*.js $(HOME)/.claude/workflows/
-	@echo "  linked settings.json, CLAUDE.md, file-suggestion.sh, workflows; generated output-styles/house-style.md"
+	@echo "  linked settings.json, CLAUDE.md, file-suggestion.sh, statusline.sh, workflows; generated output-styles/house-style.md"
 
 .PHONY: claude-hooks
 claude-hooks:
