@@ -332,6 +332,18 @@ check-agents:
 		elif [ $$w -gt 700 ]; then echo "warn $$(basename $$f): $$w words (budget 700)"; fi; \
 	done; exit $$fail
 
+# Every agent needs a routing row in the delegate-task skill, or an orchestrator
+# cannot pick it. The skill is written in another worktree: skip until it lands.
+ROUTING := $(DOTFILES)/assistants/skills/delegate-task/SKILL.md
+
+.PHONY: check-routing
+check-routing:
+	@[ -f $(ROUTING) ] || { echo "skip check-routing: delegate-task skill absent"; exit 0; }; \
+	fail=0; for f in $(DOTFILES)/assistants/agents/*.md; do \
+		name=$$(basename "$$f" .md); \
+		grep -Eq "^(- |\| *)\`$$name\`" $(ROUTING) || { echo "FAIL $$name: no row in delegate-task/SKILL.md"; fail=1; }; \
+	done; exit $$fail
+
 # global.md is always loaded, so it stays under 400 words and passes its own
 # Communication Rules gate.
 .PHONY: check-instructions
@@ -356,7 +368,21 @@ done
 endef
 
 .PHONY: claude
-claude: claude-config claude-hooks claude-skills claude-agents claude-commands
+claude: claude-config claude-hooks claude-skills claude-agents claude-commands claude-plugins
+
+# The codex skill drives the official Codex plugin; install it once.
+CODEX_PLUGIN := codex@openai-codex
+CODEX_MARKETPLACE := openai/codex-plugin-cc
+
+.PHONY: claude-plugins
+claude-plugins:
+	@command -v claude >/dev/null 2>&1 || { echo "  skip claude-plugins: claude not on PATH"; exit 0; }; \
+	if claude plugin list 2>/dev/null | grep -q "$(CODEX_PLUGIN)"; then \
+		echo "  plugin $(CODEX_PLUGIN) already installed"; \
+	else \
+		claude plugin marketplace list 2>/dev/null | grep -q "openai-codex" || claude plugin marketplace add $(CODEX_MARKETPLACE); \
+		claude plugin install $(CODEX_PLUGIN) && echo "  installed plugin $(CODEX_PLUGIN)"; \
+	fi
 
 .PHONY: claude-config
 claude-config:
