@@ -196,10 +196,11 @@ while (round < MAX_ROUNDS) {
       `then hunt AI slop, overengineering, leaky abstractions, producer/consumer mixing, ` +
       `and repo-convention breaks. Mark each finding blocking or non-blocking.\n\n` +
       (reviewer === 'codex'
-        ? `Second opinion REQUIRED: follow your "Second Opinion via Codex" section. Run ONE ` +
-          `adversarial review through the official Codex plugin from the repo root the task ` +
-          `names. Do not pass --base: peter's work is uncommitted and the plugin's default ` +
-          `scope reviews the dirty working tree, while --base would review commits only. ` +
+        ? `Second opinion REQUIRED: load the \`codex\` skill and follow its adversarial ` +
+          `review and pushback procedure. Run ONE adversarial review through the official ` +
+          `Codex plugin from the repo root the task names. Do not pass --base: peter's work ` +
+          `is uncommitted and the plugin's default scope reviews the dirty working tree, ` +
+          `while --base would review commits only. ` +
           `Put the skill mentions, the task, peter's summary, and your priorities in the ` +
           `focus text. Push back once where Codex is generic or hedged. Then vet every Codex ` +
           `claim against the actual code yourself before reporting: drop what you can refute, ` +

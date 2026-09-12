@@ -100,7 +100,7 @@ trusted project and `agentScope: "both"` or `"project"`.
 
 | Agent | Role |
 |---|---|
-| `dastardly` | Performs adversarial Go design and correctness reviews |
+| `dastardly` | Performs adversarial design and correctness reviews |
 | `openscad-agent` | Runs the OpenSCAD modelling, preview, and STL export flow |
 | `peter` | Implements small Go changes and runs build, test, and lint checks |
 | `velma` | Creates verified project documentation for users and contributors |
@@ -108,7 +108,7 @@ trusted project and `agentScope: "both"` or `"project"`.
 Examples:
 
 ```text
-Use the dastardly agent to review the current Go diff.
+Use the dastardly agent to review the current diff.
 Use the openscad-agent to create and export a printable model.
 Ask peter to implement the change. Ask velma to document the result.
 ```
