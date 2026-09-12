@@ -34,7 +34,9 @@ For non-trivial coding tasks (anything beyond a one-line or trivial fix), run
 the implement-and-review loop: Peter implements, Dastardly reviews, Peter vets
 and applies the confirmed blocking findings. Use the harness's implementation:
 the `implement-and-review` workflow in Claude Code (task as args),
-`/implement-review` in pi.
+`/implement-review` in pi. Dastardly reviews in Claude by default; in Claude
+Code it can add a Codex second opinion through the official Codex plugin when
+asked (`reviewer: "codex"`). Pi has no Codex path.
 
 Skip the loop for trivial edits, docs, and config changes; handle those
 directly. This is a strong default, not an absolute rule. The repository's

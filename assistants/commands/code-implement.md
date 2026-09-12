@@ -8,8 +8,10 @@ Workflow({name: "implement-and-review", args: {task: "$ARGUMENTS"}})
 
 Pass the task text verbatim, including any repository path it names. Optional
 modifiers the user may add: a round cap (pass as `maxRounds`), a base ref for
-reviewing committed work (`baseRef`), or planning mode for large tasks
-(`plan: true`). When the workflow returns, report rounds, convergence, and
+reviewing committed work (`baseRef`), planning mode for large tasks
+(`plan: true`), or a Codex second opinion on each review round
+(`reviewer: "codex"`; the default is a Claude-only dastardly review). When the
+workflow returns, report rounds, convergence, and
 findings; commit the result yourself once converged (subagents never commit),
 and stage any push for human approval.
 

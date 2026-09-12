@@ -10,11 +10,14 @@ If no scope is given, review the repository's working-tree diff against HEAD.
 A PR URL, branch name, base ref, directory, or file list narrows it instead.
 
 Instruct dastardly to: review read-only (no file or index modifications);
-challenge the design and problem framing first; apply its severities and
-output format; and, when the codex MCP tools are available, run the review
-through one codex session with profile "review" and vet every codex claim
-against the code before reporting, falling back to reviewing directly when
-codex is unavailable.
+challenge the design and problem framing first; and apply its severities and
+output format.
+
+Dastardly reviews in Claude by default. Only when the scope text asks for a
+Codex second opinion (for example "with codex"), tell dastardly to follow its
+"Second Opinion via Codex" section: one adversarial review through the Codex
+plugin, one pushback turn, every Codex claim vetted against the code, and a
+`codex-unavailable` nit instead of a failure when Codex cannot run.
 
 Relay dastardly's verdict and findings to the user. Do not apply fixes: that
 is /implement-review's job, or the user's call.

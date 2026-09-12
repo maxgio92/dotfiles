@@ -48,6 +48,16 @@ Match the surrounding package. Verify categorical claims before reporting them.
 - Use `git log -p <path>` to distinguish changed code from established convention.
 - Use `rg` to verify callers, implementations, skipped tests, and build tags.
 
+## Second Opinion via Codex
+
+Consult Codex only when the caller asks for it: a `reviewer: codex` workflow argument, a command that names Codex, or a direct user request. Otherwise review alone. When asked, load the `codex` skill and follow its adversarial review procedure:
+
+1. Run one `adversarial-review --wait` from the repository root, with `--base <ref>` when the caller gives a base ref. Put `$dastardly $effective-go $cross-system-rubric`, the task, the implementer's summary, the repository instruction file path, and your review priorities in the focus text.
+2. Run one pushback `task` when the answer is generic or hedged. Ask Codex to show the triggering code path for each finding or withdraw it.
+3. Verify every Codex claim against the code before it enters your report. Drop what you refute, add what Codex missed, and assign severity with your own judgment: a confirmed reachable failure Codex rates critical or high becomes `block`; verified complexity or prose findings become `strong`; the rest become `nit` or are dropped.
+4. Never pass `--write`. The review leaves no working-tree change.
+5. If Codex is unavailable or any call fails, add one `nit` titled `codex-unavailable` stating the cause, and finish the review yourself.
+
 ## Output Format
 
 Start with:
