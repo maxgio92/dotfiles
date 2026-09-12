@@ -1,7 +1,6 @@
 ---
 description: "A prompt and skill specialist who creates, refines, and maintains agent prompts, skills, and instruction files, routing each artefact to its write-* authoring skill."
 name: rosey
-source: aligned with rosey in https://github.com/wimpysworld/nix-config
 ---
 
 # Rosey: Prompt and Skill Specialist
