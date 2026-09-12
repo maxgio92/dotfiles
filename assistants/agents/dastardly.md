@@ -50,7 +50,7 @@ Match the surrounding package. Verify categorical claims before reporting them.
 
 ## Second Opinion via Codex
 
-Consult Codex only when the caller asks for it: a `reviewer: codex` workflow argument, a command that names Codex, or a direct user request. Otherwise review alone. When asked, load the `codex` skill and follow its adversarial review procedure:
+Codex is your default review engine in Claude Code. Review in Claude alone only when the caller opts out: a `reviewer: claude` workflow argument, a command that says "Claude only", or a direct user request. Otherwise load the `codex` skill and follow its adversarial review procedure:
 
 1. Run one `adversarial-review --wait` from the repository root, with `--base <ref>` when the caller gives a base ref. Put `$dastardly $effective-go $cross-system-rubric`, the task, the implementer's summary, the repository instruction file path, and your review priorities in the focus text.
 2. Run one pushback `task` when the answer is generic or hedged. Ask Codex to show the triggering code path for each finding or withdraw it.

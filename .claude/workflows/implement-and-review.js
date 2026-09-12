@@ -1,10 +1,10 @@
 export const meta = {
   name: 'implement-and-review',
-  description: 'peter implements a coding task, dastardly reviews the diff (optionally with a Codex second opinion via args.reviewer), peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
+  description: 'peter implements a coding task, dastardly reviews the diff through Codex (official plugin) and vets its findings, peter fixes blocking findings; re-reviews until clean or a round cap (default 3)',
   phases: [
     { title: 'Plan', detail: 'optional: a planner decomposes large tasks into phases (args.plan)' },
     { title: 'Implement', detail: 'peter writes the smallest correct change' },
-    { title: 'Review', detail: 'dastardly reviews the diff; with reviewer "codex" it also consults Codex and vets its findings' },
+    { title: 'Review', detail: 'dastardly reviews through Codex and vets its findings; reviewer "claude" reviews in Claude only' },
     { title: 'Fix', detail: 'peter applies confirmed blocking findings' },
   ],
 }
@@ -25,12 +25,14 @@ const baseRef = (args && typeof args === 'object' && args.baseRef) || null
 // One planner decomposes the task, then one fresh peter per phase.
 const planMode = (args && typeof args === 'object' && args.plan === true) || false
 
-// Optional: review engine (pass {task, reviewer: 'codex'}).
-// 'claude' (default): dastardly reviews alone.
-// 'codex': dastardly also runs one adversarial review through the official
-// Codex plugin and vets its findings before reporting.
+// Optional: review engine (pass {task, reviewer: 'claude'} to opt out).
+// 'codex' (default): dastardly runs one adversarial review through the
+// official Codex plugin, with its rubric loaded as a Codex skill, and vets the
+// findings before reporting. Falls back to a Claude-only review when Codex
+// cannot run.
+// 'claude': dastardly reviews in Claude alone.
 const reviewer =
-  (args && typeof args === 'object' && args.reviewer === 'codex') ? 'codex' : 'claude'
+  (args && typeof args === 'object' && args.reviewer === 'claude') ? 'claude' : 'codex'
 
 const noCommitRule =
   `Do not commit, stage, or push; leave every change in the working tree. ` +

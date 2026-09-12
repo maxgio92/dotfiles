@@ -32,7 +32,7 @@ node "$COMPANION" setup --json
 - A design or migration call you want pressure-tested.
 - An unfamiliar codebase you want explored in parallel.
 
-Do not consult Codex for routine edits, small refactors, or anything faster to do directly. In the implement-and-review loop, consult Codex only when the caller asked for it.
+Do not consult Codex for routine edits, small refactors, or anything faster to do directly. In the implement-and-review loop and `/code-review`, Codex is dastardly's default engine; the caller opts out with `reviewer: claude` or "Claude only".
 
 ## Adversarial review
 
