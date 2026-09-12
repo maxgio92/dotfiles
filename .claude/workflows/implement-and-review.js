@@ -49,12 +49,14 @@ const rawResearch =
     : 'auto'
 // A blank string (e.g. an empty tracker field) means "no research supplied",
 // not "skip research"; anything else unrecognised falls back to 'auto'.
-const research =
-  typeof rawResearch === 'boolean' || rawResearch === 'auto'
-    ? rawResearch
-    : typeof rawResearch === 'string'
-      ? (rawResearch.trim() ? rawResearch : 'auto')
-      : (log(`Unrecognised research value ${JSON.stringify(rawResearch)}; using 'auto'.`), 'auto')
+let research = 'auto'
+if (typeof rawResearch === 'boolean' || rawResearch === 'auto') {
+  research = rawResearch
+} else if (typeof rawResearch === 'string') {
+  if (rawResearch.trim()) research = rawResearch
+} else {
+  log(`Unrecognised research value ${JSON.stringify(rawResearch)}; using 'auto'.`)
+}
 // Matched on word boundaries so "author" does not trigger on "auth" and
 // "tokenizer" does not trigger on "token".
 const RESEARCH_SIGNALS = [
@@ -63,8 +65,10 @@ const RESEARCH_SIGNALS = [
   'credential', 'token', 'secret', 'crypto',
 ]
 const taskLower = String(task).toLowerCase()
-const mentionsSignal = (signal) =>
-  new RegExp(`\\b${signal.replace(/[-\s]/g, '[-\\s]')}(s|es)?\\b`).test(taskLower)
+const mentionsSignal = (signal) => {
+  const stem = signal.replace(/[-\s]/g, '[-\\s]').replace(/y$/, '(y|ies)')
+  return new RegExp(`\\b${stem}(s|es)?\\b`).test(taskLower)
+}
 const runResearch =
   research === true ||
   (research === 'auto' && (planMode || RESEARCH_SIGNALS.some(mentionsSignal)))
@@ -84,7 +88,7 @@ if (runResearch) {
       priorArt: { type: 'array', items: { type: 'string' } },
       pitfalls: { type: 'array', items: { type: 'string' } },
       sources: { type: 'array', items: { type: 'string' }, description: 'URLs or file paths' },
-      verdict: { type: 'string', description: 'one line on whether the task as stated should change' },
+      verdict: { type: 'string', minLength: 1, description: 'one line on whether the task as stated should change' },
     },
     required: ['findings', 'priorArt', 'pitfalls', 'sources', 'verdict'],
   }
@@ -144,10 +148,10 @@ if (planMode) {
           required: ['title', 'goal'],
         },
       },
+      sweep: { type: 'string' },
     },
     required: ['phases'],
   }
-  PLAN_SCHEMA.properties.sweep = { type: 'string' }
   plan = await agent(
     `Plan this coding task. Decompose it into 2 to 6 sequential phases, each ` +
       `independently implementable by a fresh agent with no memory of the others. ` +
