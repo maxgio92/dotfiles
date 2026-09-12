@@ -24,4 +24,5 @@ any push for human approval.
 
 If the Workflow tool is unavailable in this session, fall back to the same
 loop with the Agent tool: peter implements, dastardly reviews the diff, peter
-applies confirmed blocking findings, up to three rounds.
+applies confirmed blocking findings, up to three rounds. For each launch, send
+the packet per the `delegate-task` skill and relay the result by its rules.
