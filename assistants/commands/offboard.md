@@ -22,7 +22,7 @@ Create handover enabling next engineer to continue without reverse-engineering d
 | Technical | Architecture/data flow only if text insufficient | 150-300 |
 | Development | Essential commands, single most common gotcha | 100-200 |
 | Known Limitations | Constraints discovered, workarounds (not hypotheticals) | 100-200 |
-| Remaining Work | Outstanding items with approach and complexity (S/M/L) | 150-300 |
+| Remaining Work | Outstanding items with approach and complexity on the `sizing` scale | 150-300 |
 | Quick Orientation | First-day setup (max 5 steps), starting point | 100-150 |
 
 ### Example
