@@ -28,8 +28,15 @@ const repoRootArg =
 // A fix agent may run in a git worktree and, given only the findings, search
 // the main checkout instead (seen in run wf_19705886). The first absolute path
 // in the task text that a later 'branch', 'worktree', or 'repository' in the
-// same sentence qualifies wins; then the first absolute path anywhere; else null
-// and the prompts fall back to 'the repository this task names'.
+// same sentence qualifies marks that sentence. The candidates are the
+// qualifying paths plus any path that prefixes one of them, since a repository
+// root is a prefix of its files; the shortest candidate wins ('tests in
+// /r/tests/x_test.go for the repository /r' resolves to /r, 'Fix /a/b/c and
+// /a/b in the repository /a' to /a). Unrelated paths never compete, so a
+// fixture pair ('/home/me/project worktree; fixtures live in /tmp/fx and
+// /tmp/fx/case.json') cannot displace the root.
+// Then the first absolute path anywhere; else null and the prompts fall back
+// to 'the repository this task names'.
 const resolveRepoPath = (text) => {
   // A path starts at a word edge so `codex/hooks.json`, URLs, and tilde paths
   // like `~/code/repo` do not match (the latter would resolve to `/code/repo`).
@@ -37,10 +44,15 @@ const resolveRepoPath = (text) => {
   const trimPath = (m) => m.replace(/[.,;:]+$/, '')
   const sentences = String(text).split(/(?<=[.!?])\s+|\n+/)
   for (const sentence of sentences) {
-    for (const m of sentence.matchAll(ABS_PATH)) {
-      const rest = sentence.slice(m.index + m[0].length)
-      if (/\b(branch|worktree|repository)\b/i.test(rest)) return trimPath(m[0])
-    }
+    const paths = [...sentence.matchAll(ABS_PATH)]
+    const qualifying = paths
+      .filter((m) => /\b(branch|worktree|repository)\b/i.test(sentence.slice(m.index + m[0].length)))
+      .map((m) => trimPath(m[0]))
+    if (qualifying.length === 0) continue
+    const candidates = paths
+      .map((m) => trimPath(m[0]))
+      .filter((p) => qualifying.includes(p) || qualifying.some((q) => q.startsWith(p + '/')))
+    return candidates.reduce((root, p) => (p.length < root.length ? p : root))
   }
   const first = String(text).match(ABS_PATH)
   return first ? trimPath(first[0]) : null
@@ -119,6 +131,16 @@ const noCommitRule =
   `Do not commit, stage, or push; leave every change in the working tree. ` +
   `The orchestrating session commits after the review loop converges.`
 
+// One re-request on an empty reply (null, not a schema result) before the
+// caller decides what a missing answer means. The full packet is resent so
+// every instruction in it (engine, fallback rule, scope) still holds.
+const askOnce = async (prompt, opts) => {
+  const first = await agent(prompt, opts)
+  if (first) return first
+  log(`${opts.label} returned nothing; re-requesting once.`)
+  return agent(`You returned nothing. Reply in text.\n\n` + prompt, { ...opts, label: `${opts.label}:retry` })
+}
+
 let researchResult = null
 if (runResearch) {
   phase('Research')
@@ -134,7 +156,7 @@ if (runResearch) {
     },
     required: ['findings', 'priorArt', 'pitfalls', 'sources', 'verdict'],
   }
-  researchResult = await agent(
+  researchResult = await askOnce(
     `Task: research the coding task below before anyone plans or implements it. Apply the ` +
       `\`deep-research\` skill at ${planMode ? 'Standard' : 'Quick'} depth. Cover the ` +
       `task's domain, prior art in this repository and upstream, known pitfalls, and ` +
@@ -198,7 +220,7 @@ if (planMode) {
     },
     required: ['phases'],
   }
-  plan = await agent(
+  plan = await askOnce(
     `Task: plan the coding task below. Decompose it into 2 to 6 sequential phases, each ` +
       `independently implementable by a fresh agent with no memory of the others. ` +
       `Order them so each phase builds only on completed ones, and aim for the ` +
@@ -267,7 +289,7 @@ if (plan && planPathUsable) {
         log(`Warning: could not write plan to ${target}: ${err && err.message ? err.message : err}`)
       }
     } else {
-      const ack = await agent(
+      const ack = await askOnce(
         `Task: create the directory ${dir} (and any missing parents), then write the ` +
           `Markdown below to ${target} exactly as given, replacing any existing file.\n` +
           `Scope: ${target} only; do not touch any other path.\n` +
@@ -292,7 +314,7 @@ if (plan) {
   const phaseSummaries = []
   for (let i = 0; i < plan.phases.length; i++) {
     const p = plan.phases[i]
-    const summary = await agent(
+    const summary = await askOnce(
       `Task: implement one phase of a planned coding task in ${repoName}. ` +
         `Make the smallest correct change for YOUR PHASE ONLY, reuse existing code ` +
         `over new abstractions, and run the project's tests and lint before finishing.\n` +
@@ -330,7 +352,7 @@ if (plan) {
     .map((p, i) => `Phase ${i + 1} (${p.title}):\n${phaseSummaries[i]}`)
     .join('\n---\n')
 } else {
-  implementation = await agent(
+  implementation = await askOnce(
     `Task: implement the coding task below in ${repoName}. ` +
       `Make the smallest correct change, reuse existing code over new abstractions, ` +
       `and run the project's tests and lint before finishing. ` +
@@ -402,15 +424,7 @@ while (round < MAX_ROUNDS) {
       (repoRootArg ? `` : `\nCoding task (for locating the repo):\n${task}\n\n`) +
       diffOutput +
       discipline
-  let diff = await agent(diffPrompt, { label: `capture-diff:r${round}`, phase: 'Review' })
-  // One re-request on an empty reply (null, not NONE) before giving up.
-  if (!diff) {
-    log(`Round ${round}: diff capture returned nothing; re-requesting once.`)
-    diff = await agent(`You returned nothing. Reply in text.\n\n` + diffPrompt, {
-      label: `capture-diff:r${round}:retry`,
-      phase: 'Review',
-    })
-  }
+  const diff = await askOnce(diffPrompt, { label: `capture-diff:r${round}`, phase: 'Review' })
 
   if (!diff || diff.trim() === 'NONE') {
     unverified = true
@@ -448,7 +462,7 @@ while (round < MAX_ROUNDS) {
           `fell back.\n\n`
         : `Review alone; do not consult Codex.\n\n`) +
       `Context:\n` +
-      `Coding task:\n${task}\n\nImplementation summary from peter:\n${implementation}\n` +
+      `Coding task:\n${task}\n\nImplementation summary from peter:\n${implementation || '(no report returned)'}\n` +
       (fixSummaries.length
         ? `\nFix summaries from earlier rounds:\n${fixSummaries.join('\n---\n')}\n`
         : ``) +
@@ -456,16 +470,7 @@ while (round < MAX_ROUNDS) {
       `Diff under review (round ${round}):\n${diff}\n\n` +
       reviewOutput +
       discipline
-  let review = await agent(reviewPrompt, reviewOptions)
-  // One re-request on an empty reply before marking the run unverified. The
-  // full packet is resent so the engine instruction and fallback rule hold.
-  if (!review) {
-    log(`Round ${round}: review agent returned nothing; re-requesting once.`)
-    review = await agent(`You returned nothing. Reply in text.\n\n` + reviewPrompt, {
-      ...reviewOptions,
-      label: `dastardly:review:r${round}:retry`,
-    })
-  }
+  const review = await askOnce(reviewPrompt, reviewOptions)
 
   if (!review) {
     unverified = true
@@ -487,7 +492,7 @@ while (round < MAX_ROUNDS) {
   const fixList = blocking
     .map((f, i) => `${i + 1}. [${f.file || 'unspecified'}] ${f.title}: ${f.detail}`)
     .join('\n')
-  const fixSummary = await agent(
+  const fixSummary = await askOnce(
     `Task: in ${repoName}, apply fixes for these confirmed blocking review findings. ` +
       `Smallest correct change; re-run the project's tests and lint after.\n\n${fixList}\n\n` +
       `Authority: Do not commit, stage, or push; leave every change in the working tree.\n` +
@@ -496,9 +501,15 @@ while (round < MAX_ROUNDS) {
       discipline,
     { label: `peter:fix:r${round}`, phase: 'Fix', agentType: 'peter' },
   )
-  if (fixSummary) fixSummaries.push(`Round ${round}:\n${fixSummary}`)
-  fixedAny = true
-  log(`Round ${round}: fixed ${blocking.length} blocking finding(s). Re-reviewing.`)
+  // A silent fix agent may or may not have edited files; only a report counts
+  // as a fix, and the next diff review shows what actually changed.
+  if (fixSummary && fixSummary.trim()) {
+    fixSummaries.push(`Round ${round}:\n${fixSummary}`)
+    fixedAny = true
+    log(`Round ${round}: fixed ${blocking.length} blocking finding(s). Re-reviewing.`)
+  } else {
+    log(`Round ${round}: fix agent returned no report for ${blocking.length} blocking finding(s). Re-reviewing.`)
+  }
 }
 
 if (!converged && !unverified) {

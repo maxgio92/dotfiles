@@ -23,7 +23,7 @@ Read exactly one reference per task. Text after the argument is extra context, n
 
 Creation targets, for commands that file a new task: a Linear team or project name resolves to `references/linear.md`; `owner/repo` with no `#N` resolves to `references/github.md`; a directory resolves to `references/local.md`. An explicit target always wins.
 
-Work organisation: `github.com/chainguard-dev/`. Edit this line to change it. The Linear team key `FUL` also appears in `references/linear.md` and `sizing`.
+Work organisation: host `github.com`, owner `chainguard-dev`, in either the HTTPS (`https://github.com/chainguard-dev/<repo>`) or the SSH (`git@github.com:chainguard-dev/<repo>`) remote form. Edit this line to change it. The Linear team key `FUL` also appears in `references/linear.md` and `sizing`.
 
 A blank creation target is the one inference allowed, and it reads the current repository's `origin` remote (`git remote get-url origin`):
 

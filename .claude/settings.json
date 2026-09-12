@@ -1,9 +1,4 @@
 {
-  "outputStyle": "house-style",
-  "statusLine": {
-    "type": "command",
-    "command": "$HOME/.claude/statusline.sh"
-  },
   "fileSuggestion": {
     "type": "command",
     "command": "$HOME/.claude/file-suggestion.sh"
@@ -35,6 +30,10 @@
       "Bash(gh pr ready:*)",
       "Bash(gh issue edit:*)",
       "Bash(gh issue close:*)",
+      "Bash(gh issue reopen:*)",
+      "Bash(gh issue transfer:*)",
+      "Bash(gh issue pin:*)",
+      "Bash(gh pr reopen:*)",
       "Bash(gh release:*)",
       "Bash(gh repo edit:*)",
       "Bash(gh workflow run:*)",
@@ -62,6 +61,9 @@
       "mcp__linear__delete_attachment",
       "Bash(gh pr lock:*)",
       "Bash(gh pr unlock:*)",
+      "Bash(gh issue delete:*)",
+      "Bash(gh issue lock:*)",
+      "Bash(gh issue unlock:*)",
       "Bash(gh secret:*)",
       "Bash(gh variable:*)",
       "Bash(gh config:*)"
@@ -349,6 +351,10 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/statusline.sh"
+  },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
@@ -365,6 +371,7 @@
       }
     }
   },
+  "outputStyle": "house-style",
   "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,

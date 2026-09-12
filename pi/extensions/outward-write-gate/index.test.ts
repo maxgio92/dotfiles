@@ -27,6 +27,12 @@ test("gh api with a quoted mutating method is a write", () => {
 	assert.equal(isOutwardWrite("gh api -X 'DELETE' repos/a/b/issues/comments/1"), true);
 });
 
+test("gh api with a quoted write flag is a write", () => {
+	assert.equal(isOutwardWrite("gh api x '-f' body=hi"), true);
+	assert.equal(isOutwardWrite('gh api x "--input" -'), true);
+	assert.equal(isOutwardWrite("gh api x '-X' POST"), true);
+});
+
 test("gh api with a quoted pipe before the write flag is a write", () => {
 	assert.equal(isOutwardWrite("gh api repos/a/b/issues/1/comments -f body='a|b'"), true);
 	assert.equal(isOutwardWrite("gh api repos/a/b/issues -H 'Accept: a|b' -f body=hi"), true);
@@ -58,6 +64,32 @@ test("gh mutating subcommands are writes", () => {
 	assert.equal(isOutwardWrite("gh release create v1.0.0"), true);
 	assert.equal(isOutwardWrite("gh repo edit --description x"), true);
 	assert.equal(isOutwardWrite("gh workflow run ci.yml"), true);
+});
+
+test("gh pr state and thread subcommands are writes", () => {
+	assert.equal(isOutwardWrite("gh pr reopen 1"), true);
+	assert.equal(isOutwardWrite("gh pr lock 1"), true);
+	assert.equal(isOutwardWrite("gh pr unlock 1"), true);
+});
+
+test("gh issue state and thread subcommands are writes", () => {
+	assert.equal(isOutwardWrite("gh issue reopen 3"), true);
+	assert.equal(isOutwardWrite("gh issue delete 3 --yes"), true);
+	assert.equal(isOutwardWrite("gh issue transfer 3 a/b"), true);
+	assert.equal(isOutwardWrite("gh issue pin 3"), true);
+	assert.equal(isOutwardWrite("gh issue lock 3"), true);
+	assert.equal(isOutwardWrite("gh issue unlock 3"), true);
+});
+
+test("gh secret and variable mutations are writes", () => {
+	assert.equal(isOutwardWrite("gh secret set TOKEN"), true);
+	assert.equal(isOutwardWrite("gh secret delete TOKEN"), true);
+	assert.equal(isOutwardWrite("gh secret remove TOKEN"), true);
+	assert.equal(isOutwardWrite("gh variable set NAME"), true);
+	assert.equal(isOutwardWrite("gh variable delete NAME"), true);
+	assert.equal(isOutwardWrite("gh variable remove NAME"), true);
+	assert.equal(isOutwardWrite("gh secret list"), false);
+	assert.equal(isOutwardWrite("gh variable get NAME"), false);
 });
 
 test("git push with flags between git and the subcommand is a write", () => {

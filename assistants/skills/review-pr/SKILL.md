@@ -21,7 +21,9 @@ Options:
   the pull request.
 - Save the result to
   `${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports/<repo>/<YYYY-MM-DD>-review-pr-<number>.md`,
-  following the `review-reports` skill. `<repo>` is the repository directory
+  following the `review-reports` skill. The `<YYYY-MM-DD>-review-pr-<number>`
+  name is a deliberate variant of that skill's naming: the PR number replaces
+  the slug so the report is found by number. `<repo>` is the repository directory
   name, or the repository name from the PR URL when the review runs from the
   URL alone with no local checkout. Create the directory if missing.
 - The `Head:` line in the saved report is a guard that `publish` compares
@@ -108,7 +110,7 @@ Reference: `<path>:<head|base>:<line>`
 ```
 ````
 
-The block holds the findings and nothing else, per the review body budget in
+The block holds the verdict line and the findings and nothing else, per the review body budget in
 `communication-rules/rules.md`. Questions and strengths stay in the header:
 `publish` posts the block unedited and cannot trim them out.
 

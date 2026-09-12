@@ -20,7 +20,7 @@ that publishes; drafting skills (`pr-review-message`, `slack-message`, the
 3. Verify: fetch the posted artifact back (permalink, message timestamp) and
    report it. A post you cannot fetch is not done.
 4. One approval covers one post. A batch approval must name each item.
-5. SHA guard. For a PR review or PR comment drafted from a review, read the
+5. SHA guard. For a PR comment drafted from a `review-pr` report, read the
    `Head:` line from the saved report file's header (the `review-pr` skill
    keeps it outside the publishable block) and compare it with `gh pr view
    <pr> --json headRefOid`. If they differ, the author pushed during the review: stop,

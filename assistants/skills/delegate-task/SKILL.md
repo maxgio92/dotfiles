@@ -69,7 +69,12 @@ The reply is the deliverable; a reply without the result is a failed task, whate
 
 ## Re-request and fallback
 
-When a worker returns empty, re-request once: a one-line recap of its scope, the two or three questions that matter most, and an instruction to reply in text. A second failure is the orchestrator's own work, to the same standard.
+When a worker returns empty, re-request once. The form depends on whether the worker keeps its context:
+
+- Resumed worker (an Agent tool continuation through SendMessage): a one-line recap of its scope, the two or three questions that matter most, and an instruction to reply in text.
+- Fresh worker (a Workflow `agent()` call or a pi child): resend the full packet with `You returned nothing. Reply in text.` prepended, as `implement-and-review.js` and the pi extension do; a fresh context has no memory of the first packet.
+
+A second failure is the orchestrator's own work, to the same standard.
 
 A worker may also write a named fallback file under the `review-reports` convention; the file is never reused and never the primary channel.
 

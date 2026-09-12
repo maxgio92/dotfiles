@@ -40,12 +40,14 @@ done
 
 url=""
 body_file=""
+body_file_given=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --body-file)
       [ $# -ge 2 ] || policy "--body-file needs a path"
-      [ -z "$body_file" ] || policy "--body-file given twice"
+      [ "$body_file_given" -eq 0 ] || policy "--body-file given twice"
       body_file="$2"
+      body_file_given=1
       shift 2
       ;;
     --body-file=*)
@@ -63,7 +65,8 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$url" ] || policy "missing review comment URL"
-[ -n "$body_file" ] || policy "missing --body-file PATH"
+[ "$body_file_given" -eq 1 ] || policy "missing --body-file PATH"
+[ -n "$body_file" ] || policy "--body-file path is empty"
 [ "$body_file" != "-" ] || policy "body must be a file, not stdin ('-')"
 [ -f "$body_file" ] && [ -r "$body_file" ] || policy "body file '$body_file' is missing or unreadable"
 [ -s "$body_file" ] || policy "body file '$body_file' is empty"
@@ -92,13 +95,24 @@ done
 
 endpoint="repos/${owner}/${repo}/pulls/${pr}/comments/${comment_id}/replies"
 
+# gh's stderr is kept apart from the URL on stdout, so a warning (an update
+# notice, a deprecation) cannot land in the caller's captured URL.
+err="$(mktemp)"
+trap 'rm -f "$err"' EXIT
+
 out="$(jq -Rs '{body: .}' < "$body_file" |
-  gh api --hostname github.com --method POST "$endpoint" --input - --jq '.html_url' 2>&1)" && status=0 || status=$?
+  gh api --hostname github.com --method POST "$endpoint" --input - --jq '.html_url' 2>"$err")" && status=0 || status=$?
 
 if [ "$status" -ne 0 ]; then
+  # On a non-2xx response gh prints its one-line status on stderr and GitHub's
+  # JSON error body (message, errors[].field/code) on stdout, skipping --jq.
+  # Surface both so a 422 keeps the field detail GitHub gave.
+  cat "$err" >&2
+  [ -z "$out" ] || printf '%s\n' "$out" >&2
   # GitHub rejects a reply to a reply with 422 on in_reply_to_id. Resolve the
-  # thread root so the caller can retry with the URL the API accepts.
-  if grep -q -e 'HTTP 422' -e 'in_reply_to_id' <<< "$out"; then
+  # thread root so the caller can retry with the URL the API accepts. Any
+  # other 422 keeps GitHub's own message ahead of the generic one.
+  if grep -q -e 'HTTP 422' -e 'in_reply_to_id' "$err" <(printf '%s' "$out"); then
     root="$(gh api --hostname github.com "repos/${owner}/${repo}/pulls/comments/${comment_id}" \
       --jq '.in_reply_to_id // empty' 2>/dev/null || true)"
     if [[ "$root" =~ ^[0-9]+$ ]]; then
@@ -106,7 +120,7 @@ if [ "$status" -ne 0 ]; then
     fi
     policy "'$url' was rejected (HTTP 422); if the comment is itself a reply, use the thread's root comment URL"
   fi
-  printf '%s\n' "$out" >&2
   exit "$status"
 fi
+cat "$err" >&2
 printf '%s\n' "$out"
