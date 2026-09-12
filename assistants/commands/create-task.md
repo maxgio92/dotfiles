@@ -14,7 +14,7 @@ Turn an outcome into one tracked task, or a parent with ordered children, and fi
 - `owner/repo` for a GitHub issue
 - a filesystem path for a local task file
 
-A blank target means infer the target from the session (the repository, the tracker mentioned, the team visible in Linear) and state it in the same confirmation as the body, so the run still asks once.
+A blank target follows the `task-tracker` blank-creation-target rule: the tracker the session already named or the team visible in Linear, stated in the same confirmation as the body, so the run still asks once.
 
 ### Setup
 
@@ -86,12 +86,8 @@ When the target is a directory:
 
 ### Tracker Writes
 
-Follow the `task-tracker` reference for the resolved tracker; it owns every write mechanic. Create the parent first so children get its id.
+Follow the `task-tracker` reference for the resolved tracker; it owns every write mechanic. Create the parent first so children get its id. When the target is a repository the user does not own, the body confirmation is the human approval and `publish` files the issue per `upstream-contribution`.
 
 ### Constraints
 
-- One confirmation, then file. No further prompts.
-- Never invent a label, status, team, or project.
-- Parents carry no estimate.
-- Order lives in the parent body, never in tracker relations.
-- A tracker failure is one reported line; report what was filed and what was not.
+- Report what was filed and what was not; `task-tracker` Shared rules and `sizing` Rules govern the rest.

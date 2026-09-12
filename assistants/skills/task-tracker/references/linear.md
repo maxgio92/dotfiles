@@ -44,7 +44,7 @@ Any `completed`, `canceled`, or `duplicate`-type status. Report the status and s
 
 ## Parent and order
 
-Set `parentId` on each child. Order lives in the parent body's `Child issues` list, one line per child with `Depends on <KEY>` where needed. Edit the list with `save_issue` `patch` operations so the rest of the body stays untouched.
+Set `parentId` on each child. Order lives in the parent body's `Child issues` list, one line per child with `Depends on <KEY>` where needed.
 
 Partial body edits always use `patch` operations, never a full `description` rewrite. This is what makes merge-never-replace hold mechanically.
 

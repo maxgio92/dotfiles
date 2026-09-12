@@ -20,17 +20,13 @@ paraphrase it here.
 ## Steps
 
 1. `create-task`: run its procedure with `$ARGUMENTS`. It confirms the body
-   once with the user, then files the task. Record the key it returns. When
-   the target is the user's own tracker (a Linear team, a repository the user
-   owns, or a local file) this confirmation is the only prompt in the run: the
-   later tracker writes are bookkeeping on the user's own task record, not
-   publishing. When the target is a repository the user does not own, the run
-   follows `upstream-contribution` and every write, the issue creation
-   included, is an outward write under the global rules: the body
-   confirmation is the human approval for the creation, `publish` posts the
-   approved body to that repository and fetches the filed issue back, and
-   each later write (body edits, the durable-record comment) goes through
-   `publish` after the human approves it.
+   once with the user, then files the task. Record the key it returns. This
+   command handles a single task: when create-task splits the outcome into a
+   parent with children, run steps 2 to 4 once per child and report `Ready`
+   only when every child is `Ready`. On the user's own tracker this
+   confirmation is the only prompt in the run. On a repository the user does
+   not own, create-task's Tracker Writes rule applies and every later write
+   goes through `publish` after approval.
 2. `research-task`: run the skill on the new key. Keep the report on disk per
    the `review-reports` skill and record its path.
 3. `update-task`: run its procedure on the key with the research report as

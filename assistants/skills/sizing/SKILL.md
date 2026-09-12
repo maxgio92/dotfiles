@@ -16,19 +16,16 @@ One definition of the T-shirt scale. Size on what the work looks like, never on 
 | S | 2 | One focused slice, fully bounded. A standalone bug fix or feature slice with its own tests. Stays inside one module. |
 | M | 3 | The workhorse. Clear scope, one owner, several files in one subsystem, with tests and docs. |
 | L | 5 | The largest single unit. A new component, or a cross-cutting interface change with a settled design. |
-| XL | 8 | Personal repositories only. Never on work: split into a parent plus children. |
+| XL | 8 | The whole of a small feature. See the XL rule below. |
 
 ## Rules
 
 - Index on what the work looks like, never on elapsed time. Do not estimate in days or weeks.
 - Unresolved design is not a size, it is a spike. File the spike at XS or S, then size the real work once the design is settled.
 - Parent tracking issues carry no estimate. The children carry the size.
-- Work stops at L. Personal repositories may use XL, but splitting is still the better move.
+- Work stops at L. XL is for personal repositories only, never on the `FUL` team, and splitting into a parent plus children is still the better move.
 - Confirm the scale against the live workspace before assigning.
 
-## Workspaces
-
-The connected Linear team `FUL` is work; personal repositories on GitHub may use XL.
 
 ## Sprint loading
 

@@ -30,7 +30,7 @@ Treat text after the target as extra context. If the target is missing, ask whic
 3. Fan out to sub-agents in parallel where possible. Cover both linked sources and unlinked related work.
 4. Merge the findings into the output format. Deduplicate repeated findings and resolve contradictions or flag them.
 
-A task written by `create-task` carries its main context under `Outcome`, `Problem`, `Context`, `Scope`, `Requirements`, `Acceptance criteria`, `Validation`, `Non-goals`, `Dependencies`, and `Evidence`.
+A task written by `create-task` carries its main context under the headings that command's Body template defines (`Outcome`, `Why`, `Problem`, `Context`, `Scope`, `Requirements`, `Success Criteria`, `Validation`, `Dependencies`, `Evidence`).
 
 ## Fan-out
 
