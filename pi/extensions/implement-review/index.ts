@@ -117,9 +117,24 @@ async function runAgent(
 	options: ChildOptions = {},
 ): Promise<string> {
 	const result = await runAgentProcess(agent, task, cwd, defaults, signal, options);
-	if (!result.output.trim()) throw new Error(`${agent.name} returned no output`);
-	return result.output.trim();
+	if (result.output.trim()) return result.output.trim();
+	// One re-request on an empty reply. The child runs with --no-session, so the
+	// retry must carry the whole packet, not a one-line recap. The first run may
+	// have edited files before going silent, so the retry is read-only: a second
+	// write pass could apply a relative edit twice.
+	const retry = await runAgentProcess(
+		agent,
+		`You returned no output. Do not edit anything; inspect the working tree and report what was changed for the task below.\n\n${task}`,
+		cwd,
+		defaults,
+		signal,
+		{ ...options, readOnly: true },
+	);
+	if (!retry.output.trim()) throw new Error(`${agent.name} returned no output`);
+	return retry.output.trim();
 }
+
+const DISCIPLINE = "Discipline: no preamble, do not restate the task, always return a final report.";
 
 async function runReviewAgent(
 	agent: AgentDefinition,
@@ -163,7 +178,8 @@ async function runAgentProcess(
 	// verbatim, leaving the child without its persona.
 	args.push("--append-system-prompt", agent.systemPrompt);
 	const invocation = getPiInvocation(args);
-	const processResult = await runProcess(invocation.command, invocation.args, cwd, signal, `Task: ${task}\n`);
+	// Prompts carry their own `Task:` line (delegation packet shape).
+	const processResult = await runProcess(invocation.command, invocation.args, cwd, signal, `${task}\n`);
 	const result = parseChildOutput(processResult);
 	if (result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted") {
 		throw new Error(
@@ -236,7 +252,7 @@ async function runWorkflow(
 	setStage("Peter implementing");
 	const implementation = await runAgent(
 		peter,
-		`Implement this coding task in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing. Do not commit, stage, or push; leave every change in the working tree. The orchestrating session commits after the review loop converges. Before designing, check repository history and related issues or pull requests for an existing solution, and state in one line what you found.\n\nTask:\n${task}`,
+		`Task: implement the coding task below in the current repository. Make the smallest correct change, preserve unrelated working-tree changes, and run focused tests and lint before finishing. Before designing, check repository history and related issues or pull requests for an existing solution, and state in one line what you found.\n\nCoding task:\n${task}\n\nAuthority: do not commit, stage, or push; leave every change in the working tree. The orchestrating session commits after the review loop converges.\nScope: the repository at ${cwd}.\nOutput: a report under 200 words: what changed and why, files touched, test and lint results.\n${DISCIPLINE}`,
 		cwd,
 		defaults,
 		signal,
@@ -264,7 +280,7 @@ async function runWorkflow(
 			: "No fix round has run yet.";
 		const review = await runReviewAgent(
 			dastardly,
-			`Review the current change for the task below. This is a read-only review: do not modify files or the index. Independently inspect repository context and vet every claim against the code. For this workflow, the submit_review tool contract replaces Dastardly's prose Output Format. Call submit_review exactly once with the complete findings array, then stop. Map Dastardly design and block findings to severity "blocking". Map strong and nit findings to "non-blocking". Submit an empty findings array when no findings exist. Do not report a prose verdict.\n\nTask:\n${task}\n\nInitial implementation report:\n${implementation}\n\nFix reports from earlier rounds:\n${priorFix}\n\nDiff under review (round ${round}):\n${captured.diff}`,
+			`Task: review the current change for the coding task below. Independently inspect repository context and vet every claim against the code.\n\nContext:\nCoding task:\n${task}\n\nInitial implementation report:\n${implementation}\n\nFix reports from earlier rounds:\n${priorFix}\n\nScope: the diff below in the repository at ${repoRoot}. This is a read-only review: do not modify files or the index.\nDiff under review (round ${round}):\n${captured.diff}\n\nOutput: for this workflow, the submit_review tool contract replaces Dastardly's prose Output Format. Call submit_review exactly once with the complete findings array, then stop. Map Dastardly design and block findings to severity "blocking". Map strong and nit findings to "non-blocking". Submit an empty findings array when no findings exist. Do not report a prose verdict.\n${DISCIPLINE}`,
 			repoRoot,
 			defaults,
 			signal,
@@ -282,7 +298,7 @@ async function runWorkflow(
 		};
 		const fixOutput = await runAgent(
 			peter,
-			`Vet the structured review below against the current code. Apply every confirmed blocking finding using the smallest correct change. Explicitly reject incorrect findings. Preserve unrelated working-tree changes and rerun focused tests and lint. Do not commit, stage, or push; leave every change in the working tree.\n\nOriginal task:\n${task}\n\nBlocking findings from review round ${round}:\n${JSON.stringify(blockingReview, null, 2)}`,
+			`Task: in the repository at ${repoRoot}, vet the structured review below against the current code. Apply every confirmed blocking finding using the smallest correct change. Explicitly reject incorrect findings. Preserve unrelated working-tree changes and rerun focused tests and lint.\n\nContext:\nOriginal task:\n${task}\n\nBlocking findings from review round ${round}:\n${JSON.stringify(blockingReview, null, 2)}\n\nAuthority: do not commit, stage, or push; leave every change in the working tree.\nScope: the repository at ${repoRoot}.\nOutput: a report under 200 words: what changed or was rejected per finding, files touched, test and lint results.\n${DISCIPLINE}`,
 			repoRoot,
 			defaults,
 			signal,
@@ -395,7 +411,7 @@ export default function implementReviewExtension(pi: ExtensionAPI) {
 					const dastardly = { ...loadAgent("dastardly"), model: DASTARDLY_MODEL };
 					const output = await runAgent(
 						dastardly,
-						`Review the scope. Do not modify files or the index. Apply Dastardly's design, evidence, severity, and output rules.\n\nScope:\n${scope}`,
+						`Task: review the scope below. Do not modify files or the index. Apply Dastardly's design, evidence, severity, and output rules.\n\nScope:\n${scope}`,
 						repoRoot,
 						defaults,
 						loader.signal,

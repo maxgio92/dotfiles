@@ -17,6 +17,41 @@ if (!task) {
   return { error: 'no task provided' }
 }
 
+// Optional: repository root (pass {task, repoRoot}). Used for the agent packets
+// and the planPath guard. Prefer passing it: guessing the root from the task
+// text is unsafe, since the first absolute path in a task body is often a Scope
+// or Evidence file, not the repository.
+const repoRootArg =
+  (args && typeof args === 'object' && typeof args.repoRoot === 'string' && args.repoRoot.trim()) || null
+
+// Fallback repository path guessed from the task text when repoRoot is absent.
+// A fix agent may run in a git worktree and, given only the findings, search
+// the main checkout instead (seen in run wf_19705886). The first absolute path
+// in the task text that a later 'branch', 'worktree', or 'repository' in the
+// same sentence qualifies wins; then the first absolute path anywhere; else null
+// and the prompts fall back to 'the repository this task names'.
+const resolveRepoPath = (text) => {
+  // A path starts at a word edge so `codex/hooks.json`, URLs, and tilde paths
+  // like `~/code/repo` do not match (the latter would resolve to `/code/repo`).
+  const ABS_PATH = /(?<![\w.:\/~-])\/[\w.@+-]+(?:\/[\w.@+-]+)*/g
+  const trimPath = (m) => m.replace(/[.,;:]+$/, '')
+  const sentences = String(text).split(/(?<=[.!?])\s+|\n+/)
+  for (const sentence of sentences) {
+    for (const m of sentence.matchAll(ABS_PATH)) {
+      const rest = sentence.slice(m.index + m[0].length)
+      if (/\b(branch|worktree|repository)\b/i.test(rest)) return trimPath(m[0])
+    }
+  }
+  const first = String(text).match(ABS_PATH)
+  return first ? trimPath(first[0]) : null
+}
+const repoPath = repoRootArg || resolveRepoPath(task)
+const repoName = repoPath || 'the repository this task names'
+
+// Packet fields shared by every agent prompt.
+const discipline = `Discipline: no preamble, do not restate the task, always return a final report.`
+const scopeLine = repoPath ? `Scope: the repository at ${repoPath}.\n` : ``
+
 // Optional: diff against this ref instead of HEAD (pass {task, baseRef}).
 // Use it when reviewing committed work (e.g. after a rebase), where
 // `git diff HEAD` is empty and the review would pass vacuously.
@@ -32,14 +67,6 @@ const planMode = (args && typeof args === 'object' && args.plan === true) || fal
 // the task names; a path inside it is skipped with a warning.
 const planPath =
   (args && typeof args === 'object' && typeof args.planPath === 'string' && args.planPath.trim()) || null
-
-// Optional: repository root (pass {task, plan: true, planPath, repoRoot}).
-// The planPath guard compares against this path. Guessing the root from the
-// task text is unsafe: the first absolute path in a task body is usually a
-// Scope or Evidence file, not the repository. Without it the guard is skipped
-// with a warning.
-const repoRootArg =
-  (args && typeof args === 'object' && typeof args.repoRoot === 'string' && args.repoRoot.trim()) || null
 
 // Optional: review engine (pass {task, reviewer: 'claude'} to opt out).
 // 'codex' (default): dastardly runs one adversarial review through the
@@ -108,14 +135,17 @@ if (runResearch) {
     required: ['findings', 'priorArt', 'pitfalls', 'sources', 'verdict'],
   }
   researchResult = await agent(
-    `Research this coding task before anyone plans or implements it. Apply the ` +
+    `Task: research the coding task below before anyone plans or implements it. Apply the ` +
       `\`deep-research\` skill at ${planMode ? 'Standard' : 'Quick'} depth. Cover the ` +
       `task's domain, prior art in this repository and upstream, known pitfalls, and ` +
-      `existing helpers the implementer should reuse. Read the repository read-only; ` +
-      `do not modify it. Keep any disposable research plan outside the repository and ` +
-      `name its path in sources if you create one. Every source is a URL or a file path. ` +
-      `The verdict is one line on whether the task as stated should change.\n\n` +
-      `Task:\n${task}`,
+      `existing helpers the implementer should reuse.\n\n` +
+      `Coding task:\n${task}\n\n` +
+      `Scope: read ${repoName} read-only; do not modify it. Keep any disposable ` +
+      `research plan outside the repository and name its path in sources if you create one.\n` +
+      `Output: findings, priorArt, pitfalls, sources, and verdict per the schema. Every ` +
+      `source is a URL or a file path. The verdict is one line on whether the task as ` +
+      `stated should change.\n` +
+      discipline,
     { label: 'research:research', phase: 'Research', schema: RESEARCH_SCHEMA },
   )
   if (!researchResult) {
@@ -124,7 +154,7 @@ if (runResearch) {
 }
 
 // Research text for the planner and peter prompts: the phase result, the
-// string arg, or empty. Sections start with 'Research:' and end before 'Task:'.
+// string arg, or empty. Sections start with 'Research:' and end before 'Coding task:'.
 const researchList = (title, items) =>
   items && items.length ? `${title}:\n${items.map((item) => `- ${item}`).join('\n')}\n` : ``
 const researchBlock = researchResult
@@ -137,6 +167,7 @@ const researchBlock = researchResult
   : typeof research === 'string' && research !== 'auto' && research.trim()
     ? `Research:\n${research.trim()}\n\n`
     : ``
+const contextBlock = researchBlock ? `Context:\n${researchBlock}` : ``
 
 const topicSweep =
   `Before designing, check repository history and related issues or pull requests ` +
@@ -168,15 +199,17 @@ if (planMode) {
     required: ['phases'],
   }
   plan = await agent(
-    `Plan this coding task. Decompose it into 2 to 6 sequential phases, each ` +
+    `Task: plan the coding task below. Decompose it into 2 to 6 sequential phases, each ` +
       `independently implementable by a fresh agent with no memory of the others. ` +
       `Order them so each phase builds only on completed ones, and aim for the ` +
-      `smallest total change across all phases. Each phase needs a short title ` +
-      `and a concrete goal stating what must exist and pass when it is done. ` +
-      `Read the repository as needed but do not modify it.\n` +
+      `smallest total change across all phases. ` +
       `${topicSweep}\n\n` +
-      researchBlock +
-      `Task:\n${task}`,
+      contextBlock +
+      `Coding task:\n${task}\n\n` +
+      `Scope: read ${repoName} as needed but do not modify it.\n` +
+      `Output: phases per the schema, each with a short title and a concrete goal stating ` +
+      `what must exist and pass when it is done; the topic sweep result in sweep.\n` +
+      discipline,
     { label: 'planner:plan', phase: 'Plan', schema: PLAN_SCHEMA },
   )
   if (!plan) {
@@ -235,9 +268,11 @@ if (plan && planPathUsable) {
       }
     } else {
       const ack = await agent(
-        `Create the directory ${dir} (and any missing parents), then write the ` +
-          `Markdown below to ${target} exactly as given, replacing any existing file. ` +
-          `Do not touch any other path. Return the single word DONE.\n\n` +
+        `Task: create the directory ${dir} (and any missing parents), then write the ` +
+          `Markdown below to ${target} exactly as given, replacing any existing file.\n` +
+          `Scope: ${target} only; do not touch any other path.\n` +
+          `Output: the single word DONE.\n` +
+          `${discipline}\n\n` +
           planMarkdown,
         { label: 'plan:write', phase: 'Plan' },
       )
@@ -258,22 +293,25 @@ if (plan) {
   for (let i = 0; i < plan.phases.length; i++) {
     const p = plan.phases[i]
     const summary = await agent(
-      `Implement one phase of a planned coding task in the current repository.\n` +
+      `Task: implement one phase of a planned coding task in ${repoName}. ` +
         `Make the smallest correct change for YOUR PHASE ONLY, reuse existing code ` +
         `over new abstractions, and run the project's tests and lint before finishing.\n` +
-        `${noCommitRule}\n` +
-        `Earlier phases are already applied in the working tree; build on them.\n\n` +
+        `Your phase (${i + 1} of ${plan.phases.length}): ${p.title}\n` +
+        `Goal: ${p.goal}\n\n` +
+        `Context:\n` +
+        `Earlier phases are already applied in the working tree; build on them.\n` +
         researchBlock +
         `Full task:\n${task}\n\n` +
-        `Full plan:\n${planOverview}\n\n` +
-        `Your phase (${i + 1} of ${plan.phases.length}): ${p.title}\n` +
-        `Goal: ${p.goal}\n` +
+        `Full plan:\n${planOverview}\n` +
         (phaseSummaries.length
           ? `\nCompleted phases:\n${phaseSummaries
               .map((s, j) => `${j + 1}. ${plan.phases[j].title}: ${s.trim().split('\n').filter(Boolean).pop()}`)
               .join('\n')}\n`
           : ``) +
-        `\nEnd your report with a one-line summary of what your phase changed.`,
+        `\nAuthority: ${noCommitRule}\n` +
+        scopeLine +
+        `Output: a report under 200 words ending with a one-line summary of what your phase changed.\n` +
+        discipline,
       {
         label: `peter:implement:p${i + 1}`,
         phase: 'Implement',
@@ -293,13 +331,16 @@ if (plan) {
     .join('\n---\n')
 } else {
   implementation = await agent(
-    `Implement this coding task in the current repository.\n` +
+    `Task: implement the coding task below in ${repoName}. ` +
       `Make the smallest correct change, reuse existing code over new abstractions, ` +
-      `and run the project's tests and lint before finishing.\n` +
-      `${noCommitRule}\n` +
+      `and run the project's tests and lint before finishing. ` +
       `${topicSweep}\n\n` +
-      researchBlock +
-      `Task:\n${task}`,
+      contextBlock +
+      `Coding task:\n${task}\n\n` +
+      `Authority: ${noCommitRule}\n` +
+      scopeLine +
+      `Output: a report under 200 words: what changed and why, files touched, test and lint results.\n` +
+      discipline,
     { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
   )
 }
@@ -342,21 +383,34 @@ while (round < MAX_ROUNDS) {
     ? `Run \`git -C <repo> diff $(git -C <repo> merge-base ${baseRef} HEAD)\` ` +
       `for committed and working-tree changes since the merge base with ${baseRef}, `
     : `Run \`git -C <repo> diff HEAD\` for tracked changes, `
-  const diff = await agent(
-    `Capture the diff of the repository this task targets.\n` +
-      `First resolve the repo root: use the absolute path named in the task text below; ` +
-      `only fall back to the current directory when the task names none.\n` +
+  const repoHint = repoPath
+    ? `<repo> is ${repoPath}.\n`
+    : `First resolve <repo>: use the absolute path named in the task text below; ` +
+      `only fall back to the current directory when the task names none.\n`
+  const diffOutput =
+    `Output: the combined raw diff as plain text and nothing else. If it is empty, ` +
+    `return the single word NONE.\n`
+  const diffPrompt =
+    `Task: capture the diff of ${repoName}.\n` +
+      `Scope: ${repoHint}` +
       `Do NOT modify the repo or its index: no git add of any kind (in particular no ` +
       `\`git add -N\`, it pollutes the index of whatever directory you run it in).\n` +
       diffCmd +
       `then for each file listed by ` +
       `\`git -C <repo> ls-files --others --exclude-standard\` append ` +
       `\`git diff --no-index -- /dev/null <repo>/<file>\` so new files show too.\n` +
-      `Return the combined raw diff as plain text. If it is empty, return the single ` +
-      `word NONE. Output nothing else.\n\n` +
-      `Task (for locating the repo):\n${task}`,
-    { label: `capture-diff:r${round}`, phase: 'Review' },
-  )
+      (repoRootArg ? `` : `\nCoding task (for locating the repo):\n${task}\n\n`) +
+      diffOutput +
+      discipline
+  let diff = await agent(diffPrompt, { label: `capture-diff:r${round}`, phase: 'Review' })
+  // One re-request on an empty reply (null, not NONE) before giving up.
+  if (!diff) {
+    log(`Round ${round}: diff capture returned nothing; re-requesting once.`)
+    diff = await agent(`You returned nothing. Reply in text.\n\n` + diffPrompt, {
+      label: `capture-diff:r${round}:retry`,
+      phase: 'Review',
+    })
+  }
 
   if (!diff || diff.trim() === 'NONE') {
     unverified = true
@@ -365,14 +419,23 @@ while (round < MAX_ROUNDS) {
   }
 
   phase('Review')
-  const review = await agent(
-    `Review the change below for the task. Challenge the design and problem framing first, ` +
+  const reviewOutput =
+    `Output: vetted findings per the schema, each with title, severity (blocking or ` +
+    `non-blocking), file when known, and detail; an empty array when nothing is wrong.\n`
+  const reviewOptions = {
+    label: `dastardly:review:r${round}`,
+    phase: 'Review',
+    agentType: 'dastardly',
+    schema: REVIEW_SCHEMA,
+  }
+  const reviewPrompt =
+    `Task: review the change below for the coding task. Challenge the design and problem framing first, ` +
       `then hunt AI slop, overengineering, leaky abstractions, producer/consumer mixing, ` +
       `and repo-convention breaks. Mark each finding blocking or non-blocking.\n\n` +
       (reviewer === 'codex'
         ? `Second opinion REQUIRED: load the \`codex\` skill and follow its adversarial ` +
           `review and pushback procedure. Run ONE adversarial review through the official ` +
-          `Codex plugin from the repo root the task names. Do not pass --base: peter's work ` +
+          `Codex plugin from the repo root at ${repoName}. Do not pass --base: peter's work ` +
           `is uncommitted and the plugin's default scope reviews the dirty working tree, ` +
           `while --base would review commits only. ` +
           `Put the skill mentions, the task, peter's summary, and your priorities in the ` +
@@ -384,18 +447,25 @@ while (round < MAX_ROUNDS) {
           `non-blocking finding titled "codex-unavailable" so the operator can see the engine ` +
           `fell back.\n\n`
         : `Review alone; do not consult Codex.\n\n`) +
-      `Task:\n${task}\n\nImplementation summary from peter:\n${implementation}\n` +
+      `Context:\n` +
+      `Coding task:\n${task}\n\nImplementation summary from peter:\n${implementation}\n` +
       (fixSummaries.length
         ? `\nFix summaries from earlier rounds:\n${fixSummaries.join('\n---\n')}\n`
         : ``) +
-      `\nDiff under review (round ${round}):\n${diff}`,
-    {
-      label: `dastardly:review:r${round}`,
-      phase: 'Review',
-      agentType: 'dastardly',
-      schema: REVIEW_SCHEMA,
-    },
-  )
+      `\nScope: the diff below in ${repoName}; read-only, do not modify files or the index.\n` +
+      `Diff under review (round ${round}):\n${diff}\n\n` +
+      reviewOutput +
+      discipline
+  let review = await agent(reviewPrompt, reviewOptions)
+  // One re-request on an empty reply before marking the run unverified. The
+  // full packet is resent so the engine instruction and fallback rule hold.
+  if (!review) {
+    log(`Round ${round}: review agent returned nothing; re-requesting once.`)
+    review = await agent(`You returned nothing. Reply in text.\n\n` + reviewPrompt, {
+      ...reviewOptions,
+      label: `dastardly:review:r${round}:retry`,
+    })
+  }
 
   if (!review) {
     unverified = true
@@ -418,9 +488,12 @@ while (round < MAX_ROUNDS) {
     .map((f, i) => `${i + 1}. [${f.file || 'unspecified'}] ${f.title}: ${f.detail}`)
     .join('\n')
   const fixSummary = await agent(
-    `Apply fixes for these confirmed blocking review findings. ` +
-      `Smallest correct change; re-run the project's tests and lint after. ` +
-      `Do not commit, stage, or push; leave every change in the working tree.\n\n${fixList}`,
+    `Task: in ${repoName}, apply fixes for these confirmed blocking review findings. ` +
+      `Smallest correct change; re-run the project's tests and lint after.\n\n${fixList}\n\n` +
+      `Authority: Do not commit, stage, or push; leave every change in the working tree.\n` +
+      scopeLine +
+      `Output: a report under 200 words: what changed per finding, files touched, test and lint results.\n` +
+      discipline,
     { label: `peter:fix:r${round}`, phase: 'Fix', agentType: 'peter' },
   )
   if (fixSummary) fixSummaries.push(`Round ${round}:\n${fixSummary}`)
