@@ -1,7 +1,6 @@
 ---
 name: deep-research
 description: "Use when the user asks to research a topic in depth, compare options, or investigate an open question, and says things like 'deep research', 'research this', 'look into X', or 'what are the options for X'. Runs multi-round web research and synthesises a cited report; use it for an open question with no tracked task yet, and `research-task` when an existing task anchors the work."
-source: https://github.com/wimpysworld/nix-config
 ---
 
 # Deep Research
