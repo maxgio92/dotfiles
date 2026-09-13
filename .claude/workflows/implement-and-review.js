@@ -86,6 +86,16 @@ const planPath =
 // findings before reporting. Falls back to a Claude-only review when Codex
 // cannot run.
 // 'claude': dastardly reviews in Claude alone.
+// Optional: implementing agent (pass {task, implementer: 'rosey'}).
+// 'peter' (default) implements code; 'rosey' authors prompts, skills, and
+// commands; 'donatello' executes an existing improvement plan. Any agent name
+// under assistants/agents/ is accepted; the delegate-task routing table says
+// which fits.
+const implementer =
+  (args && typeof args === 'object' && typeof args.implementer === 'string' && args.implementer.trim())
+    ? args.implementer.trim()
+    : 'peter'
+
 const reviewer =
   (args && typeof args === 'object' && args.reviewer === 'claude') ? 'claude' : 'codex'
 
@@ -337,7 +347,7 @@ if (plan) {
       {
         label: `peter:implement:p${i + 1}`,
         phase: 'Implement',
-        agentType: 'peter',
+        agentType: implementer,
       },
     )
     const trimmed = summary && summary.trim()
@@ -363,7 +373,7 @@ if (plan) {
       scopeLine +
       `Output: a report under 200 words: what changed and why, files touched, test and lint results.\n` +
       discipline,
-    { label: 'peter:implement', phase: 'Implement', agentType: 'peter' },
+    { label: `${implementer}:implement`, phase: 'Implement', agentType: implementer },
   )
 }
 
@@ -499,7 +509,7 @@ while (round < MAX_ROUNDS) {
       scopeLine +
       `Output: a report under 200 words: what changed per finding, files touched, test and lint results.\n` +
       discipline,
-    { label: `peter:fix:r${round}`, phase: 'Fix', agentType: 'peter' },
+    { label: `${implementer}:fix:r${round}`, phase: 'Fix', agentType: implementer },
   )
   // A silent fix agent may or may not have edited files; only a report counts
   // as a fix, and the next diff review shows what actually changed.

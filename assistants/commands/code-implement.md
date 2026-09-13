@@ -17,7 +17,9 @@ workflow can refuse a plan path inside it), a research phase (`research`; auto
 by default: runs before planning when plan is set or the task names a new
 dependency, external API, unfamiliar domain, or security surface; `research:
 false` skips it; a string passes existing research in), or a Claude-only review
-(`reviewer: "claude"`; by default dastardly reviews through Codex and vets its
+an implementer other than peter (`implementer: "rosey"` for prompts, skills,
+and commands; `"donatello"` to execute an existing plan), or a Claude-only
+review (`reviewer: "claude"`; by default dastardly reviews through Codex and vets its
 findings). When the workflow returns, report rounds, convergence, and findings;
 commit the result yourself once converged (subagents never commit), and stage
 any push for human approval.
