@@ -28,7 +28,7 @@ Prefer `gh` for GitHub reads; prefer LSP diagnostics. Verify current documentati
 
 ## Outward writes and safety
 
-Commits stay with the main session and need no approval; subagents never commit. Bookkeeping on the user's own task record (create, body, fields, durable-record comment) is not publishing and needs no per-write approval. Anything reaching other people (push, PR, review, comment on another's thread, Slack message, another person's Linear issue, an issue on a repository the user does not own) goes through `publish` after human approval. A permission prompt or gate is the approval surface; a go-gate or Communication Rules block is a requirement to fix, not bypass. Repositories the user does not control follow `upstream-contribution`. Draft PR titles and bodies with `draft-pr`, issues with `draft-issue`.
+Commits stay with the main session and need no approval; subagents never commit. Bookkeeping on the user's own task record (create, body, fields, durable-record comment) is not publishing and needs no per-write approval. Anything reaching other people (push, PR, review, comment on another's thread, Slack message, another person's Linear issue, an issue on a repository the user does not own) goes through `publish` after human approval. A permission prompt or gate is the approval surface; a go-gate or Communication Rules block means fix, not bypass. Repositories the user does not control follow `upstream-contribution`. Draft PR titles and bodies with `draft-pr`, issues with `draft-issue`.
 
 Never destroy the unrecoverable. Use the user's Git identity, no agent attribution. Keep secrets out of prompts, fixtures, and posts.
 
