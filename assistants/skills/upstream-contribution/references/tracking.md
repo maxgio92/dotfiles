@@ -14,8 +14,8 @@ outward without the approval gate in SKILL.md.
 
 ## PR and issue titles and bodies
 
-- Titles: one line, about 60 characters or fewer.
-- Bodies: see `communication.md` for register.
+- PR title and body: the `draft-pr` skill. Issue title and body: the
+  `draft-issue` skill.
 - Code references: commit-pinned permalinks, never branch links or bare
   `file:line` text.
 - External artifacts (releases, assets, docs): always linked.

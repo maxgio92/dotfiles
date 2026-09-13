@@ -1,13 +1,13 @@
 ---
 name: publish
-description: "The single choke point for posting approved drafts: PR comments and replies, issues, and Slack messages. Use when posting, publishing, or sending a draft the human approved; never before that approval, since every other skill drafts and stops."
+description: "The single choke point for posting approved drafts: pull requests, PR comments and replies, issues, and Slack messages. Use when posting, publishing, or sending a draft the human approved; never before that approval, since every other skill drafts and stops."
 ---
 
 # Publish
 
 Post an approved draft to its destination, verbatim. This is the only skill
-that publishes; drafting skills (`pr-review-message`, `slack-message`, the
-`upstream-contribution` staging step) produce text and stop.
+that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
+`slack-message`, the `upstream-contribution` staging step) produce text and stop.
 
 ## Contract
 
@@ -45,10 +45,27 @@ user does not own goes through this skill after the human approves it.
   <file>`, so the reply lands in the thread the comment lives in.
 - Top-level PR comment: `gh pr comment --body-file <file>`.
 - Never a raw `gh api` call for a write; the two commands above are the only
-  PR paths.
+  paths for PR comments and replies.
 - Issue: `gh issue create --title <line one> --body-file <rest>` for a
   `draft-issue` block, whose first line is the title and whose remaining
   lines are the body; `gh issue comment --body-file <file>` for a comment.
+- Pull request, from a `draft-pr` block (title on line one, body after the
+  blank line): push the branch with an explicit refspec, `git push origin
+  <branch>`, never a bare `git push` and never `-u`; verify with `git fetch
+  origin <branch>` and confirm `git rev-parse HEAD` equals `git rev-parse
+  FETCH_HEAD`; then `gh pr create --base <base> --head <head> --title
+  <line one> --body-file <rest>`, where `<base>` is the `Base:` line
+  `draft-pr` reports before its block, never the repository default by omission. A bare
+  `--head <branch>` means the branch on the base repository, so when `origin`
+  is a fork of the base repository (an `upstream` remote, or `gh repo view
+  --json isFork,parent`), set `<head>` to `<fork-owner>:<branch>` with the
+  owner from `gh repo view --json owner`; a bare `<branch>` only when
+  `origin` is the base repository itself. Fetch it back with `gh pr view
+  --json url,baseRefName,headRepositoryOwner,headRefName,headRefOid`, confirm
+  the base, the head owner, and that `headRefOid` equals `git rev-parse
+  HEAD`, and report the URL. `gh pr create --web` with the same `--base`,
+  `--head`, title, and body is the alternative when the user wants to finish
+  in the browser.
 - Another person's Linear issue: `save_comment`, or `save_issue` for a body or status change the owner asked for.
 - Slack: the Slack send tools, or the repository's posting helper if one
   exists.

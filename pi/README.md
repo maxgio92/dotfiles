@@ -66,13 +66,14 @@ Pi to load a matching skill, but the command form makes the choice explicit.
 |---|---|
 | `/skill:coordinator` | Run and combine work from several worktree agents |
 | `/skill:daily [date]` | Build and save an interactive daily note |
+| `/skill:draft-pr` | Draft a pull request title and body without publishing |
 | `/skill:effective-go` | Apply Effective Go guidance while writing or reviewing Go |
 | `/skill:export-stl` | Export OpenSCAD to STL and check the geometry |
 | `/skill:merge` | Commit, rebase, and merge the current branch |
-| `/skill:open-pr` | Draft a pull request and open the GitHub creation page |
 | `/skill:openscad` | Create and revise versioned OpenSCAD models |
 | `/skill:pr-review-message` | Draft a reply to a pull request review comment |
 | `/skill:preview-scad` | Render an OpenSCAD model to PNG for visual checks |
+| `/skill:publish` | Post an approved draft: pull request, issue, PR comment, or Slack message |
 | `/skill:rebase` | Rebase the current branch and resolve conflicts |
 | `/skill:review-pr` | Draft a junior, senior, or staff pull request review without posting it |
 | `/skill:session-journal` | Add new Claude, Codex, and Pi session activity to today's journal |

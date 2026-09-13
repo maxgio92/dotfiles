@@ -32,7 +32,7 @@ One contract for every hand-off: which specialist, what it receives, what it sen
 - Adversarial diff review: `dastardly`. Security sweep of a scope: `blast`.
 - Tests: `brain`. Documentation: `velma`. Naming: `snagglepuss`. Maintainability: `penry`. Performance: `gonzales`.
 - Nix: `dexter`. Prompts, skills, commands, instruction files: `rosey`.
-- Git messages: `garfield`. Blog: `pat`. Talks: `edison`. LOVE 2D: `pepe`. 3D printing: `openscad-agent`.
+- Git messages: `garfield`. Pull request title and body: `draft-pr` skill in the calling session (no agent). Blog: `pat`. Talks: `edison`. LOVE 2D: `pepe`. 3D printing: `openscad-agent`.
 - No match: the smallest capable specialist, or ask the user.
 
 Pick from the descriptions; the specialist does its own discovery.
