@@ -125,19 +125,7 @@ IMPACT: <practical effects>
 
 **Pull Request:**
 
-Prose is the default. Write paragraphs, not headings.
-
-```
-<type>(<scope>): <description>
-
-<What changes and why, in prose. Lead with the conclusion.>
-
-<What you verified and how, in one sentence. Omit when there was nothing to verify.>
-
-<Refs: or issue reference on its own line, when there is one.>
-```
-
-Use headings only when a reviewer needs to navigate the pull request: several independent concerns, or a long commit series that no single narrative covers. Headings on a focused change are the fault `contribution-voice` names.
+The title follows the commit subject rules: `<type>(<scope>): <description>`, at most 72 characters. The body follows the `draft-pr` skill's template (What, Why, How, Tracking, Impact); load that skill and do not restate its sections here.
 
 ## Constraints
 

@@ -49,7 +49,7 @@ The plan lives at `${TMPDIR:-/tmp}/agent-plans/<key>/plan.md`. It is never insid
 
 ### Constraints
 
-- Never push and never open a PR. Point the user at the `open-pr` skill for repositories they own, or `upstream-contribution` for repositories they do not control.
+- Never push and never open a PR. Point the user at the `draft-pr` skill, then `publish`, for repositories they own, or `upstream-contribution` for repositories they do not control.
 - `git status` must show no plan files at any point.
 
 ### Output

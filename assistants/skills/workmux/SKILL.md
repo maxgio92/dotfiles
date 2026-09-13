@@ -195,9 +195,12 @@ step. This cleans up the worktree, tmux window, and branch.
 ### Finishing work: PR-based
 
 1. Commit changes
-2. `git push -u origin HEAD`
-3. Use `/open-pr` to write a PR description and open in browser
-4. After PR is merged remotely, clean up with `workmux rm --gone`
+2. Use `/draft-pr` to write the PR title and body
+3. Once the draft is approved, use `/publish` to push the branch and open the PR
+4. Set the upstream so cleanup can see the remote branch: `git branch
+   --set-upstream-to=origin/<branch>` (`/publish` pushes without `-u`, and
+   `workmux add` creates the branch without tracking)
+5. After PR is merged remotely, clean up with `workmux rm --gone`
 
 ### Delegating tasks
 
@@ -246,4 +249,4 @@ other projects by path and let the agent explore on its own.
 - **`/rebase`**: rebase with smart conflict resolution
 - **`/worktree`**: delegate tasks to parallel worktree agents
 - **`/coordinator`**: orchestrate multiple agents (spawn, monitor, merge)
-- **`/open-pr`**: write PR description and open in browser
+- **`/draft-pr`**: write the PR title and body; **`/publish`**: push and open it

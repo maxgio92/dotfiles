@@ -28,7 +28,7 @@ Budgets for text published under my name:
 - Review finding: 3 sentences (defect, proof, fix).
 - Review body: the findings and nothing else.
 - Slack message: 1 to 2 sentences.
-- PR body: 1 paragraph plus 1 sentence of validation.
+- PR body: the draft-pr template's sections, each in prose or short bullets.
 - Commit: subject plus a short paragraph or up to 5 bullets.
 - Issue body: the template's sections, each in prose.
 - Over budget is a defect.

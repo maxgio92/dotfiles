@@ -19,7 +19,8 @@ around it.
 Read the file for the phase you are in; do not front-load all three.
 
 - Drafting any maintainer-facing text (PR body, review reply, issue):
-  read `references/communication.md`.
+  read `references/communication.md`. A PR body loads the `draft-pr`
+  skill and stops at the draft.
 - Creating commits, PRs, or issues: read `references/tracking.md`.
 - After a push: CI watching, review rounds, rebases: read
   `references/progression.md`.
