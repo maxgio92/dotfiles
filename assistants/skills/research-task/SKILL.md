@@ -9,7 +9,7 @@ Deeply research an existing task, everything it links to, and related work, then
 
 Use `research-task` when a tracked task anchors the work. Defer an open question with no tracked task to `deep-research`.
 
-Keep every source read-only. For GitHub issue, pull request, code, comment, review, and status reads or searches, prefer dedicated read-only `gh` subcommands (`view`, `list`, `search`, `gh pr diff`, `gh pr checks`); use `gh api` only for GET endpoints. Never run a mutating command.
+Keep every source read-only. For GitHub issue, pull request, code, comment, review, and status reads or searches, prefer dedicated read-only `gh` subcommands (`view`, `list`, `search`, `gh pr diff`, `gh pr checks`); use `gh-api-safe` for raw REST reads, never `gh api`. Never run a mutating command.
 
 ## Input resolution
 

@@ -44,8 +44,8 @@ user does not own goes through this skill after the human approves it.
 - PR review-thread reply: `gh-review-reply <review-comment-url> --body-file
   <file>`, so the reply lands in the thread the comment lives in.
 - Top-level PR comment: `gh pr comment --body-file <file>`.
-- Never a raw `gh api` call for a write; the two commands above are the only
-  paths for PR comments and replies.
+- Never a raw `gh api` call for a write, and reads go through `gh-api-safe`;
+  the two commands above are the only paths for PR comments and replies.
 - Issue: `gh issue create --title <line one> --body-file <rest>` for a
   `draft-issue` block, whose first line is the title and whose remaining
   lines are the body; `gh issue comment --body-file <file>` for a comment.

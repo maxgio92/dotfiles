@@ -145,7 +145,7 @@ def _stub_extract(agent: str, event: str, payload: dict) -> Extraction:
             record.texts = [command]
             # The stub classifies surface from the same command string the
             # adapters classify on; the BODY still routes through scan_bash. A
-            # gh/gh-api-safe post is external (B2), everything else local (B1).
+            # gh post is external (B2), everything else local (B1).
             # ``is_bash_gh_post`` is the canonical surface helper shared with the
             # migrated extractors, so the stub cannot drift on which flags count.
             surface = "external" if is_bash_gh_post(command) else "local"

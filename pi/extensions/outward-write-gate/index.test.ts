@@ -51,6 +51,11 @@ test("gh api reads are not writes", () => {
 	assert.equal(isOutwardWrite("gh api -X GET repos/a/b/pulls/1"), false);
 });
 
+test("gh-api-safe reads are not writes", () => {
+	assert.equal(isOutwardWrite("gh-api-safe repos/a/b -X GET"), false);
+	assert.equal(isOutwardWrite("gh-api-safe repos/a/b --jq .name"), false);
+});
+
 test("gh read subcommands are not writes", () => {
 	assert.equal(isOutwardWrite("gh pr view 1"), false);
 	assert.equal(isOutwardWrite("gh issue list --state all"), false);

@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+# Read-only front end for gh api.
+#
+# Usage: gh-api-safe <endpoint> [gh api read flags]
+#        gh-api-safe graphql -f query=<query>
+#        gh-api-safe graphql --field query=@file
+#
+# Raw gh api is a read or a write depending on its flags, so a permission
+# allowlist cannot tell them apart. This wrapper admits only the read shape:
+# a GET on a REST path under an allowed prefix (or the matching absolute
+# https://api.github.com/ URL), or a GraphQL document whose operation is not a
+# mutation or subscription. Anything else exits 64 with a one-line reason
+# before gh runs, so no network call happens for a rejected argv. Output
+# flags (--jq, --template, --paginate, --cache, -H, ...) pass through
+# unchanged; the hostname is pinned to github.com so GH_HOST cannot move the
+# read elsewhere. Unknown flags are rejected rather than forwarded, since a
+# flag added to gh later could carry write semantics.
+# https://cli.github.com/manual/gh_api
+
+set -euo pipefail
+
+readonly EX_POLICY=64
+
+usage() {
+  cat >&2 <<'EOF'
+usage: gh-api-safe <endpoint> [gh api read flags]
+       gh-api-safe graphql -f query=<query>
+       gh-api-safe graphql --field query=@file
+EOF
+  exit "$EX_POLICY"
+}
+
+policy() {
+  echo "gh-api-safe: $*" >&2
+  exit "$EX_POLICY"
+}
+
+[ $# -eq 0 ] && usage
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage ;;
+  esac
+done
+
+# Flags that take a value, by long name. Short aliases map onto them so
+# '-H x', '-Hx', '-H=x', '--header x', and '--header=x' all resolve the same.
+value_flag() {
+  case "$1" in
+    -H|--header) echo header ;;
+    -q|--jq) echo jq ;;
+    -t|--template) echo template ;;
+    -p|--preview) echo preview ;;
+    --cache) echo cache ;;
+    -X|--method) echo method ;;
+    -f|--raw-field) echo raw-field ;;
+    -F|--field) echo field ;;
+    --input) echo input ;;
+    --hostname) echo hostname ;;
+    *) return 1 ;;
+  esac
+}
+
+boolean_flag() {
+  case "$1" in
+    -i|--include|--paginate|--slurp|--silent|--verbose|--allow-escape-sequences) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+endpoint=""
+pass=()
+query_fields=()
+while [ $# -gt 0 ]; do
+  tok="$1"
+  shift
+  case "$tok" in
+    --)
+      policy "'--' is not accepted; give the endpoint as the first argument"
+      ;;
+    --*=*)
+      name="${tok%%=*}"
+      value="${tok#*=}"
+      has_value=1
+      ;;
+    --*)
+      name="$tok"
+      value=""
+      has_value=0
+      ;;
+    -?*)
+      name="${tok:0:2}"
+      rest="${tok:2}"
+      if [ -z "$rest" ]; then
+        value=""
+        has_value=0
+      else
+        # pflag accepts '-Xvalue' and '-X=value'.
+        value="${rest#=}"
+        has_value=1
+      fi
+      ;;
+    *)
+      [ -z "$endpoint" ] || policy "extra argument '$tok'; one endpoint only"
+      endpoint="$tok"
+      continue
+      ;;
+  esac
+
+  if boolean_flag "$name"; then
+    [ "$has_value" -eq 0 ] || policy "flag '$name' takes no value"
+    pass+=("$name")
+    continue
+  fi
+  kind="$(value_flag "$name")" || policy "unknown flag '$name'; only gh api read flags are accepted"
+  if [ "$has_value" -eq 0 ]; then
+    [ $# -ge 1 ] || policy "flag '$name' needs a value"
+    value="$1"
+    shift
+  fi
+
+  case "$kind" in
+    method)
+      [ "${value^^}" = "GET" ] || policy "method '$value' is not GET; use gh api directly for a write"
+      pass+=(--method GET)
+      ;;
+    field|raw-field)
+      case "$value" in
+        # Forwarded as --raw-field whatever the caller wrote: --field would
+        # expand a leading '@' or a {owner} placeholder in the validated text.
+        query=*) query_fields+=(--raw-field "$value") ;;
+        *) policy "request field '$value' is not accepted; only 'query=' on graphql is a read" ;;
+      esac
+      ;;
+    input)
+      policy "--input sends a request body; use gh api directly for a write"
+      ;;
+    hostname)
+      [ "$value" = "github.com" ] || policy "hostname '$value' is not github.com"
+      ;;
+    *)
+      pass+=("--$kind" "$value")
+      ;;
+  esac
+done
+
+[ -n "$endpoint" ] || policy "missing endpoint"
+
+# Strip comments and string literals from a GraphQL document so a keyword
+# inside either cannot trip or dodge the operation check. Block strings
+# ("""...""") come before plain strings so their opening quotes are not read
+# as an empty string followed by a string start.
+strip_graphql() {
+  local doc="$1" out="" i=0 c
+  local n=${#doc}
+  while [ "$i" -lt "$n" ]; do
+    c="${doc:$i:1}"
+    if [ "${doc:$i:3}" = '"""' ]; then
+      i=$((i + 3))
+      while [ "$i" -lt "$n" ] && [ "${doc:$i:3}" != '"""' ]; do
+        # '\"""' is literal content inside a block string, not its end.
+        if [ "${doc:$i:4}" = '\"""' ]; then
+          i=$((i + 4))
+        else
+          i=$((i + 1))
+        fi
+      done
+      i=$((i + 3))
+      out+=" "
+    elif [ "$c" = '"' ]; then
+      i=$((i + 1))
+      while [ "$i" -lt "$n" ] && [ "${doc:$i:1}" != '"' ]; do
+        [ "${doc:$i:1}" = "\\" ] && i=$((i + 1))
+        i=$((i + 1))
+      done
+      i=$((i + 1))
+      out+=" "
+    elif [ "$c" = '#' ]; then
+      # GraphQL line terminators are LF, CR, and CRLF.
+      while [ "$i" -lt "$n" ] && [ "${doc:$i:1}" != $'\n' ] && [ "${doc:$i:1}" != $'\r' ]; do
+        i=$((i + 1))
+      done
+    else
+      out+="$c"
+      i=$((i + 1))
+    fi
+  done
+  printf '%s' "$out"
+}
+
+if [ "$endpoint" = "graphql" ]; then
+  [ "${#query_fields[@]}" -gt 0 ] || policy "graphql needs '-f query=<query>' or '--field query=@file'"
+  i=0
+  while [ "$i" -lt "${#query_fields[@]}" ]; do
+    value="${query_fields[$((i + 1))]}"
+    doc="${value#query=}"
+    if [ "${doc:0:1}" = "@" ]; then
+      file="${doc:1}"
+      [ "$file" != "-" ] || policy "query must be inline or a file, not stdin ('@-')"
+      [ -f "$file" ] && [ -r "$file" ] || policy "query file '$file' is missing or unreadable"
+      doc="$(cat "$file")"
+      # Forward the validated text itself, so the file cannot change between
+      # the check here and gh reading it.
+      query_fields[i + 1]="query=$doc"
+    fi
+    # Capture first: with a producer behind 'grep -q' a long document can end
+    # the pipeline in SIGPIPE (status 141) and the check would fail open.
+    stripped="$(strip_graphql "$doc")"
+    if grep -qwE 'mutation|subscription' <<< "$stripped"; then
+      policy "graphql document contains a mutation or subscription; use gh api directly for a write"
+    fi
+    i=$((i + 2))
+  done
+else
+  [ "${#query_fields[@]}" -eq 0 ] || policy "request field 'query=' is only accepted on the graphql endpoint"
+  path="${endpoint#https://api.github.com/}"
+  # gh drops a '#fragment' before sending, so it would only hide the real
+  # path from the checks below.
+  case "$path" in
+    *'#'*) policy "'$endpoint' contains a URL fragment" ;;
+  esac
+  # gh fills {owner}, {repo}, {branch} and the legacy :owner/:repo forms from
+  # GH_REPO or the current checkout after this script has run, so a literal
+  # placeholder could resolve into a denied segment.
+  case "${path%%\?*}" in
+    *'{'*|*'}'*|*/:*) policy "'$endpoint' contains a placeholder; placeholders are not accepted, spell the path out" ;;
+  esac
+  case "$path" in
+    repos/*|search/*|users/*|orgs/*|gists/*|user|user/*|user\?*|notifications|notifications/*|notifications\?*|rate_limit) ;;
+    *) policy "'$endpoint' is not an allowed REST read path" ;;
+  esac
+  # Compare on the decoded path only: a percent-encoded or dot segment must
+  # not slip a denied resource past the prefix and segment checks.
+  decoded="$(printf '%s' "${path%%\?*}" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')"
+  decoded="$(printf '%b' "$decoded")"
+  case "/$decoded/" in
+    */../*|*//*) policy "'$endpoint' contains an empty or dot segment" ;;
+  esac
+  case "$decoded" in
+    repos/*/*/actions/secrets|repos/*/*/actions/secrets/*|orgs/*/actions/secrets|orgs/*/actions/secrets/*)
+      policy "'$endpoint' reads repository or organisation secrets" ;;
+    */hooks|*/hooks/*)
+      policy "'$endpoint' reads webhooks, which carry secrets" ;;
+    admin/*|enterprises/*|app/installations|app/installations/*)
+      policy "'$endpoint' is an administrative endpoint" ;;
+  esac
+fi
+
+command -v gh >/dev/null 2>&1 || policy "gh is required but not on PATH"
+
+exec gh api --hostname github.com "$endpoint" ${pass[@]+"${pass[@]}"} ${query_fields[@]+"${query_fields[@]}"}

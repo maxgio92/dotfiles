@@ -40,6 +40,14 @@ class GhPostCommandPathTest(unittest.TestCase):
         self.assertFalse(is_bash_gh_post("cat notes/gh-review-reply --body-file reply.md"))
         self.assertFalse(is_bash_gh_post("gh pr view 1"))
 
+    def test_gh_api_safe_read_is_not_a_post(self) -> None:
+        # gh-api-safe admits only GET paths and GraphQL queries, so a plain
+        # read through it carries no post signal.
+        self.assertFalse(is_bash_gh_post("gh-api-safe repos/a/b --jq .name"))
+        self.assertFalse(is_bash_gh_post("gh-api-safe repos/a/b -X GET"))
+        self.assertFalse(is_bash_gh_post('gh-api-safe graphql -f "query=query { viewer { login } }"'))
+        self.assertFalse(is_bash_gh_post("gh-api-safe graphql -F query=@query.graphql --jq .data"))
+
     def test_compound_command_with_a_gh_post_segment_is_external(self) -> None:
         for command in (
             "cd repo && gh pr comment 1 --body-file reply.md",
