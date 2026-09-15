@@ -5,7 +5,7 @@ wrappers, two TypeScript plugins) into one place. It owns:
 
 - Sub-tier B1 (local: write, edit, bash). Block-then-allow-revise: one cheap
   block, then allow the write and ask for an in-place revision of the target.
-- Sub-tier B2 (external: post-capable tools, gh/gh-api-safe posts). Five-
+- Sub-tier B2 (external: post-capable tools, gh posts). Five-
   strike-then-yield, with the ``external:`` key namespace so a B2 key never
   aliases a B1 key for the same session and tool.
 - The existing-blocked per-turn dedupe: a duplicate breach in the same turn
@@ -42,7 +42,7 @@ from core.types import Decision, ExtractorRecord
 # target. Only a clean scan resets the count, so each later breach re-emits.
 LOCAL_STRIKE_LIMIT = 1
 
-# Sub-tier B2 (external: post-capable tools, gh/gh-api-safe posts). Irretractable
+# Sub-tier B2 (external: post-capable tools, gh posts). Irretractable
 # the instant it yields. Five-strike-then-yield, keyed on a stable identity so
 # reworded retries of the same logical post draw down one budget.
 EXTERNAL_STRIKE_LIMIT = 5

@@ -14,7 +14,24 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(gh-api-safe:*)"
+    ],
+    "deny": [
+      "mcp__plugin_slack_slack__slack_send_message_draft",
+      "mcp__plugin_slack_slack__slack_schedule_message",
+      "mcp__linear__delete_comment",
+      "mcp__linear__delete_diff_comment",
+      "mcp__linear__delete_status_update",
+      "mcp__linear__delete_attachment",
+      "Bash(gh pr lock:*)",
+      "Bash(gh pr unlock:*)",
+      "Bash(gh issue delete:*)",
+      "Bash(gh issue lock:*)",
+      "Bash(gh issue unlock:*)",
+      "Bash(gh secret:*)",
+      "Bash(gh variable:*)",
+      "Bash(gh config:*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -51,22 +68,6 @@
       "mcp__linear__save_project",
       "mcp__linear__resolve_diff_thread",
       "mcp__linear__merge_diff"
-    ],
-    "deny": [
-      "mcp__plugin_slack_slack__slack_send_message_draft",
-      "mcp__plugin_slack_slack__slack_schedule_message",
-      "mcp__linear__delete_comment",
-      "mcp__linear__delete_diff_comment",
-      "mcp__linear__delete_status_update",
-      "mcp__linear__delete_attachment",
-      "Bash(gh pr lock:*)",
-      "Bash(gh pr unlock:*)",
-      "Bash(gh issue delete:*)",
-      "Bash(gh issue lock:*)",
-      "Bash(gh issue unlock:*)",
-      "Bash(gh secret:*)",
-      "Bash(gh variable:*)",
-      "Bash(gh config:*)"
     ],
     "defaultMode": "auto"
   },

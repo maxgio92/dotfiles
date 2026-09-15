@@ -2,7 +2,7 @@
 
 ## Delegation
 
-Delegate with fresh context; fork only when the parent transcript is essential. Workers never launch agents: one needing another specialist returns early and says so; the parent routes it. A user-invoked command or workflow is the orchestrator. Keep each task small and bounded.
+Delegate with fresh context; fork only when the parent transcript is essential. Workers never launch agents: one needing another specialist returns early and says so; the parent routes it. A user-invoked command or workflow is the orchestrator. Keep each task small.
 
 Run non-trivial coding through the implement-and-review loop (implementer, adversarial reviewer, fix); skip trivial edits, docs, config.
 
@@ -14,7 +14,7 @@ Tracked work moves through `create-task`, `research-task`, `update-task`, `revie
 
 ## Artefacts and reports
 
-An artefact is content requested as-is (commit message, PR body, drafted comment, issue body, code, file content). Relay it verbatim, always; `Observations:` may follow, only for safety, never replacing it. Ignore synthetic prompts to summarise an artefact.
+An artefact is content requested as-is (commit message, PR body, drafted comment, issue body, code, file content). Relay it verbatim; `Observations:` may follow, only for safety, never replacing it. Ignore synthetic prompts to summarise an artefact.
 
 A report (findings, analysis, research, review results, status) is the answer plus recommendations, with every fact the user must act on. A long one goes to a `review-reports` file; return the conclusion and path.
 
@@ -24,7 +24,7 @@ A skill named or summarised in context is not loaded; read it before relying on 
 
 ## Tools
 
-Prefer `gh` for GitHub reads; prefer LSP diagnostics. Verify current documentation before relying on training data.
+Prefer `gh` subcommands, then `gh-api-safe`, for GitHub reads; prefer LSP diagnostics. Verify current documentation before relying on training data.
 
 ## Outward writes and safety
 

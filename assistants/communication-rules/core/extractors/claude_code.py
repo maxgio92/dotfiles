@@ -164,7 +164,7 @@ def collect_post_texts(value: Any, post_text_keys: frozenset[str], key: str = ""
 
 
 def is_external_surface(tool_name: str, tool_input: dict[str, Any], config: Config) -> bool:
-    # External (B2): a post-capable MCP tool, or a gh/gh-api-safe post run through
+    # External (B2): a post-capable MCP tool, or a gh post run through
     # the Bash tool. Everything else is local (B1).
     if is_post_capable_mcp_tool(tool_name, config.post_tool_terms):
         return True

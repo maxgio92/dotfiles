@@ -21,7 +21,7 @@
 ## Review rounds
 
 - Fetch review bodies and inline comments without truncation
-  (`gh pr view`, `gh api`).
+  (`gh pr view`, `gh-api-safe`).
 - Classify each ask per the loop in SKILL.md before touching code.
 - Track which findings each pushed commit addresses so replies can cite
   the right sha per finding.
