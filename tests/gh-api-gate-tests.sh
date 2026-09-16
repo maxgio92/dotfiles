@@ -43,6 +43,13 @@ expect "graphql query" none "gh api graphql -f query='query { viewer { login } }
 expect "graphql query with variables" none "gh api graphql -f query='query(\$n:String!){ repository(name:\$n){ id } }' -F n=r"
 expect "graphql query from file" none "gh api graphql --field query=@q.graphql"
 expect "header and cache flags" none "gh api repos/o/r -H 'Accept: application/vnd.github+json' --cache 1h"
+expect "header before graphql endpoint" none "gh api -H 'Accept: application/vnd.github+json' graphql -f query='query { viewer { login } }'"
+expect "hostname before graphql endpoint" none "gh api --hostname github.com graphql -f query='{ viewer { login } }'"
+expect "explicit GET with query fields" none "gh api search/issues -X GET -f q='is:pr' -f per_page=5"
+expect "--method GET with field" none "gh api repos/o/r/commits --method GET -F per_page=1"
+expect "read with stderr redirect" none "gh api repos/o/r 2>/dev/null --jq .name"
+expect "grep for gh api text" none "rg 'gh api -X' assistants/"
+expect "echo quoting a write then a read" none "echo \"gh api -X POST\" && gh api repos/o/r"
 expect "no gh api" none "ls; gh pr view 1; gh issue list"
 expect "wrapper" none "gh-api-safe repos/o/r"
 expect "gh apix" none "gh apix repos/o/r"
@@ -68,6 +75,19 @@ expect "write after pipe" ask "cat body.md | gh api repos/o/r/issues/1/comments 
 expect "write on the second line" ask "$(printf 'echo a\ngh api -X PUT repos/o/r/topics -f names=x')"
 expect "write with env prefix" ask "GH_TOKEN=x gh api -X POST repos/o/r/issues -f title=x"
 expect "write with unterminated quote" ask "gh api -X POST repos/o/r/issues -f title='x"
+expect "method after stderr redirect" ask "gh api repos/o/r 2>/dev/null -X POST"
+expect "method after stdout redirect" ask "gh api repos/o/r >out.json -X DELETE"
+expect "method after merged stderr" ask "gh api repos/o/r 2>&1 -X POST"
+expect "--input after stdin redirect" ask "gh api repos/o/r <in.json --input -"
+expect "field after redirect" ask "gh api repos/o/r >f -f a=b"
+expect "continued lines" ask "$(printf 'gh api \\\n  -X POST \\\n  repos/o/r')"
+expect "continuation between gh and api" ask "$(printf 'gh \\\napi -X POST repos/o/r')"
+expect "path-qualified gh" ask "/usr/bin/gh api -X POST repos/o/r"
+# shellcheck disable=SC2088  # the literal tilde is the point
+expect "tilde path gh" ask "~/.local/bin/gh api repos/o/r -f a=b"
+expect "backtick substitution" ask "echo \`gh api -X POST repos/o/r\`"
+expect "eval script" ask "eval 'gh api -X POST repos/o/r'"
+expect "header value that looks like a field" none "gh api -H '-f' repos/o/r"
 
 # Other tools and unreadable input: silent.
 out="$(payload Edit "gh api -X POST x" | "$hook")"; status=$?
