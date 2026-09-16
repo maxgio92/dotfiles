@@ -22,13 +22,20 @@ import shlex
 import sys
 
 GH_API_RE = re.compile(r"(?<![\w-])gh\s+api(?![\w-])")
-OPERATORS = set(";&|<>()\n")
+SEPARATORS = set(";&|()\n")
+REDIRECTS = set("<>")
 FIELD_FLAGS = ("-f", "-F", "--field", "--raw-field")
+# Flags whose next token is a value, never the endpoint or a field.
+VALUE_FLAGS = ("-H", "--header", "--hostname", "-q", "--jq", "-t", "--template", "--cache", "-p", "--preview")
+SCRIPT_FLAGS = ("-c", "-lc", "-ec", "-ic")
 GRAPHQL_WRITE_RE = re.compile(r"\bmutation\b|\bsubscription\b")
 
 
 def tokens_of(command):
     """Shell words with quotes removed; whitespace split when shlex fails."""
+    # A continuation is one command; a backtick is a substitution boundary
+    # shlex does not know, so both become plain whitespace first.
+    command = command.replace("\\\n", " ").replace("`", " ")
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     lexer.commenters = ""
@@ -38,44 +45,71 @@ def tokens_of(command):
         return command.split()
 
 
+def is_gh(tok):
+    return tok.rsplit("/", 1)[-1] == "gh"
+
+
 def calls(tokens):
-    """Yield the argv after each ``gh api``, up to the next shell operator."""
+    """Yield the argv after each ``gh api``, up to the next command separator.
+
+    A redirection and its target are skipped, not treated as the end, so
+    ``gh api x 2>/dev/null -X POST`` still shows its method.
+    """
     for i in range(len(tokens) - 1):
-        if tokens[i] == "gh" and tokens[i + 1] == "api":
+        if is_gh(tokens[i]) and tokens[i + 1] == "api":
             argv = []
+            skip = False
             for tok in tokens[i + 2:]:
-                if tok and set(tok) <= OPERATORS:
+                if skip:
+                    skip = False
+                    continue
+                if tok and set(tok) <= SEPARATORS | REDIRECTS:
+                    # 2>&1 lexes as ">&": a redirect with its own target.
+                    if set(tok) & REDIRECTS:
+                        skip = True
+                        continue
                     break
                 argv.append(tok)
             yield argv
-    # A quoted script (bash -c 'gh api ...') is one token; scan its words.
-    for tok in tokens:
-        if GH_API_RE.search(tok):
-            inner = tok.split()
-            for j in range(len(inner) - 1):
-                if inner[j] == "gh" and inner[j + 1] == "api":
-                    yield inner[j + 2:]
+    # A script handed to another shell (bash -c 'gh api ...', eval '...') is
+    # one token; scan its words.
+    for i, tok in enumerate(tokens):
+        if i == 0 or not GH_API_RE.search(tok):
+            continue
+        if tokens[i - 1] not in SCRIPT_FLAGS and tokens[i - 1] != "eval":
+            continue
+        inner = tok.replace("\\\n", " ").split()
+        for j in range(len(inner) - 1):
+            if is_gh(inner[j]) and inner[j + 1] == "api":
+                yield inner[j + 2:]
 
 
 def write_signal(argv):
     """Return why ``gh api ARGV`` writes, or None."""
     endpoint = None
     fields = []
+    explicit_get = False
     i = 0
     while i < len(argv):
         tok = argv[i]
+        if tok in VALUE_FLAGS:
+            i += 2
+            continue
         if tok in ("-X", "--method"):
             method = argv[i + 1] if i + 1 < len(argv) else ""
             if method.upper() != "GET":
                 return "method %s" % (method or "missing")
+            explicit_get = True
             i += 2
             continue
         if tok.startswith("--method="):
             if tok[9:].upper() != "GET":
                 return "method %s" % tok[9:]
+            explicit_get = True
         elif tok.startswith("-X") and len(tok) > 2:
             if tok[2:].lstrip("=").upper() != "GET":
                 return "method %s" % tok[2:].lstrip("=")
+            explicit_get = True
         elif tok == "--input" or tok.startswith("--input="):
             return "--input sends a request body"
         elif tok in FIELD_FLAGS:
@@ -89,7 +123,8 @@ def write_signal(argv):
         elif not tok.startswith("-") and endpoint is None:
             endpoint = tok
         i += 1
-    if fields:
+    # With an explicit GET, gh sends fields as query parameters: a read.
+    if fields and not explicit_get:
         if endpoint != "graphql":
             return "request field on %s" % (endpoint or "unknown endpoint")
         for field in fields:
@@ -106,7 +141,7 @@ def main():
         return 0
     if payload.get("tool_name") != "Bash":
         return 0
-    if not isinstance(command, str) or not GH_API_RE.search(command):
+    if not isinstance(command, str) or not GH_API_RE.search(command.replace("\\\n", " ")):
         return 0
     try:
         reason = None
