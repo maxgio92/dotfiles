@@ -42,7 +42,6 @@
       "Bash(gh pr close:*)",
       "Bash(gh issue create:*)",
       "Bash(gh issue comment:*)",
-      "Bash(gh api:*)",
       "Bash(gh pr edit:*)",
       "Bash(gh pr ready:*)",
       "Bash(gh issue edit:*)",
@@ -162,6 +161,16 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "h=$HOME/.claude/hooks/gh-api-gate.py; if [ -x \"$h\" ]; then exec \"$h\"; elif grep -q \"gh api\"; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"gh-api-gate is not installed\"}}'; fi",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "",
         "hooks": [
