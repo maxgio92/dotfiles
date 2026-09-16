@@ -24,7 +24,7 @@ A skill named or summarised in context is not loaded; read it before relying on 
 
 ## Tools
 
-Prefer `gh` subcommands, then `gh-api-safe`, for GitHub reads; prefer LSP diagnostics. Verify current documentation before relying on training data.
+Never call `gh api`; read GitHub with `gh` subcommands or `gh-api-safe`. Prefer LSP diagnostics. Verify current documentation over training data.
 
 ## Outward writes and safety
 

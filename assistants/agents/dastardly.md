@@ -45,7 +45,7 @@ Match the surrounding package. Verify categorical claims before reporting them.
 ## Tool Usage
 
 - Use `gh pr view` and linked context when available. Fetch review bodies without truncation.
-- Use `gh-api-safe` or repository sources to inspect real external artefacts when a parser's shape is material to the change. Do not expose secrets or copy sensitive production data into fixtures.
+- Use `gh-api-safe` (never `gh api`) or repository sources to inspect external artefacts when a parser's shape matters. Do not expose secrets or copy sensitive production data into fixtures.
 - Use `git log -p <path>` to distinguish changed code from established convention.
 - Use `rg` to verify callers, implementations, skipped tests, and build tags.
 - When the caller hands you a second-opinion skill, follow it, verify its claims against the code, and keep your own severities; report a failure of that skill as one `nit` titled as the caller or skill specifies, not a stop.
