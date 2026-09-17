@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Send Claude alerts over SSH."""
+import argparse
+import html
+import json
+import os
+from pathlib import Path
+import socket
+import stat
+import subprocess
+import sys
+
+LIMIT = 8192
+EVENTS = {
+    "permission_prompt": "Claude needs approval",
+    "elicitation_dialog": "Claude needs an answer",
+    "idle_prompt": "Claude is waiting",
+}
+
+
+def clean(value):
+    if not isinstance(value, str):
+        raise ValueError("expected text")
+    return "".join(c for c in value if c.isprintable())[:512]
+
+
+def read_json(stream):
+    data = stream.readline(LIMIT + 1)
+    if len(data) > LIMIT:
+        raise ValueError("payload too large")
+    value = json.loads(data)
+    if not isinstance(value, dict):
+        raise ValueError("expected an object")
+    return value
+
+
+def make_event(payload):
+    kind = payload.get("notification_type")
+    if not isinstance(kind, str) or kind not in EVENTS:
+        return None
+    context = ""
+    pane = os.environ.get("TMUX_PANE", "")
+    if pane.startswith("%") and pane[1:].isdigit():
+        try:
+            result = subprocess.run(
+                ["tmux", "display-message", "-p", "-t", pane,
+                 "#{session_name}/#{window_name}/#{pane_id}"],
+                capture_output=True, text=True, timeout=1, check=True,
+            )
+            context = clean(result.stdout)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return {
+        "version": 1, "type": kind, "host": clean(socket.gethostname()),
+        "project": clean(Path(clean(payload.get("cwd", ""))).name),
+        "context": context,
+    }
+
+
+def notify(event):
+    if type(event.get("version")) is not int or event["version"] != 1:
+        raise ValueError("unsupported version")
+    kind = event.get("type")
+    if not isinstance(kind, str) or kind not in EVENTS:
+        raise ValueError("unsupported event")
+    body = " / ".join(filter(None, (clean(event.get(key, ""))
+                                     for key in ("host", "project", "context"))))
+    subprocess.run(
+        ["notify-send", "--app-name=Claude", "--", EVENTS[kind], html.escape(body)],
+        check=True, timeout=2, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+
+def send(path):
+    # Schema: https://code.claude.com/docs/en/hooks#notification
+    payload = sys.stdin.buffer.read(LIMIT + 1)
+    if len(payload) > LIMIT:
+        raise ValueError("hook payload too large")
+    payload = json.loads(payload)
+    if not isinstance(payload, dict):
+        raise ValueError("expected hook object")
+    event = make_event(payload)
+    if event is None:
+        return
+    data = json.dumps(event).encode() + b"\n"
+    if len(data) > LIMIT:
+        raise ValueError("event too large")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+        client.settimeout(3)
+        client.connect(str(path))
+        client.sendall(data)
+        with client.makefile("rb") as stream:
+            if stream.readline(4) != b"OK\n":
+                raise ValueError("notification failed")
+
+
+def serve(path):
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    info = path.parent.lstat()
+    if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid()
+            or stat.S_IMODE(info.st_mode) & 0o077):
+        raise ValueError("socket directory needs your ownership and mode 0700")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
+        server.bind(str(path))
+        try:
+            path.chmod(0o600)
+            server.listen(8)
+            while True:
+                client, _ = server.accept()
+                with client:
+                    client.settimeout(2)
+                    try:
+                        with client.makefile("rb") as stream:
+                            notify(read_json(stream))
+                        client.sendall(b"OK\n")
+                    except (OSError, ValueError, subprocess.SubprocessError):
+                        print("agent-notify: invalid event or desktop delivery failed",
+                              file=sys.stderr)
+        finally:
+            path.unlink(missing_ok=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("mode", choices=("send", "serve"))
+    parser.add_argument("--socket", type=Path,
+                        default=Path.home() / ".local/state/agent-notify/notify.sock")
+    args = parser.parse_args()
+    try:
+        if args.mode == "send":
+            send(args.socket)
+        else:
+            serve(args.socket)
+    except KeyboardInterrupt:
+        pass
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        print(f"agent-notify: {error}", file=sys.stderr)
+        return 0 if args.mode == "send" else 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
