@@ -383,6 +383,12 @@
   },
   "outputStyle": "house-style",
   "effortLevel": "medium",
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Trusted scratch locations: /tmp (and $TMPDIR, which expands to /tmp here) for draft bodies, plan files, and temporary output; ~/.local/share/agent-reports (the XDG data home) for agent reports, meaning the agent's own summaries of its work. Creating directories and writing new files under these paths, and overwriting files this session created there, is routine local work. This blesses the location only: the content written is judged like any other write, and a scratch file or report is judged by its content at the step that sends it anywhere. Deletion rules are unchanged: deleting by wildcard, glob, or age filter, and overwriting pre-existing files not created this session, remain blocked; deletes should name the literal path."
+    ]
+  },
   "modelSettings": {
     "claude-fable-5-1": {
       "effortLevel": "medium"
