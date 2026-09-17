@@ -68,6 +68,12 @@ class Events(unittest.TestCase):
         self.assertIn("agent-notify:", result.stderr)
 
     def test_socket_delivery_after_bad_event(self):
+        self.check_socket_delivery(False)
+
+    def test_systemd_socket_delivery(self):
+        self.check_socket_delivery(True)
+
+    def check_socket_delivery(self, activated):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             endpoint = root / "notify.sock"
@@ -81,8 +87,29 @@ class Events(unittest.TestCase):
             notifier.chmod(0o700)
             env = {**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
                    "NOTIFY_TEST_OUTPUT": str(output), "TMUX_PANE": ""}
+            command = [str(SCRIPT), "serve", "--socket", str(endpoint)]
+            listener = None
+            inherited = ()
+            if activated:
+                # https://www.freedesktop.org/software/systemd/man/sd_listen_fds.html
+                listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                self.addCleanup(listener.close)
+                listener.bind(str(endpoint))
+                endpoint.chmod(0o600)
+                listener.listen(8)
+                inherited = (listener.fileno(),)
+                command = [
+                    "python3", "-c",
+                    "import os, sys; "
+                    "os.dup2(int(sys.argv[1]), 3, inheritable=True); "
+                    "os.set_inheritable(3, True); "
+                    "os.environ['LISTEN_PID'] = str(os.getpid()); "
+                    "os.environ['LISTEN_FDS'] = '1'; "
+                    "os.execv(sys.argv[2], sys.argv[2:])",
+                    str(listener.fileno()), *command,
+                ]
             server = subprocess.Popen(
-                [str(SCRIPT), "serve", "--socket", str(endpoint)],
+                command, pass_fds=inherited,
                 env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
             try:
@@ -111,7 +138,7 @@ class Events(unittest.TestCase):
             finally:
                 server.send_signal(signal.SIGINT)
                 server.communicate(timeout=5)
-            self.assertFalse(endpoint.exists())
+            self.assertEqual(endpoint.exists(), activated)
 
     def test_refuse_existing_path(self):
         with tempfile.TemporaryDirectory() as directory:
