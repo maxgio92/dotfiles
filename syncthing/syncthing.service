@@ -1,0 +1,14 @@
+[Unit]
+Description=Syncthing file sync
+Documentation=https://docs.syncthing.net/
+
+[Service]
+ExecStart=%h/.local/bin/dotfiles-syncthing serve --no-browser --no-restart --no-upgrade
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=3 4
+RestartForceExitStatus=3 4
+UMask=0077
+
+[Install]
+WantedBy=default.target

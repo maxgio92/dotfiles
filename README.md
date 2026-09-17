@@ -1,5 +1,7 @@
 # dotfiles
 
+[Syncthing setup](syncthing/README.md) declares laptop and workstation file sync.
+
 #### Configure
 
 ---

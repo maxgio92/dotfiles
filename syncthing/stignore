@@ -1,0 +1,4 @@
+// Skip unfinished browser downloads.
+*.crdownload
+*.part
+*.download
