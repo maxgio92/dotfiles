@@ -68,6 +68,29 @@ while SSH stays connected. No tmux passthrough setting is needed.
 Use one tunnel per remote socket. Its owner and remote root can submit alerts.
 After a crash, stop the old process before removing its stale `notify.sock`.
 
+### SSH host alias
+
+Add this entry to the laptop's `~/.ssh/config`:
+
+```sshconfig
+Host workstation
+    HostName SERVER_IP_OR_DNS
+    User REMOTE_USER
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    ExitOnForwardFailure yes
+    RemoteForward /home/REMOTE_USER/.local/state/agent-notify/notify.sock /home/LOCAL_USER/.local/state/agent-notify/notify.sock
+```
+
+Replace the placeholders and key path. Socket paths must be absolute.
+Complete the receiver and directory setup above, then connect:
+
+```sh
+ssh workstation
+```
+
+See [RemoteForward](https://man.openbsd.org/ssh_config#RemoteForward).
+
 ## Checks
 
 Run the automated tests:
