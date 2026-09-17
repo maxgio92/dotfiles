@@ -74,6 +74,16 @@
   "hooks": {
     "Notification": [
       {
+        "matcher": "permission_prompt|elicitation_dialog|idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.local/bin/agent-notify\" ] || \"$HOME/.local/bin/agent-notify\" send",
+            "async": true
+          }
+        ]
+      },
+      {
         "matcher": "permission_prompt|elicitation_dialog",
         "hooks": [
           {
