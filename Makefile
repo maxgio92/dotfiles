@@ -6,6 +6,19 @@ git := $(shell command -v git 2>/dev/null)
 
 .DEFAULT_GOAL := dotonly
 
+.PHONY: syncthing-install syncthing-laptop syncthing-workstation syncthing-id
+syncthing-install:
+	@command -v syncthing >/dev/null 2>&1 || brew install syncthing
+
+syncthing-laptop: syncthing-install
+	@bash "$(DOTFILES)/syncthing/setup.sh" laptop
+
+syncthing-workstation: syncthing-install
+	@bash "$(DOTFILES)/syncthing/setup.sh" workstation
+
+syncthing-id:
+	@bash "$(DOTFILES)/syncthing/run.sh" device-id
+
 dotonly: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit
 all: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
