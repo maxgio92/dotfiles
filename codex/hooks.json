@@ -24,6 +24,16 @@
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status waiting"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "hooks": [
@@ -66,6 +76,14 @@
             "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex SubagentStart"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
+          }
+        ]
       }
     ],
     "SubagentStop": [
@@ -74,6 +92,14 @@
           {
             "type": "command",
             "command": "python3 \"$HOME/.dotfiles/assistants/communication-rules/scanner.py\" --policy-json \"$HOME/.dotfiles/assistants/communication-rules/policy.json\" --rules \"$HOME/.dotfiles/assistants/communication-rules/rules.md\" codex SubagentStop"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "workmux set-window-status working"
           }
         ]
       }
