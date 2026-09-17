@@ -100,11 +100,28 @@ def serve(path):
     if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid()
             or stat.S_IMODE(info.st_mode) & 0o077):
         raise ValueError("socket directory needs your ownership and mode 0700")
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
-        server.bind(str(path))
+    activated = os.environ.get("LISTEN_PID") == str(os.getpid())
+    if activated and os.environ.get("LISTEN_FDS") != "1":
+        raise ValueError("expected one systemd socket")
+    if activated:
+        server = socket.socket(fileno=3)
+        if (server.family != socket.AF_UNIX or server.type != socket.SOCK_STREAM
+                or server.getsockname() != str(path)
+                or not server.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN)):
+            server.close()
+            raise ValueError("invalid systemd socket")
+    else:
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
-            path.chmod(0o600)
-            server.listen(8)
+            server.bind(str(path))
+        except OSError:
+            server.close()
+            raise
+    with server:
+        try:
+            if not activated:
+                path.chmod(0o600)
+                server.listen(8)
             while True:
                 client, _ = server.accept()
                 with client:
@@ -117,7 +134,8 @@ def serve(path):
                         print("agent-notify: invalid event or desktop delivery failed",
                               file=sys.stderr)
         finally:
-            path.unlink(missing_ok=True)
+            if not activated:
+                path.unlink(missing_ok=True)
 
 
 def main():

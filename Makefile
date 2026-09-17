@@ -7,6 +7,7 @@ git := $(shell command -v git 2>/dev/null)
 .DEFAULT_GOAL := dotonly
 
 include $(addprefix $(dir $(lastword $(MAKEFILE_LIST))), \
+	agent-notify/Makefile \
 	syncthing/Makefile \
 	assistants/Makefile \
 	.claude/Makefile \

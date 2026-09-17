@@ -27,7 +27,7 @@ Send alerts over SSH to `notify-send`. Keep Alacritty.
 Python matches the existing hooks and needs no build step.
 Rust may cut startup time. Neither version was benchmarked.
 
-The sender drops events when disconnected. Retries and autostart remain future work.
+The sender drops events when disconnected. Retries remain future work.
 
 ## Setup
 
@@ -47,13 +47,30 @@ mkdir -p ~/.local/state/agent-notify
 chmod 700 ~/.local/state/agent-notify
 ```
 
-Start the receiver in a laptop terminal within the desktop session:
+On the laptop, install and enable the systemd user socket:
 
 ```sh
-agent-notify serve
+make agent-notify
 ```
 
-Connect from another laptop terminal. Replace USER, SERVER, and the remote home
+Stop any manual receiver before installation.
+Systemd starts the receiver on demand and keeps its socket open across restarts.
+
+Check status and logs:
+
+```sh
+systemctl --user status agent-notify.socket agent-notify.service
+journalctl --user -u agent-notify.service
+```
+
+To disable the receiver:
+
+```sh
+systemctl --user disable --now agent-notify.socket
+systemctl --user stop agent-notify.service
+```
+
+Connect from the laptop. Replace USER, SERVER, and the remote home
 path with their real values:
 
 ```sh
@@ -66,7 +83,7 @@ Attach tmux and start Claude. The tunnel handles events from hidden windows
 while SSH stays connected. No tmux passthrough setting is needed.
 
 Use one tunnel per remote socket. Its owner and remote root can submit alerts.
-After a crash, stop the old process before removing its stale `notify.sock`.
+After an SSH crash, stop the old tunnel before removing its stale remote socket.
 
 ### SSH host alias
 
@@ -110,5 +127,5 @@ Repeat from a hidden tmux window. Trigger a real Claude permission prompt and
 idle event. Confirm the popup names the source window. Disconnect SSH and
 confirm Claude continues. Delivery failures go to stderr; the hook returns zero.
 
-Nine tests passed with a fake `notify-send`.
-Socket tests ran outside the sandbox. SSH and desktop checks remain open.
+Ten tests pass with a fake notifier.
+Local systemd startup and restart checks pass. Real SSH and popup checks remain open.

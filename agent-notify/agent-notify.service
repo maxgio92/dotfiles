@@ -1,0 +1,10 @@
+[Unit]
+Description=Claude notification receiver
+Requires=agent-notify.socket
+After=agent-notify.socket
+
+[Service]
+ExecStart=%h/.local/bin/agent-notify serve
+Restart=on-failure
+RestartSec=2
+UMask=0077
