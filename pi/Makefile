@@ -60,7 +60,7 @@ pi-skills:
 .PHONY: pi-prompts
 pi-prompts:
 	@mkdir -p $(HOME)/.pi/agent/prompts
-	@for name in orientate onboard botsnack; do \
+	@for name in orientate onboard botsnack orchestrate spawn-work check-work steer-work; do \
 		ln -sfn $(DOTFILES)/assistants/commands/$$name.md $(HOME)/.pi/agent/prompts/$$name.md; \
 	done
 	@echo "  linked compatible Pi prompt templates"

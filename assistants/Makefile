@@ -57,3 +57,7 @@ endef
 # Skills that drive a Claude Code plugin; pi and Codex run the same agents
 # natively and must not see them.
 CLAUDE_ONLY_SKILLS := codex
+
+.PHONY: orchestration
+orchestration:
+	@bash "$(DOTFILES)/assistants/orchestration-install.sh"
