@@ -6,25 +6,14 @@ git := $(shell command -v git 2>/dev/null)
 
 .DEFAULT_GOAL := dotonly
 
-.PHONY: syncthing-install syncthing-laptop syncthing-workstation syncthing-id
-syncthing-install:
-	@command -v syncthing >/dev/null 2>&1 || brew install syncthing
-
-syncthing-laptop: syncthing-install
-	@bash "$(DOTFILES)/syncthing/setup.sh" laptop
-
-syncthing-workstation: syncthing-install
-	@bash "$(DOTFILES)/syncthing/setup.sh" workstation
-
-syncthing-id:
-	@bash "$(DOTFILES)/syncthing/run.sh" device-id
+include $(dir $(lastword $(MAKEFILE_LIST)))syncthing/Makefile
 
 dotonly: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit
 all: init bash bin git i3 i3status terminator tmux vim xbindkeys xinit openresolv dnsmasq systemd-logind systemd-system-resume
 
 .PHONY: list
 list:
-	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null \
+	@$(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null \
 		| awk -v RS= -F: '/^# File/,/^# Finished Make data base/ \
 		{if ($$1 !~ "^[#.]") {print $$1}}' \
 		| sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$'
