@@ -371,7 +371,8 @@
     "slack@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "codex@openai-codex": true
+    "codex@openai-codex": true,
+    "diagram-design@diagram-design": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -379,24 +380,31 @@
         "source": "github",
         "repo": "openai/codex-plugin-cc"
       }
+    },
+    "diagram-design": {
+      "source": {
+        "source": "github",
+        "repo": "cathrynlavery/diagram-design"
+      }
     }
   },
   "outputStyle": "house-style",
   "effortLevel": "medium",
+  "modelSettings": {
+    "claude-fable-5-1": {
+      "effortLevel": "low"
+    }
+  },
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark-ansi",
+  "editorMode": "vim",
+  "skipAutoPermissionPrompt": true,
   "autoMode": {
     "environment": [
       "$defaults",
       "Trusted scratch locations: /tmp (and $TMPDIR, which expands to /tmp here) for draft bodies, plan files, and temporary output; ~/.local/share/agent-reports (the XDG data home) for agent reports, meaning the agent's own summaries of its work. Creating directories and writing new files under these paths, and overwriting files this session created there, is routine local work. This blesses the location only: the content written is judged like any other write, and a scratch file or report is judged by its content at the step that sends it anywhere. Deletion rules are unchanged: deleting by wildcard, glob, or age filter, and overwriting pre-existing files not created this session, remain blocked; deletes should name the literal path."
     ]
-  },
-  "modelSettings": {
-    "claude-fable-5-1": {
-      "effortLevel": "medium"
-    }
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true,
-  "theme": "dark-ansi",
-  "editorMode": "vim",
-  "skipAutoPermissionPrompt": true
+  }
 }
