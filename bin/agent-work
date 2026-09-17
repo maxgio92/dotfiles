@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""Manage agent panes and worktrees."""
+import argparse
+from contextlib import contextmanager
+from datetime import datetime, timezone
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import uuid
+
+
+def run(*args, **kwargs):
+    timeout = kwargs.pop("timeout", 30)
+    return subprocess.run(args, check=True, text=True, capture_output=True,
+                          timeout=timeout, **kwargs).stdout.strip()
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def pane_info(pane):
+    if not isinstance(pane, str) or not re.fullmatch(r"%[0-9]+", pane):
+        raise ValueError("use a pane ID such as %12")
+    fields = run("tmux", "display-message", "-p", "-t", pane,
+                 "#{pane_id}\t#{window_id}\t#{pane_pid}\t#{pane_current_path}"
+                 "\t#{pane_current_command}\t#{pane_dead}\t#{@agent_work_token}\tEND").split("\t")
+    if len(fields) != 8 or fields[0] != pane or fields[-1] != "END":
+        raise ValueError("pane identity unavailable")
+    return dict(zip(("pane", "window", "pid", "cwd", "command", "dead", "token"), fields))
+
+
+def state_path(value):
+    if value:
+        return Path(value).expanduser().resolve()
+    pane = pane_info(os.environ.get("TMUX_PANE", ""))
+    key = run("tmux", "display-message", "-p", "-t", pane["pane"],
+              "#{socket_path}:#{pid}:#{window_id}")
+    root = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+    return root / "agent-work" / hashlib.sha256(key.encode()).hexdigest()[:16] / "state.json"
+
+
+def save(path, state):
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+        json.dump(state, stream, indent=2)
+        stream.write("\n")
+        temporary = stream.name
+    os.replace(temporary, path)
+
+
+@contextmanager
+def locked(path):
+    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    with open(path.with_suffix(".lock"), "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def load(path):
+    state = json.loads(path.read_text())
+    if state.get("version") != 1:
+        raise ValueError("unsupported registry version")
+    return state
+
+
+def common_dir(repo):
+    return run("git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--git-common-dir")
+
+
+def checked_pane(state, task):
+    pane = pane_info(task["pane"])
+    for field in ("window", "pid", "token"):
+        if pane[field] != task[field]:
+            raise ValueError(f"worker {field} changed")
+    if pane["window"] != state["window"] or pane["dead"] != "0":
+        raise ValueError("worker left the window or exited")
+    worktree = Path(task["worktree"])
+    if not worktree.is_dir():
+        raise ValueError("worktree missing")
+    if common_dir(worktree) != state["common_dir"]:
+        raise ValueError("worktree repository changed")
+    if not Path(pane["cwd"]).is_relative_to(worktree):
+        raise ValueError("pane left its worktree")
+    return pane
+
+
+def capture(pane):
+    return run("tmux", "capture-pane", "-p", "-t", pane, "-S", "-100")
+
+
+def snapshot(state):
+    result = json.loads(json.dumps(state))
+    for task in result["tasks"].values():
+        try:
+            pane = checked_pane(state, task)
+            output = capture(task["pane"])
+            task.update(health="present", command=pane["command"], output=output,
+                        screen_sha256=hashlib.sha256(output.encode()).hexdigest())
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+            task.update(health="unavailable", error=str(error))
+    result["observed_at"] = now()
+    return result
+
+
+def slug(value):
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", value):
+        raise ValueError("task ID must use lowercase letters, digits, and hyphens")
+    return value
+
+
+def register_pane(state, task, pane):
+    info = pane_info(pane)
+    if info["window"] != state["window"] or pane == state["coordinator"]:
+        raise ValueError("worker must be another pane in the coordinator window")
+    if any(t.get("pane") == pane for t in state["tasks"].values()):
+        raise ValueError("pane already registered")
+    token = uuid.uuid4().hex
+    run("tmux", "set-option", "-p", "-t", pane, "@agent_work_token", token)
+    task.update(pane=pane, window=info["window"], pid=info["pid"], token=token)
+
+
+def spawn(path, state, args):
+    key = slug(args.task)
+    if key in state["tasks"]:
+        raise ValueError("task already registered; use steer or a new task ID")
+    coordinator = pane_info(state["coordinator"])
+    if coordinator["window"] != state["window"] or coordinator["pid"] != state["coordinator_pid"]:
+        raise ValueError("coordinator pane changed; initialize a new registry")
+    command = json.loads(args.command_json) if args.command_json else [args.agent]
+    if (not isinstance(command, list) or not command
+            or any(not isinstance(s, str) or not s or "\0" in s for s in command)):
+        raise ValueError("agent command must be a JSON array of arguments")
+    executable = shutil.which(command[0])
+    if not executable:
+        raise ValueError(f"agent executable not found: {command[0]}")
+    command[0] = executable
+    prompt = Path(args.prompt_file).read_text()
+    if not prompt.strip():
+        raise ValueError("prompt is empty")
+    task_dir = path.parent / "tasks" / key
+    task_dir.mkdir(parents=True, mode=0o700, exist_ok=False)
+    prompt_file = task_dir / "prompt.md"
+    prompt_file.write_text(prompt)
+    worktree = path.parent / "worktrees" / key
+    branch = "work/" + path.parent.name + "/" + key
+    base = run("git", "-C", state["repo"], "rev-parse", "--verify", "--end-of-options", args.base + "^{commit}")
+    task = dict(id=key, agent=args.agent, command=command, worktree=str(worktree),
+                branch=branch, base=base, stage="starting", prompt=str(prompt_file),
+                created_at=now(), ticket="", pr="", pending="", evidence="")
+    state["tasks"][key] = task
+    save(path, state)
+    try:
+        run("git", "-C", state["repo"], "worktree", "add", "-b", branch,
+            str(worktree), base, timeout=300)
+        launch = shlex.join([sys.executable, str(Path(__file__).resolve()),
+                             "--state", str(path), "run-worker", key])
+        pane = run("tmux", "split-window", "-d", "-P", "-F", "#{pane_id}",
+                   "-t", state["coordinator"], "-c", str(worktree), launch)
+        register_pane(state, task, pane)
+        task["stage"] = "launched"
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        task.update(stage="launch-failed", error=str(error))
+        raise
+    finally:
+        save(path, state)
+    return task
+
+
+def run_worker(path, key):
+    with locked(path):
+        task = load(path)["tasks"][key]
+    env = {**os.environ, "AGENT_WORK_STATE": str(path), "AGENT_WORK_TASK": key}
+    env.pop("CLAUDECODE", None)
+    code = subprocess.call(task["command"] + [Path(task["prompt"]).read_text()],
+                           cwd=task["worktree"], env=env)
+    with locked(path):
+        state = load(path)
+        state["tasks"][key].update(exit_code=code, exited_at=now())
+        save(path, state)
+    return code
+
+
+def steer(path, state, args):
+    task = state["tasks"][args.task]
+    message = Path(args.message_file).read_text()
+    controls = any((ord(c) < 32 and c not in "\n\t") or ord(c) == 127 for c in message)
+    if not message.strip() or len(message.encode()) > 32768 or controls:
+        raise ValueError("message must be nonempty text under 32 KiB without escapes")
+    if not args.screen_sha256:
+        raise ValueError("inspect check output and supply --screen-sha256")
+    pane = checked_pane(state, task)
+    if pane["command"] in ("bash", "zsh", "sh", "fish", "nu", "dash"):
+        raise ValueError("worker pane is a shell")
+    screen = capture(task["pane"])
+    if hashlib.sha256(screen.encode()).hexdigest() != args.screen_sha256:
+        raise ValueError("pane changed; inspect it again before sending")
+    buffer = "agent-work-" + uuid.uuid4().hex
+    run("tmux", "load-buffer", "-b", buffer, "-", input=message)
+    try:
+        run("tmux", "paste-buffer", "-p", "-d", "-b", buffer, "-t", task["pane"])
+        run("tmux", "send-keys", "-t", task["pane"], "Enter")
+    finally:
+        subprocess.run(["tmux", "delete-buffer", "-b", buffer], capture_output=True)
+    task.update(last_message=message, sent_at=now())
+    save(path, state)
+    return {"task": args.task, "sent": True, "acknowledged": False}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state", help="registry path printed by init")
+    sub = parser.add_subparsers(dest="action", required=True)
+    init = sub.add_parser("init")
+    init.add_argument("--repo", default=os.getcwd())
+    init.add_argument("--coordinator", default=os.environ.get("TMUX_PANE"))
+    sub.add_parser("check")
+    launch = sub.add_parser("spawn")
+    launch.add_argument("task")
+    launch.add_argument("--agent", required=True)
+    launch.add_argument("--base", required=True)
+    launch.add_argument("--prompt-file", required=True)
+    launch.add_argument("--command-json", help="argv before the final prompt argument")
+    adopt = sub.add_parser("adopt")
+    adopt.add_argument("task")
+    adopt.add_argument("--pane", required=True)
+    adopt.add_argument("--agent", required=True)
+    record = sub.add_parser("record")
+    record.add_argument("task")
+    for field in ("stage", "ticket", "pr", "pending", "evidence", "session_id"):
+        record.add_argument("--" + field.replace("_", "-"))
+    message = sub.add_parser("steer")
+    message.add_argument("task")
+    message.add_argument("--message-file", required=True)
+    message.add_argument("--screen-sha256", required=True)
+    worker = sub.add_parser("run-worker")
+    worker.add_argument("task")
+    args = parser.parse_args()
+    path = state_path(args.state)
+    if args.action == "run-worker":
+        return run_worker(path, args.task)
+    with locked(path):
+        if args.action == "init":
+            if path.exists():
+                state = load(path)
+                pane = pane_info(args.coordinator)
+                if (state["coordinator"] != args.coordinator
+                        or state["coordinator_pid"] != pane["pid"]
+                        or state["window"] != pane["window"]
+                        or state["common_dir"] != common_dir(args.repo)):
+                    raise ValueError("registry belongs to another coordinator or repository")
+            else:
+                pane = pane_info(args.coordinator)
+                state = dict(version=1, repo=str(Path(args.repo).resolve()),
+                             common_dir=common_dir(args.repo), coordinator=pane["pane"],
+                             coordinator_pid=pane["pid"], window=pane["window"], tasks={})
+                save(path, state)
+            result = {"state": str(path), **state}
+        else:
+            state = load(path)
+            if args.action == "check":
+                result = snapshot(state)
+            elif args.action == "spawn":
+                result = spawn(path, state, args)
+            elif args.action == "adopt":
+                key = slug(args.task)
+                if key in state["tasks"]:
+                    raise ValueError("task already registered")
+                pane = pane_info(args.pane)
+                worktree = run("git", "-C", pane["cwd"], "rev-parse", "--show-toplevel")
+                if common_dir(worktree) != state["common_dir"]:
+                    raise ValueError("pane belongs to another repository")
+                occupied = [t["worktree"] for t in state["tasks"].values()]
+                occupied.append(run("git", "-C", state["repo"], "rev-parse", "--show-toplevel"))
+                if worktree in occupied:
+                    raise ValueError("worktree already used by another worker or coordinator")
+                task = dict(id=key, agent=args.agent, worktree=worktree,
+                            branch=run("git", "-C", worktree, "branch", "--show-current"),
+                            stage="unknown", created_at=now(), ticket="", pr="", pending="", evidence="")
+                register_pane(state, task, args.pane)
+                state["tasks"][key] = task
+                save(path, state)
+                result = task
+            elif args.action == "record":
+                task = state["tasks"][args.task]
+                for field in ("stage", "ticket", "pr", "pending", "evidence", "session_id"):
+                    value = getattr(args, field)
+                    if value is not None:
+                        task[field] = value
+                task["checked_at"] = now()
+                save(path, state)
+                result = task
+            else:
+                result = steer(path, state, args)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+        print(f"agent-work: {error}", file=sys.stderr)
+        sys.exit(1)

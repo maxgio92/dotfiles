@@ -1,5 +1,7 @@
 # dotfiles
 
+[Agent orchestration](docs/orchestration.md) coordinates tasks across tmux panes and worktrees.
+
 [Syncthing setup](syncthing/README.md) declares laptop and workstation file sync.
 
 [Remote Claude alerts](docs/remote-agent-notifications.md) covers the research,
