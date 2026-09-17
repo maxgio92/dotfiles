@@ -2,6 +2,9 @@
 
 [Syncthing setup](syncthing/README.md) declares laptop and workstation file sync.
 
+[Remote Claude alerts](docs/remote-agent-notifications.md) covers the research,
+plan, and setup.
+
 #### Configure
 
 ---
