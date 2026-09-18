@@ -6,7 +6,8 @@ description: "Draft a pull request title and body in Massimiliano's voice and st
 # draft-pr
 
 This skill produces a draft and stops. Pushing and `gh pr create` happen in
-the `publish` skill after human approval.
+the `publish` skill after human approval; `drive-to-merge` then carries the
+PR to merge and cleanup.
 
 ## Gather context
 
