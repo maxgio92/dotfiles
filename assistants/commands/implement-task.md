@@ -45,13 +45,14 @@ The plan lives at `${TMPDIR:-/tmp}/agent-plans/<key>/plan.md`. It is never insid
 6. Write the durable record: 2 to 4 sentences on what changed, where, how it was validated, and what remains. Post it as the `task-tracker` reference for that tracker says: a comment on Linear or GitHub, a section appended to a local file.
 7. Commit here. Stage each changed file with a path-limited `git add -- <path>`. Use a conventional commit message with a `Refs:` trailer in the form the tracker reference's Branch link section gives. The main session commits without approval; subagents never commit.
 8. Delete `${TMPDIR:-/tmp}/agent-plans/<key>` after the commit.
-9. Leave the issue in `started`. Return to step 4 for the next child in the order from step 2. Stop after the final commit.
+9. Leave the issue in `started`. Return to step 4 for the next child in the order from step 2.
+10. After the final commit: when the user authorized publication for this work, draft with `draft-pr`, post through `publish`, move the task to `in review`, and continue under `drive-to-merge` until the PR is merged, the task is `done`, and branches and worktree are cleaned up. Otherwise stop after the final commit and point at those skills.
 
 ### Constraints
 
-- Never push and never open a PR. Point the user at the `draft-pr` skill, then `publish`, for repositories they own, or `upstream-contribution` for repositories they do not control.
+- Never push and never open a PR without the user's approval. The path for repositories they own is `draft-pr`, `publish`, then `drive-to-merge`; for repositories they do not control it is `upstream-contribution`.
 - `git status` must show no plan files at any point.
 
 ### Output
 
-Per task: the key, the branch, the commit hash, and where the durable record was posted (comment URL or file path). Close with the skill to use for the PR.
+Per task: the key, the branch, the commit hash, and where the durable record was posted (comment URL or file path). Close with the PR URL and its merge state when one exists, otherwise with the skill to use for the PR.

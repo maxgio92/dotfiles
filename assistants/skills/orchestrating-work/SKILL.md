@@ -35,7 +35,9 @@ Read [mechanics](references/mechanics.md) for helper commands and launch details
    while work is active. Wait in tool calls of at most 60 seconds. Process new user
    instructions between checks. Report changes and pending decisions only.
 7. Stop on request, when all work is complete, or when every remaining task needs
-   human input. Do not keep polling an unchanged approval queue.
+   human input. Do not keep polling an unchanged approval queue. An open PR with
+   pending or red checks, a conflict, or an unanswered review is active work, not
+   an approval queue: steer its worker under `drive-to-merge`.
 8. A skill cannot wake a stopped session. If the runtime ends the turn or cannot
    keep waiting, state that monitoring is paused and resume with `/check-work`.
    Never claim a background monitor exists unless one was actually started.
@@ -70,7 +72,10 @@ Read [mechanics](references/mechanics.md) for helper commands and launch details
    Only checks for the current head count. Record fetch errors as unknown.
 3. Compare evidence with the task's success criteria. Use explicit stages:
    planning, readiness, implementing, review, awaiting-approval, published,
-   complete, blocked, or unknown. Publishing a PR is not proof of completion.
+   ci-watch, merge-ready, merged, complete, blocked, or unknown. Publishing a PR
+   is not proof of completion and `published` is not terminal: a task is
+   `complete` only when its PR is merged, the branches and worktree are cleaned
+   up, and the ticket is `done`.
 4. Record facts with `agent-work record`: stage, links, pending action, and concise
    evidence with the source and timestamp. Each dependency needs an explicit
    satisfied condition before its worker starts.
@@ -115,4 +120,8 @@ Report the task ID, stage, ticket and PR links, current commit, checks run,
 remaining blockers, and the exact next action needing user input.
 Include a source for each status claim. Keep drafts separate from posted results.
 Stop at the authorized stage. Follow repository and publication rules.
+When publication is authorized, the authorized stage is merge and cleanup:
+follow drive-to-merge (watch checks on the current head, fix red checks,
+rebase on conflicts, answer reviews, re-request approval, report merge-ready,
+then delete branches and the worktree and close the task).
 ```

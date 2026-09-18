@@ -22,7 +22,8 @@ and commands; `"donatello"` to execute an existing plan), or a Claude-only
 review (`reviewer: "claude"`; by default dastardly reviews through Codex and vets its
 findings). When the workflow returns, report rounds, convergence, and findings;
 commit the result yourself once converged (subagents never commit), and stage
-any push for human approval.
+any push for human approval. Once the push is approved and a PR exists, continue
+under `drive-to-merge`: the work is done at merge and cleanup, not at push.
 
 If the Workflow tool is unavailable in this session, fall back to the same
 loop with the Agent tool: peter implements, dastardly reviews the diff, peter

@@ -19,8 +19,10 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
    attribution (Co-Authored-By trailers, "Generated with" lines, signatures).
 3. Verify: fetch the posted artifact back (permalink, message timestamp) and
    report it. A post you cannot fetch is not done.
-4. One approval covers one post. A batch approval must name each item.
-5. SHA guard. For a PR comment drafted from a `review-pr` report, read the
+4. Hand off. A created or updated pull request is not finished work: load
+   `drive-to-merge` and continue there until the PR is merged and cleaned up.
+5. One approval covers one post. A batch approval must name each item.
+6. SHA guard. For a PR comment drafted from a `review-pr` report, read the
    `Head:` line from the saved report file's header (the `review-pr` skill
    keeps it outside the publishable block) and compare it with `gh pr view
    <pr> --json headRefOid`. If they differ, the author pushed during the review: stop,
@@ -65,7 +67,8 @@ user does not own goes through this skill after the human approves it.
   the base, the head owner, and that `headRefOid` equals `git rev-parse
   HEAD`, and report the URL. `gh pr create --web` with the same `--base`,
   `--head`, title, and body is the alternative when the user wants to finish
-  in the browser.
+  in the browser. Then continue under `drive-to-merge`; the URL is a
+  checkpoint, not the end.
 - Another person's Linear issue: `save_comment`, or `save_issue` for a body or status change the owner asked for.
 - Slack: the Slack send tools, or the repository's posting helper if one
   exists.
