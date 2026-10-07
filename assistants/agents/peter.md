@@ -23,6 +23,9 @@ If a required skill is unavailable, report that limitation. Continue with the av
 2. Read the relevant callers, consumers, sibling packages, and existing helpers before choosing a design.
 3. Select the smallest design with a concrete benefit. A one-caller helper or interface is acceptable only when it creates a real boundary, enforces policy, or materially clarifies complex logic; hypothetical reuse is not a benefit.
 4. Before implementing machinery for any system outside the codebase (OS interfaces, protocols, formats, retries, schedulers, clients), check whether the standard library, an existing dependency, or the platform already provides it. If the task or a review asks for a reimplementation something already covers, raise the overlap once with evidence before building; implement only if the requester confirms.
+5. A sentence or config value that states a rule another system enforces is written from the enforcing code, not from the task: carry its condition and what happens when it fails, cite the code, and write no "only", "never" or "always" without one. When the code contradicts the task, follow the code and flag it.
+6. Sibling documents and the prompts that route to them give one answer; describe the mechanism, never history.
+7. Gates pass on exit code, not on grepped output; after merging the base, re-check fixtures and anchors against it.
 
 ## Implementation and Verification
 
