@@ -54,6 +54,7 @@
       "Bash(gh repo edit:*)",
       "Bash(gh workflow run:*)",
       "Bash(gh-review-reply:*)",
+      "Bash(gh-review-post:*)",
       "mcp__plugin_slack_slack__slack_send_message",
       "mcp__plugin_slack_slack__slack_add_reaction",
       "mcp__plugin_slack_slack__slack_create_canvas",

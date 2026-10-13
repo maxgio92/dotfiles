@@ -57,12 +57,14 @@ POST_COMMANDS = {
     ("release", "edit"),
 }
 # Leading tokens that can post to GitHub. gh-review-reply wraps the review
-# thread reply endpoint and takes its body only via --body-file. gh-api-safe is
+# thread reply endpoint and gh-review-post the pull request review endpoint;
+# both take their body only via --body-file. gh-api-safe is
 # absent on purpose: it admits only GET paths and GraphQL queries, so its
 # ``-f query=`` field is never a post.
 GH_POST_COMMANDS = {
     "gh",
     "gh-review-reply",
+    "gh-review-post",
 }
 REDIRECT_HEREDOC_COMMANDS = {
     "cat",
@@ -470,7 +472,7 @@ def is_known_post_command(argv: list[str]) -> bool:
         if len(argv) >= 2 and argv[1] == "api":
             return has_api_post_signal(argv[2:])
         return any(has_body_flag(argv, index) for index in range(len(argv)))
-    if name == "gh-review-reply":
+    if name in {"gh-review-reply", "gh-review-post"}:
         return any(has_body_flag(argv, index) for index in range(len(argv)))
     return False
 
