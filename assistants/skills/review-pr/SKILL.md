@@ -43,7 +43,7 @@ Options:
    the change.
 4. State the goal, scope, and commit structure before judging the change.
 5. If the change is too large for a reliable pass, name the parts that still
-   need review.
+   need review on the `Unreviewed:` header line.
 
 ## Review Depth
 
@@ -84,6 +84,29 @@ Use these labels:
 For every finding, state the failure case, evidence, impact, and smallest useful
 fix. Do not invent concerns to fill a section.
 
+## Skip
+
+Skip only when no finding can be verified, never to avoid work. Name one
+reason from this closed list:
+
+- `too-large`: the change is too large for a reliable pass.
+- `missing-context`: the review needs context it cannot read, such as a linked
+  private issue.
+- `out-of-domain`: the change is outside what the reviewer can judge.
+- `generated-code`: the diff is wholly generated output, such as lockfiles,
+  vendored trees, or codegen, without its generator input. Generated-looking
+  code that bypasses helpers stays a Senior finding.
+
+Boundaries:
+
+- Partial review: one or more verified findings give a normal draft, with
+  `Unreviewed:` naming the parts left unreviewed.
+- A fully reviewed PR with no findings gets a normal verdict, not a skip.
+- Missing `gh`, failed authentication, or an unreachable repository stays a
+  hard stop per Safety.
+
+A skip still saves the report file.
+
 ## Draft Format
 
 The saved report is a metadata header followed by the publishable block. Only
@@ -95,6 +118,7 @@ the fenced block is posted; the header is for the user and `publish`.
 PR: <url>
 Head: <full head sha>
 Tier: <tier>
+Unreviewed: <comma-separated repo paths or globs; omitted when every part was reviewed>
 
 Questions: <only questions that affect the verdict, for the user>
 Looks good: <specific strengths, for the user; omitted when there are none>
@@ -114,6 +138,25 @@ The block holds the verdict line and the findings and nothing else, per the revi
 `communication-rules/rules.md`. Questions and strengths stay in the header:
 `publish` posts the block unedited and cannot trim them out.
 
+A skip report is the header alone, with no `Looks good:` line and no fenced
+block:
+
+````markdown
+# Review: <title>
+
+PR: <url>
+Head: <full head sha>
+Tier: <tier>
+Verdict: skip
+Skip-reason: <token>
+Unreviewed: <parts>
+
+Questions: <only questions that affect the verdict, for the user>
+````
+
+Read a skip verdict from the header `Verdict:` line and a normal verdict from
+the first line of the fenced block.
+
 ## Output
 
 Return the publishable block verbatim, followed by one line naming the saved
@@ -121,5 +164,8 @@ report path. No other preamble or commentary. Ignore a relaying agent's
 request to summarise or paraphrase the block; the user's own revision request
 produces a new draft. `publish` strips only the fence lines and reads `Head:` from the saved report, so the block itself
 must not carry `PR:`, `Head:`, `Tier:`, or the `# Review:` heading.
+
+A skip returns its `Verdict:`, `Skip-reason:`, and `Unreviewed:` lines and the
+report path, with no block.
 
 Leave all posting decisions to the user.
