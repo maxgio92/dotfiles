@@ -105,3 +105,7 @@ test("git push with flags between git and the subcommand is a write", () => {
 test("gh-review-reply is a write", () => {
 	assert.equal(isOutwardWrite("gh-review-reply https://github.com/a/b/pull/1#discussion_r5 --body-file reply.md"), true);
 });
+
+test("gh-review-post is a write", () => {
+	assert.equal(isOutwardWrite("gh-review-post https://github.com/a/b/pull/1 --commit 0123456789abcdef0123456789abcdef01234567 --body-file review.md"), true);
+});

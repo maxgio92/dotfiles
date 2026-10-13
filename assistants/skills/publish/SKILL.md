@@ -29,7 +29,10 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
    report both shas, and do not post. For a reply that cites a commit sha,
    confirm that sha is in `gh pr view <pr> --json commits` on the pushed head.
    The reviewed head sha never goes into a review body; an approved reply
-   that cites a fix commit (`fixed in <sha>`) keeps that citation.
+   that cites a fix commit (`fixed in <sha>`) keeps that citation. For a
+   review, `gh-review-post` repeats the head check itself just before the
+   POST and exits 64 on a mismatch. The header, including a skip header,
+   never goes into `--body-file`; step 7 still refuses a skip first.
 7. Skip refusal. For any draft from a `review-pr` report: if the header has
    `Verdict: skip`, stop and print its `Skip-reason:` token and the
    `Unreviewed:` line if present. If the report has no fenced block and is
@@ -52,8 +55,20 @@ user does not own goes through this skill after the human approves it.
 - PR review-thread reply: `gh-review-reply <review-comment-url> --body-file
   <file>`, so the reply lands in the thread the comment lives in.
 - Top-level PR comment: `gh pr comment --body-file <file>`.
+- Review, from an approved `review-pr` block: one COMMENT review via
+  `gh-review-post <pr-url> --commit <Head: sha from the report header>
+  --body-file <fenced block only>`. A finding runs from its `### ` heading to
+  its `Reference:` line. A finding anchored as `path:head:<line>` or
+  `path:base:<line>` on a line inside the diff becomes an inline comment made
+  of the prose between those two lines, without the heading line and without
+  the Reference line, with leading and trailing blank lines trimmed. The
+  verdict line always stays in the review body. A finding goes to the body
+  verbatim, with its Reference line, when it has no prose, cites a bare
+  `file:line`, names a path missing from the PR file list or with no patch,
+  or anchors a line outside the diff.
 - Never a raw `gh api` call for a write, and reads go through `gh-api-safe`;
-  the two commands above are the only paths for PR comments and replies.
+  `gh-review-reply`, `gh pr comment`, and `gh-review-post` are the only paths
+  for PR comments, replies, and reviews.
 - Issue: `gh issue create --title <line one> --body-file <rest>` for a
   `draft-issue` block, whose first line is the title and whose remaining
   lines are the body; `gh issue comment --body-file <file>` for a comment.

@@ -243,9 +243,11 @@ Reference: `<path>:<head|base>:<line>`
 ```
 ````
 
-The block holds the verdict line and the findings and nothing else, per the review body budget in
-`communication-rules/rules.md`. Questions and strengths stay in the header:
-`publish` posts the block unedited and cannot trim them out.
+The block follows the review body budget in `communication-rules/rules.md`.
+`publish` turns each anchored finding into an inline comment through
+`gh-review-post`, so the Reference line must keep the
+`<path>:<head|base>:<line>` form to be anchored. Questions and strengths stay
+in the header: `publish` posts the block unedited and cannot trim them out.
 
 `Profile:` is the `profile:` name from `review-profile`. `publish` reads only
 `Head:` from the header, so `Profile:` never reaches posted text.

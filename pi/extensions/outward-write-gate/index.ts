@@ -6,7 +6,8 @@
  * gh issue create/comment/edit/close/reopen/delete/transfer/pin/lock/unlock;
  * gh release; gh repo edit; gh workflow run; gh secret and gh variable
  * set/delete/remove; gh api with a mutating method or any request field;
- * gh-review-reply (the review-thread reply helper in bin/).
+ * gh-review-reply and gh-review-post (the review-thread reply and review
+ * post helpers in bin/).
  * Blocks them outright when no UI is available.
  *
  * Counterpart of the `ask` permission list in Claude Code settings and
@@ -40,6 +41,7 @@ export const outwardPatterns: readonly RegExp[] = [
 	// may carry the value attached (-fbody=hi) or be quoted ('-f').
 	/\bgh\s+api\b(?:[^\n;|&'"\\]|\\.|'[^'\n]*'|"(?:[^"\\\n]|\\.)*")*\s["']?(-[fF]|--field|--raw-field|--input)["']?([\s=]|\S)/,
 	/\bgh-review-reply\b/,
+	/\bgh-review-post\b/,
 ];
 
 export function isOutwardWrite(command: string): boolean {
