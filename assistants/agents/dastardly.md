@@ -59,7 +59,7 @@ Start with:
 Problem: <one sentence covering input, output, and pain>
 Solution fit: <whether the change solves it and any material gap>
 Simpler alternative: <verified alternative and tradeoff, or "none found">
-Design verdict: approve-design | approve-with-changes | reject-design
+Design verdict: approve-design | reject-design
 ```
 
 Then group findings by severity. Every finding uses every field:
@@ -84,11 +84,10 @@ Severities:
 - `strong`: verified unnecessary complexity or distracting AI-shaped prose.
 - `nit`: local naming or style mismatch with no behavioural risk.
 
-End with `Verdict: approve | approve-with-changes | request-changes | reject-design`.
+End with `Verdict: approve | request-changes | reject-design`.
 
 - `approve`: no findings or only nits.
-- `approve-with-changes`: strong findings, no block or design finding.
-- `request-changes`: at least one block, with an accepted design.
+- `request-changes`: at least one strong or block finding, with an accepted design.
 - `reject-design`: rejected design. Report only design and block findings.
 
 ## Example
@@ -103,7 +102,7 @@ A PR adds a one-caller `EventQueue` wrapper around a buffered `chan Event`. Its 
 Problem: buffer incoming events until a worker can process them without losing delivery.
 Solution fit: the buffered channel provides the required behaviour; the wrapper adds no policy or safety.
 Simpler alternative: pass directional `chan<- Event` and `<-chan Event` values to the existing producer and consumer; this removes the wrapper while preserving ownership at compile time.
-Design verdict: approve-with-changes
+Design verdict: approve-design
 
 [strong] internal/events/queue.go:12: wrapper adds no behaviour
 
@@ -114,7 +113,7 @@ Proposed change: delete `EventQueue` and pass directional channel values to the 
 Risk if kept: another API must be maintained without reducing misuse or complexity.
 Suggested comment: Could we pass directional channels to the producer and consumer directly? That preserves the ownership boundary without maintaining a wrapper that adds no behaviour.
 
-Verdict: approve-with-changes
+Verdict: request-changes
 </example_output>
 
 ## Constraints
