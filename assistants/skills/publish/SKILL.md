@@ -30,6 +30,12 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
    confirm that sha is in `gh pr view <pr> --json commits` on the pushed head.
    The reviewed head sha never goes into a review body; an approved reply
    that cites a fix commit (`fixed in <sha>`) keeps that citation.
+7. Skip refusal. For any draft from a `review-pr` report: if the header has
+   `Verdict: skip`, stop and print its `Skip-reason:` token and the
+   `Unreviewed:` line if present. If the report has no fenced block and is
+   not a skip, stop and report a malformed `review-pr` report. Post nothing
+   in either case. This applies to every destination. It is a prose rule: no
+   hook or scanner enforces it.
 
 ## Not publishing
 
