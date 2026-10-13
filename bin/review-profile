@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Resolve the review profile for a base repository.
+
+Usage: review-profile <owner/repo>
+
+Reads profiles.json under REVIEW_PROFILE_ROOT (default
+~/.config/assistants/review-profiles) and picks the exact key, then the first
+fnmatchcase glob in file order, then "default". Prints "profile: <name>", then
+"skill: <name>" per skill and "file: <absolute path>" per prompt file. Every
+rejection exits 64 with one stderr line and nothing on stdout.
+"""
+import fnmatch
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+EX_POLICY = 64
+PROMPT_CAP = 2000
+DEFAULT_SKILL_DIRS = "~/.claude/skills:~/.agents/skills:~/.pi/agent/skills"
+REPO = re.compile(r"[a-z0-9-]+/[a-z0-9._-]+")
+NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]*")
+
+
+class PolicyError(Exception):
+    pass
+
+
+def unique_keys(pairs):
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise PolicyError(f"duplicate key {key!r}")
+        seen[key] = value
+    return seen
+
+
+def load(path):
+    try:
+        config = json.loads(path.read_text(), object_pairs_hook=unique_keys)
+    except json.JSONDecodeError as error:
+        raise PolicyError(f"bad JSON in {path}: {error}")
+    if not isinstance(config, dict):
+        raise PolicyError("profiles.json must be an object")
+    for key, profile in config.items():
+        if key != key.lower():
+            raise PolicyError(f"key {key!r} has uppercase letters")
+        if not isinstance(profile, dict) or set(profile) != {"skills", "files"}:
+            raise PolicyError(f"profile {key!r} must hold exactly skills and files")
+        for field in ("skills", "files"):
+            values = profile[field]
+            if not isinstance(values, list) or not all(isinstance(v, str) for v in values):
+                raise PolicyError(f"profile {key!r} {field} must be a list of strings")
+    if "default" not in config:
+        raise PolicyError("no default profile")
+    return config
+
+
+def select(config, key):
+    if key in config:
+        return key
+    for pattern in config:
+        if pattern != "default" and fnmatch.fnmatchcase(key, pattern):
+            return pattern
+    return "default"
+
+
+def plain(name, kind):
+    if not NAME.fullmatch(name) or ".." in name:
+        raise PolicyError(f"{kind} {name!r} is not a plain name")
+    return name
+
+
+def check_skills(skills):
+    raw = os.environ.get("REVIEW_PROFILE_SKILL_DIRS", DEFAULT_SKILL_DIRS)
+    present = [p for p in (Path(d).expanduser() for d in raw.split(":") if d) if p.is_dir()]
+    for skill in skills:
+        plain(skill, "skill")
+        if not present:
+            raise PolicyError(f"skill {skill!r}: no skills directory present")
+        for directory in present:
+            if not (directory / skill / "SKILL.md").is_file():
+                raise PolicyError(f"skill {skill!r} missing from {directory}")
+
+
+def resolve_files(root, files):
+    if not files:
+        return []
+    try:
+        prompts = (root / "prompts").resolve(strict=True)
+    except OSError:
+        raise PolicyError(f"prompts directory missing under {root}")
+    paths, total = [], 0
+    for name in files:
+        plain(name, "file")
+        try:
+            path = (prompts / name).resolve(strict=True)
+        except OSError:
+            raise PolicyError(f"file {name!r} missing from {prompts}")
+        if not path.is_relative_to(prompts) or not path.is_file():
+            raise PolicyError(f"file {name!r} resolves outside {prompts}")
+        total += len(path.read_text())
+        paths.append(path)
+    if total > PROMPT_CAP:
+        raise PolicyError(f"prompt files hold {total} characters (cap {PROMPT_CAP})")
+    return paths
+
+
+def main(argv):
+    if len(argv) != 1:
+        raise PolicyError("usage: review-profile <owner/repo>")
+    key = argv[0].lower()
+    if not REPO.fullmatch(key):
+        raise PolicyError(f"{argv[0]!r} is not owner/repo")
+    root = Path(os.environ.get("REVIEW_PROFILE_ROOT")
+                or Path.home() / ".config/assistants/review-profiles").expanduser()
+    config = load(root / "profiles.json")
+    name = select(config, key)
+    profile = config[name]
+    check_skills(profile["skills"])
+    paths = resolve_files(root, profile["files"])
+    lines = [f"profile: {name}"]
+    lines += [f"skill: {skill}" for skill in profile["skills"]]
+    lines += [f"file: {path}" for path in paths]
+    print("\n".join(lines))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except (PolicyError, OSError, ValueError, RecursionError) as error:
+        message = " ".join(str(error).split())
+        print(f"review-profile: {message}", file=sys.stderr)
+        sys.exit(EX_POLICY)
