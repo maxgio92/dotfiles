@@ -14,7 +14,7 @@ class GhPostCommandPathTest(unittest.TestCase):
     """A path-qualified post helper must classify the same as its bare name.
 
     ``is_known_post_command`` already compares the basename; ``is_bash_gh_post``
-    must agree, or a ``bin/gh-review-reply`` post lands on the local-file (B1)
+    must agree, or a ``bin/gh-review-reply`` or ``bin/gh-review-post`` post lands on the local-file (B1)
     policy instead of the irretractable external (B2) one.
     """
 
@@ -22,6 +22,11 @@ class GhPostCommandPathTest(unittest.TestCase):
         "gh-review-reply",
         "bin/gh-review-reply",
         "/home/user/.local/bin/gh-review-reply",
+    )
+    POST_COMMANDS = (
+        "gh-review-post",
+        "bin/gh-review-post",
+        "/home/user/.local/bin/gh-review-post",
     )
 
     def test_gh_review_reply_is_external_regardless_of_path(self) -> None:
@@ -31,6 +36,18 @@ class GhPostCommandPathTest(unittest.TestCase):
                 self.assertTrue(is_known_post_command(command.split()))
                 self.assertTrue(is_bash_gh_post(command))
 
+    def test_gh_review_post_is_external_regardless_of_path(self) -> None:
+        for prefix in self.POST_COMMANDS:
+            command = f"{prefix} https://github.com/a/b/pull/1 --commit {'a' * 40} --body-file review.md"
+            with self.subTest(command=command):
+                self.assertTrue(is_known_post_command(command.split()))
+                self.assertTrue(is_bash_gh_post(command))
+
+    def test_gh_review_post_body_file_is_scanned_unchanged(self) -> None:
+        body = "Verdict: comment\n\n### P1 Title\nprose\nReference: `a.go:head:3`\n"
+        argv = f"gh-review-post https://github.com/a/b/pull/1 --commit {'a' * 40} --body-file review.md".split()
+        self.assertEqual(extract_post_texts(argv, {"review.md": body}), ([body], False))
+
     def test_path_qualified_gh_api_post_is_external(self) -> None:
         command = "/usr/bin/gh api repos/a/b/issues -f title=x"
         self.assertTrue(is_known_post_command(command.split()))
@@ -38,6 +55,7 @@ class GhPostCommandPathTest(unittest.TestCase):
 
     def test_unrelated_command_with_matching_suffix_is_not_external(self) -> None:
         self.assertFalse(is_bash_gh_post("cat notes/gh-review-reply --body-file reply.md"))
+        self.assertFalse(is_bash_gh_post("cat notes/gh-review-post --body-file review.md"))
         self.assertFalse(is_bash_gh_post("gh pr view 1"))
 
     def test_gh_api_safe_read_is_not_a_post(self) -> None:
@@ -52,6 +70,7 @@ class GhPostCommandPathTest(unittest.TestCase):
         for command in (
             "cd repo && gh pr comment 1 --body-file reply.md",
             "git fetch && ./bin/gh-review-reply https://github.com/a/b/pull/1#discussion_r5 --body-file reply.md",
+            f"git fetch && ./bin/gh-review-post https://github.com/a/b/pull/1 --commit {'a' * 40} --body-file review.md",
             "true || GH_TOKEN=x gh api repos/a/b/issues -XPOST",
         ):
             with self.subTest(command=command):
@@ -62,6 +81,7 @@ class GhPostCommandPathTest(unittest.TestCase):
         for command in (
             "cat reply.md | gh pr comment 1 -F -",
             "true | gh-review-reply https://github.com/a/b/pull/1#discussion_r5 --body-file reply.md",
+            f"true | gh-review-post https://github.com/a/b/pull/1 --commit {'a' * 40} --body-file review.md",
             "cd repo\ngh pr comment 1 --body-file reply.md",
             "bash -c 'true | gh pr comment 1 --body hi'",
         ):
@@ -145,6 +165,7 @@ class ExternalTargetTest(unittest.TestCase):
         cases = {
             "gh pr comment 1 --body-file f": "gh pr comment",
             "./bin/gh-review-reply https://github.com/a/b/pull/1#discussion_r5 --body-file f": "gh-review-reply https://github.com/a/b/pull/1#discussion_r5 --body-file",
+            f"./bin/gh-review-post https://github.com/a/b/pull/1 --commit {'a' * 40} --body-file f": "gh-review-post https://github.com/a/b/pull/1 --commit",
             "cd repo && gh issue comment 2 --body-file f": "gh issue comment",
         }
         for command, want in cases.items():

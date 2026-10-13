@@ -26,7 +26,7 @@ Budgets for text published under my name:
 
 - Comment or reply: 1 to 3 sentences. A numbered reply that answers several findings from one review round may exceed this, one numbered item per finding.
 - Review finding: 3 sentences (defect, proof, fix).
-- Review body: the findings and nothing else.
+- Review body: the verdict and the findings and nothing else; with inline comments, the verdict and the findings that fell outside the diff.
 - Slack message: 1 to 2 sentences.
 - PR body: the draft-pr template's sections, each in prose or short bullets.
 - Commit: subject plus a short paragraph or up to 5 bullets.
