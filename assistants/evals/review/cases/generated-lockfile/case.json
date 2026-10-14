@@ -1,0 +1,8 @@
+{
+  "must_flag": [],
+  "must_not_flag": [
+    {"pattern": ".", "file": "package-lock.json", "min_severity": "block"}
+  ],
+  "verdict": {"review-pr": "skip", "dastardly": ["approve", "request-changes"]},
+  "min_score": 1.0
+}

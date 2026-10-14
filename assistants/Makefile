@@ -42,6 +42,14 @@ check-instructions:
 		--rules $(RULES) scan-file $(INSTRUCTIONS) >/dev/null \
 		|| { echo "FAIL global.md: Communication Rules breach"; exit 1; }
 
+# Review evals: every row is a paid live model call (claude -p, and Codex on
+# two-model rows), so no other target runs this one. Offline tests, with no
+# model call:
+#   python3 -B -m unittest assistants/evals/review/tests/test_score.py assistants/evals/review/tests/test_run.py
+.PHONY: eval-reviews
+eval-reviews:
+	@python3 -B $(DOTFILES)/assistants/evals/review/run.py
+
 # Remove dangling symlinks in $(1) that point into source root $(2), so
 # deleting a source file uninstalls it on the next run. Entries that are
 # not symlinks, or that link outside $(2), are left alone.

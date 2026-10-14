@@ -1,0 +1,8 @@
+{
+  "must_flag": [
+    {"pattern": "ignor|swallow|silen|suppress|discard|except OSError|pass\\b|returns? True", "file": "store.py", "lines": [11, 15], "min_severity": "block"}
+  ],
+  "must_not_flag": [],
+  "verdict": ["request-changes", "reject-design"],
+  "min_score": 1.0
+}
