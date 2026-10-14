@@ -1,0 +1,8 @@
+{
+  "must_flag": [
+    {"pattern": "wrapper|wraps|indirection|inline|one caller|single caller|only caller|one call site|unnecessary|abstraction", "file": "report.py", "lines": [6, 23], "min_severity": "strong"}
+  ],
+  "must_not_flag": [],
+  "verdict": ["request-changes", "reject-design"],
+  "min_score": 1.0
+}

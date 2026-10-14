@@ -1,0 +1,8 @@
+{
+  "must_flag": [],
+  "must_not_flag": [
+    {"pattern": ".", "min_severity": "block"}
+  ],
+  "verdict": "approve",
+  "min_score": 1.0
+}
