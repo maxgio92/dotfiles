@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Find a saved review-pr report for a pull request at a given head.
+#
+# Usage: review-queue-dedup <reports-root> <pr-url> <head-sha>
+#
+# The URL must be https://github.com/OWNER/REPO/pull/N and the sha 40
+# lowercase hex characters, as gh returns headRefOid. Any other input, or a
+# wrong argument count, exits 2 with a usage line.
+#
+# Candidates are <reports-root>/*/<date>-review-pr-<N>.md, plus the
+# <date>-review-pr-<N>-<k>.md form review-reports uses on a name collision,
+# across every repo subdirectory, since the file name carries neither owner
+# nor a stable date.
+# A candidate matches only when one of its lines is exactly "PR: <pr-url>"
+# and its last "Head:" line names <head-sha>; a later follow-up section's
+# Head: supersedes the header's. A file with no Head: line is not drafted.
+# Any report counts, including one with "Verdict: skip".
+#
+# On a match, prints the newest path and exits 0: the latest date prefix,
+# then the highest collision suffix, with no suffix counting as 1.
+# Otherwise prints nothing and exits 1, including when the root is missing.
+# The helper only reads; review-pr's save step is the only writer.
+
+set -euo pipefail
+
+readonly EX_USAGE=2
+readonly EX_NOT_DRAFTED=1
+
+usage() {
+  echo "usage: review-queue-dedup <reports-root> <pr-url> <head-sha>" >&2
+  exit "$EX_USAGE"
+}
+
+[ $# -eq 3 ] || usage
+root="$1" url="$2" sha="$3"
+
+url_re='^https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/pull/([1-9][0-9]*)$'
+[[ "$url" =~ $url_re ]] || usage
+number="${BASH_REMATCH[1]}"
+[[ "$sha" =~ ^[0-9a-f]{40}$ ]] || usage
+
+[ -d "$root" ] || exit "$EX_NOT_DRAFTED"
+
+shopt -s nullglob
+name_re="^(.*)-review-pr-${number}(-([1-9][0-9]*))?\\.md\$"
+best="" best_date="" best_k=0
+for file in "$root"/*/*-review-pr-"$number".md "$root"/*/*-review-pr-"$number"-[0-9]*.md; do
+  [ -f "$file" ] && [ -r "$file" ] || continue
+  [[ "${file##*/}" =~ $name_re ]] || continue
+  date="${BASH_REMATCH[1]}" k="${BASH_REMATCH[3]:-1}"
+  # Prints the last Head: value when a line equals "PR: <url>" exactly.
+  # Lines inside code fences are review text, which can quote PR content,
+  # so PR: and Head: are read only outside them.
+  head_sha="$(awk -v pr="PR: $url" '
+    /^(```|~~~)/ { fenced = !fenced; next }
+    fenced { next }
+    $0 == pr { found = 1 }
+    /^Head:/ { h = $0; sub(/^Head:[ \t]*/, "", h); sub(/[ \t\r]+$/, "", h) }
+    END { if (found && h != "") print h }
+  ' "$file")"
+  [ "$head_sha" = "$sha" ] || continue
+  if [ -z "$best" ] || [[ "$date" > "$best_date" ]] ||
+    { [ "$date" = "$best_date" ] && [ "$k" -gt "$best_k" ]; }; then
+    best="$file" best_date="$date" best_k="$k"
+  fi
+done
+
+[ -n "$best" ] || exit "$EX_NOT_DRAFTED"
+printf '%s\n' "$best"

@@ -1,7 +1,6 @@
 ---
 name: review-pr
-description: Review a peer pull request at junior, senior, or staff depth and save a draft without posting it.
-disable-model-invocation: true
+description: Review a peer pull request at junior, senior, or staff depth and save a draft without posting it. Run only when invoked by `/review-pr` or the `/review-queue` command.
 allowed-tools: Read, Bash, Glob, Grep, Agent
 ---
 
