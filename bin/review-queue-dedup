@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Find a saved review-pr report for a pull request at a given head.
+# Find saved review-pr reports for pull requests.
 #
 # Usage: review-queue-dedup <reports-root> <pr-url> <head-sha>
+#        review-queue-dedup --latest <reports-root> <pr-url>
+#        review-queue-dedup --list <reports-root>
 #
 # The URL must be https://github.com/OWNER/REPO/pull/N and the sha 40
 # lowercase hex characters, as gh returns headRefOid. Any other input, or a
@@ -11,14 +13,27 @@
 # <date>-review-pr-<N>-<k>.md form review-reports uses on a name collision,
 # across every repo subdirectory, since the file name carries neither owner
 # nor a stable date.
-# A candidate matches only when one of its lines is exactly "PR: <pr-url>"
-# and its last "Head:" line names <head-sha>; a later follow-up section's
-# Head: supersedes the header's. A file with no Head: line is not drafted.
-# Any report counts, including one with "Verdict: skip".
+# A candidate is for a PR only when one of its lines is exactly
+# "PR: <pr-url>". Its head is its last "Head:" line; a later follow-up
+# section's Head: supersedes the header's. A file with no Head: line is not
+# drafted. Any report counts, including one with "Verdict: skip".
+# Lines inside code fences are review text, which can quote PR content, so
+# PR: and Head: are read only outside them.
+# "Newest" means the latest date prefix, then the highest collision suffix,
+# with no suffix counting as 1.
 #
-# On a match, prints the newest path and exits 0: the latest date prefix,
-# then the highest collision suffix, with no suffix counting as 1.
-# Otherwise prints nothing and exits 1, including when the root is missing.
+# Default mode: prints the newest report for <pr-url> whose head is
+# <head-sha> and exits 0. Otherwise prints nothing and exits 1, including
+# when the root is missing.
+#
+# --latest: prints "<path> <head-sha>" for the newest report for <pr-url>
+# whatever its head, where the sha is that report's last Head: and must be
+# 40 lowercase hex characters. Exits 1 with no output when there is none.
+#
+# --list: prints each distinct URL from a "PR: <url>" line in any candidate
+# whose file name number matches the URL's, one per line, sorted. Exits 0,
+# with no output when there is none or the root is missing.
+#
 # The helper only reads; review-pr's save step is the only writer.
 
 set -euo pipefail
@@ -27,30 +42,70 @@ readonly EX_USAGE=2
 readonly EX_NOT_DRAFTED=1
 
 usage() {
-  echo "usage: review-queue-dedup <reports-root> <pr-url> <head-sha>" >&2
+  {
+    echo "usage: review-queue-dedup <reports-root> <pr-url> <head-sha>"
+    echo "       review-queue-dedup --latest <reports-root> <pr-url>"
+    echo "       review-queue-dedup --list <reports-root>"
+  } >&2
   exit "$EX_USAGE"
 }
 
-[ $# -eq 3 ] || usage
-root="$1" url="$2" sha="$3"
-
 url_re='^https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/pull/([1-9][0-9]*)$'
+sha_re='^[0-9a-f]{40}$'
+
+mode=match
+case "${1:-}" in
+  --latest) mode=latest; shift; [ $# -eq 2 ] || usage ;;
+  --list) mode=list; shift; [ $# -eq 1 ] || usage ;;
+  *) [ $# -eq 3 ] || usage ;;
+esac
+root="$1"
+
+shopt -s nullglob
+
+# PR: URLs outside code fences, as written after "PR: ".
+pr_urls() {
+  awk '
+    /^(```|~~~)/ { fenced = !fenced; next }
+    fenced { next }
+    /^PR: / { print substr($0, 5) }
+  ' "$1"
+}
+
+if [ "$mode" = list ]; then
+  [ -d "$root" ] || exit 0
+  list_re='-review-pr-([1-9][0-9]*)(-[1-9][0-9]*)?\.md$'
+  for file in "$root"/*/*-review-pr-*.md; do
+    [ -f "$file" ] && [ -r "$file" ] || continue
+    [[ "${file##*/}" =~ $list_re ]] || continue
+    file_number="${BASH_REMATCH[1]}"
+    while IFS= read -r pr; do
+      if [[ "$pr" =~ $url_re ]] && [ "${BASH_REMATCH[1]}" = "$file_number" ]; then
+        printf '%s\n' "$pr"
+      fi
+    done < <(pr_urls "$file")
+  done | LC_ALL=C sort -u
+  exit 0
+fi
+
+url="$2"
 [[ "$url" =~ $url_re ]] || usage
 number="${BASH_REMATCH[1]}"
-[[ "$sha" =~ ^[0-9a-f]{40}$ ]] || usage
+sha=""
+if [ "$mode" = match ]; then
+  sha="$3"
+  [[ "$sha" =~ $sha_re ]] || usage
+fi
 
 [ -d "$root" ] || exit "$EX_NOT_DRAFTED"
 
-shopt -s nullglob
 name_re="^(.*)-review-pr-${number}(-([1-9][0-9]*))?\\.md\$"
-best="" best_date="" best_k=0
+best="" best_date="" best_k=0 best_head=""
 for file in "$root"/*/*-review-pr-"$number".md "$root"/*/*-review-pr-"$number"-[0-9]*.md; do
   [ -f "$file" ] && [ -r "$file" ] || continue
   [[ "${file##*/}" =~ $name_re ]] || continue
   date="${BASH_REMATCH[1]}" k="${BASH_REMATCH[3]:-1}"
   # Prints the last Head: value when a line equals "PR: <url>" exactly.
-  # Lines inside code fences are review text, which can quote PR content,
-  # so PR: and Head: are read only outside them.
   head_sha="$(awk -v pr="PR: $url" '
     /^(```|~~~)/ { fenced = !fenced; next }
     fenced { next }
@@ -58,12 +113,20 @@ for file in "$root"/*/*-review-pr-"$number".md "$root"/*/*-review-pr-"$number"-[
     /^Head:/ { h = $0; sub(/^Head:[ \t]*/, "", h); sub(/[ \t\r]+$/, "", h) }
     END { if (found && h != "") print h }
   ' "$file")"
-  [ "$head_sha" = "$sha" ] || continue
+  if [ "$mode" = match ]; then
+    [ "$head_sha" = "$sha" ] || continue
+  else
+    [[ "$head_sha" =~ $sha_re ]] || continue
+  fi
   if [ -z "$best" ] || [[ "$date" > "$best_date" ]] ||
     { [ "$date" = "$best_date" ] && [ "$k" -gt "$best_k" ]; }; then
-    best="$file" best_date="$date" best_k="$k"
+    best="$file" best_date="$date" best_k="$k" best_head="$head_sha"
   fi
 done
 
 [ -n "$best" ] || exit "$EX_NOT_DRAFTED"
-printf '%s\n' "$best"
+if [ "$mode" = latest ]; then
+  printf '%s %s\n' "$best" "$best_head"
+else
+  printf '%s\n' "$best"
+fi

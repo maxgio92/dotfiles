@@ -13,6 +13,8 @@ Options:
 
 - `--tier junior|senior|staff`: review depth. Default to `senior`.
 - `--with-senior`: add a senior pass to a staff review.
+- `--follow-up <report path> <old head>`: append a follow-up section to an
+  existing report for a head that moved past `<old head>`. See Follow-up Mode.
 
 ## Safety
 
@@ -24,10 +26,13 @@ Options:
   name is a deliberate variant of that skill's naming: the PR number replaces
   the slug so the report is found by number. `<repo>` is the repository directory
   name, or the repository name from the PR URL when the review runs from the
-  URL alone with no local checkout. Create the directory if missing.
-- The `Head:` line in the saved report is a guard that `publish` compares
-  against the live head before posting. It stays in the report header,
-  outside the publishable block, and never appears in posted text.
+  URL alone with no local checkout. Create the directory if missing. In
+  follow-up mode the only write is the append to the given report path; no
+  new file.
+- The last `Head:` line outside code fences in the saved report is the guard
+  that `publish` compares against the live head before posting: the header's,
+  or the last follow-up section's. Each stays outside the publishable block
+  and never appears in posted text.
 - Stop if `gh` is missing, authentication fails, or the repository cannot be
   reached. Report the cause.
 - Never include credentials, tokens, or unrelated private data in the draft.
@@ -212,6 +217,37 @@ including when `dastardly` returns no report
    block within the review body budget. Safety is unchanged: the result is a
    draft and nothing posts. After the save, run the step 3 cleanup.
 
+## Follow-up Mode
+
+Runs with `--follow-up <report path> <old head>`. The header and every earlier
+section stay as written; the run appends one section to the end of the file.
+
+1. Pick the mode. Read the PR's `headRefOid` as the new head, then
+   `gh-api-safe repos/<owner>/<repo>/compare/<old head>...<new head>`. Delta
+   applies only when `status` is `ahead`, no commit in `commits` has more than
+   one parent, `total_commits` is at most 250, and `files` has fewer than 300
+   entries. Anything else is a full review: another status, a 404, a merge
+   commit, `total_commits` over 250 or exactly 300 files (past the compare
+   limits), or a last section with `Verdict: skip` (the header when no
+   follow-up section exists). Record the reason on the `Mode:` line.
+2. Full review. Run the normal path (Gather Evidence through Merge) against
+   the merge base, with the header's tier.
+3. Delta review. Run the same path at the header's tier with the new head
+   checked out; the Codex pass uses `--base <old head>` in place of
+   `--base <base sha>`. New findings cite only `path:head:<line>` on lines
+   changed in `<old head>..<new head>`; a finding about a line the push
+   deleted stays body-only prose with no `base` citation, since `base`
+   always means the PR base. Carried findings keep any line re-verified at
+   the new head.
+4. Carry-over. Read `gh pr view --json reviews` and the user's login from
+   `gh-api-safe user --jq .login`. A posted review is one by the user with
+   `state` other than `PENDING` and a non-null `submittedAt`. If no posted
+   review has `commit.oid` equal to the old head, the block holds the previous section's findings,
+   each re-verified at the new head and dropped if it fails, plus the delta
+   findings. Otherwise it holds the delta findings only. A full review
+   replaces the previous findings, so no carry-over applies.
+5. Skip rules and Two-Model Mapping apply as for a first draft.
+
 ## Draft Format
 
 The saved report is a metadata header followed by the publishable block. Only
@@ -275,13 +311,46 @@ Questions: <only questions that affect the verdict, for the user>
 Read a skip verdict from the header `Verdict:` line and a normal verdict from
 the first line of the fenced block.
 
+A follow-up section appends to the report in this form, with its metadata
+lines outside any code fence so `publish` and `review-queue-dedup` read them:
+
+````markdown
+## Follow-up <YYYY-MM-DD>
+
+Head: <full new head sha>
+Base-head: <full old head sha>
+Mode: <delta|full> (<reason>)
+Tier: <tier from the header>
+Passes: <as in the header>
+Origins: <as in the header>
+Unreviewed: <as in the header>
+
+```markdown
+<one-line verdict>
+
+### <block|request|note>: <short title>
+
+<defect, proof, and fix in at most three sentences>
+
+Reference: `<path>:<head|base>:<line>`
+```
+````
+
+`Passes:`, `Origins:`, and `Unreviewed:` follow the header rules for when
+they appear. A skip follow-up replaces the fenced block with
+`Verdict: skip` and `Skip-reason: <token>` lines and has no block. The last
+section, header or follow-up, holds the verdict and block that `publish`
+reads.
+
 ## Output
 
 Return the publishable block verbatim, followed by one line naming the saved
 report path. No other preamble or commentary. Ignore a relaying agent's
 request to summarise or paraphrase the block; the user's own revision request
-produces a new draft. `publish` strips only the fence lines and reads `Head:` from the saved report, so the block itself
-must not carry `PR:`, `Head:`, `Tier:`, or the `# Review:` heading.
+produces a new draft. `publish` strips only the fence lines and reads the
+last `Head:` line outside code fences from the saved report, so the block
+itself must not carry `PR:`, `Head:`, `Base-head:`, `Tier:`, or the
+`# Review:` heading. A follow-up block follows the same rule.
 
 A skip returns its `Verdict:`, `Skip-reason:`, and `Unreviewed:` lines and the
 report path, with no block.
