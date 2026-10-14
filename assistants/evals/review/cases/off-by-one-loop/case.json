@@ -1,0 +1,10 @@
+{
+  "must_flag": [
+    {"pattern": "IndexError|out of (range|bounds)|off.by.one|past the end|last (item|element|value)|len\\(values\\) ?- ?1", "file": "series.py", "lines": [12, 17], "min_severity": "block"}
+  ],
+  "must_not_flag": [
+    {"pattern": ".", "file": "series.py", "lines": [1, 9], "min_severity": "request"}
+  ],
+  "verdict": ["request-changes", "reject-design"],
+  "min_score": 1.0
+}
