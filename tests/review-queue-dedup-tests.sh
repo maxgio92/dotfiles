@@ -73,7 +73,31 @@ report "$root/example/2026-10-14-review-pr-14-10.md" "$example/14" "$sha_a"
 # A suffix that is not a number is not a review-reports collision name.
 report "$root/example/2026-10-14-review-pr-15-2x.md" "$example/15" "$sha_a"
 
-sums_before="$(cd "$root" && find . -type f -print0 | sort -z | xargs -0 sha256sum; find . | sort)"
+# Fixtures for --latest and --list live in their own root, so the list
+# output stays small.
+lroot="$tmp/list-reports"
+mkdir -p "$lroot/example" "$lroot/other" "$tmp/empty-reports/example"
+# Latest across two dates: the newer date wins whatever its head.
+report "$lroot/example/2026-10-12-review-pr-20.md" "$example/20" "$sha_a"
+report "$lroot/example/2026-10-14-review-pr-20.md" "$example/20" "$sha_b"
+# Same date: the collision suffix beats no suffix.
+report "$lroot/example/2026-10-14-review-pr-21.md" "$example/21" "$sha_a"
+report "$lroot/example/2026-10-14-review-pr-21-2.md" "$example/21" "$sha_c"
+# A follow-up Head: supersedes the header's.
+report "$lroot/example/2026-10-14-review-pr-22.md" "$example/22" "$sha_a" "$sha_d"
+# PR: and Head: lines inside a fence are ignored; the real PR: is another URL.
+{
+  printf '# Review: fixture\n\nPR: %s/23\nHead: %s\nTier: standard\n\n' "$example" "$sha_a"
+  printf '%smarkdown\nPR: %s/23\nHead: %s\n%s\n' "$fence" "https://github.com/evil/repo/pull/23" "$sha_b" "$fence"
+} > "$lroot/example/2026-10-14-review-pr-23.md"
+# PR: number does not match the file name number.
+report "$lroot/other/2026-10-14-review-pr-24.md" "$example/25" "$sha_a"
+# No Head: line: --list still lists it, --latest has nothing.
+printf '# Review: fixture\n\nPR: %s/26\nTier: standard\n' "$example" > "$lroot/example/2026-10-14-review-pr-26.md"
+# Invalid PR: value is not listed.
+printf '# Review: fixture\n\nPR: %s/27/\nHead: %s\n' "$example" "$sha_a" > "$lroot/example/2026-10-14-review-pr-27.md"
+
+sums_before="$(cd "$tmp" && find . -type f -print0 | sort -z | xargs -0 sha256sum; find . | sort)"
 
 fails=0
 pass() { echo "ok   $1"; }
@@ -138,7 +162,26 @@ expect_usage "short sha rejected" -- "$root" "$example/1" "abc123"
 expect_usage "uppercase sha rejected" -- "$root" "$example/1" "$(printf 'A%.0s' {1..40})"
 expect_usage "41-char sha rejected" -- "$root" "$example/1" "${sha_a}a"
 
-sums_after="$(cd "$root" && find . -type f -print0 | sort -z | xargs -0 sha256sum; find . | sort)"
+expect "latest across two dates" 0 "$lroot/example/2026-10-14-review-pr-20.md $sha_b" -- --latest "$lroot" "$example/20"
+expect "latest: collision suffix beats no suffix" 0 "$lroot/example/2026-10-14-review-pr-21-2.md $sha_c" -- --latest "$lroot" "$example/21"
+expect "latest: follow-up Head: supersedes header" 0 "$lroot/example/2026-10-14-review-pr-22.md $sha_d" -- --latest "$lroot" "$example/22"
+expect "latest: fenced Head: ignored" 0 "$lroot/example/2026-10-14-review-pr-23.md $sha_a" -- --latest "$lroot" "$example/23"
+expect "latest: fenced PR: ignored" 1 "" -- --latest "$lroot" "https://github.com/evil/repo/pull/23"
+expect "latest: no Head: line" 1 "" -- --latest "$lroot" "$example/26"
+expect "latest: no report" 1 "" -- --latest "$lroot" "$example/99"
+expect "latest: missing root" 1 "" -- --latest "$tmp/nope" "$example/20"
+expect "list: distinct sorted URLs, fenced and mismatched ignored" 0 "$(printf '%s\n' "$example/20" "$example/21" "$example/22" "$example/23" "$example/26")" -- --list "$lroot"
+expect "list: missing root is empty" 0 "" -- --list "$tmp/nope"
+expect "list: empty root is empty" 0 "" -- --list "$tmp/empty-reports"
+
+expect_usage "latest: no arguments" -- --latest
+expect_usage "latest: one argument" -- --latest "$lroot"
+expect_usage "latest: three arguments" -- --latest "$lroot" "$example/20" "$sha_a"
+expect_usage "latest: bad url" -- --latest "$lroot" "$example/20/"
+expect_usage "list: no arguments" -- --list
+expect_usage "list: two arguments" -- --list "$lroot" "$example/20"
+
+sums_after="$(cd "$tmp" && find . -type f -print0 | sort -z | xargs -0 sha256sum; find . | sort)"
 if [ "$sums_before" = "$sums_after" ]; then
   pass "fixtures unchanged after all runs"
 else

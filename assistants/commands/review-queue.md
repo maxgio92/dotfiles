@@ -26,13 +26,26 @@ ascending `created` sort makes any cut drop the newest PRs, not the oldest.
 When the search returns 1000 results, the queue may be truncated: say so in
 the summary.
 
-For each candidate, read the head and recheck the draft flag and author:
+A PR the user already reviewed leaves `review-requested`, so also list the
+PRs that have reports:
 
 ```sh
-gh pr view <url> --json headRefOid,isDraft,author
+review-queue-dedup --list "${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports"
 ```
 
-Mark a PR that is now a draft as filtered by `draft`.
+Merge both sources and drop duplicate URLs. For each candidate, read its
+state and head and recheck the draft flag and author:
+
+```sh
+gh pr view <url> --json state,headRefOid,isDraft,author,createdAt,labels
+```
+
+Drop a PR unless `state` is `OPEN`. Mark a PR that is now a draft as filtered
+by `draft`, one labelled `skip-review-queue` as filtered by `label`, and one
+whose `author.login` equals the user's login (`gh-api-safe user --jq .login`)
+as filtered by `self`; the search excludes these, but report-only PRs bypass
+it.
+`createdAt` sorts the PRs that came only from reports.
 
 ## Filter
 
@@ -55,23 +68,41 @@ review-queue-dedup "${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports" <url> <h
 ```
 
 Exit 0 means already drafted for this head, and stdout is the report path.
-Read that report's header: with `Verdict: skip`, the state is skip with its
-`Skip-reason:`; otherwise it is already drafted. Exit 1 means not drafted.
-Any other exit stops the pass with the helper's message.
+Read that report's last section, header or follow-up: with `Verdict: skip`,
+the state is skip with its `Skip-reason:`; otherwise it is already drafted.
+Any exit other than 0 or 1 stops the pass with the helper's message.
+
+Exit 1 means no report has this head. Then run:
+
+```sh
+review-queue-dedup --latest "${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports" <url>
+```
+
+Exit 0 prints `<path> <old head>`: the newest report for the PR, from any
+date, whose last `Head:` differs from the live head. The PR is a moved head.
+Exit 1 means no report, so the PR is not drafted. Any other exit stops the
+pass with the helper's message.
 
 ## Draft
 
-Sort the PRs not drafted by `createdAt`, oldest first. Draft at most 3 per
-run; mark the rest over cap. Filtered, deduped, and skip-report PRs do not
-count toward the cap.
+Sort the not-drafted and moved-head PRs by `createdAt`, oldest first.
+Review at most 3 per run; mark the rest over cap. Moved-head reviews count
+toward the cap. Filtered, deduped, and skip-report PRs, and skip follow-ups,
+do not.
 
 Run the `review-pr` skill in this session, one PR at a time, at its default
 tier with no `--tier` override. Launch no worker agents for the queue;
 `review-pr` launches `dastardly` itself. When `review-pr` saves a skip
 report, the PR does not count toward the cap; move to the next PR.
 
+For a moved head, run `review-pr` in follow-up mode with
+`--follow-up <path> <old head>` from `--latest`, instead of a new report.
+It appends a section to that report and picks delta or full itself. A
+follow-up with `Verdict: skip` does not count toward the cap.
+
 The queue and `review-queue-dedup` only read reports; they never write,
-rename, or rewrite one. The `review-pr` save step is the only writer.
+rename, or rewrite one. The `review-pr` save step and its follow-up append
+are the only writes.
 
 ## Summary
 
@@ -81,8 +112,10 @@ Print one line per PR:
 <url> #<number> <state> <report path or ->
 ```
 
-`<state>` is one of `drafted`, `already drafted`, `skip (<Skip-reason>)`,
-`filtered (<filter>)`, or `over cap`. Print a title only as quoted data, if at
+`<state>` is one of `drafted`, `already drafted`, `re-reviewed (delta)`,
+`re-reviewed (full: <reason>)`, `skip (<Skip-reason>)`,
+`filtered (<filter>)`, or `over cap`. For a re-review, `<reason>` is the
+follow-up section's `Mode:` reason and the path is the appended report. Print a title only as quoted data, if at
 all.
 
 When this pass checks a success criterion that the current queue cannot

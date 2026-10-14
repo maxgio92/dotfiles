@@ -22,22 +22,26 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
 4. Hand off. A created or updated pull request is not finished work: load
    `drive-to-merge` and continue there until the PR is merged and cleaned up.
 5. One approval covers one post. A batch approval must name each item.
-6. SHA guard. For a PR comment drafted from a `review-pr` report, read the
-   `Head:` line from the saved report file's header (the `review-pr` skill
+6. SHA guard. For a PR comment drafted from a `review-pr` report, the last
+   section is the last `## Follow-up <date>` section, or the header when the
+   report has none. Read the last `Head:` line outside code fences in the
+   saved report file (the header's when there is no follow-up; `review-pr`
    keeps it outside the publishable block) and compare it with `gh pr view
-   <pr> --json headRefOid`. If they differ, the author pushed during the review: stop,
-   report both shas, and do not post. For a reply that cites a commit sha,
+   <pr> --json headRefOid`. If they differ, the author pushed during the
+   review: stop, report both shas, and do not post. The publishable block is
+   the fenced block of that same last section. For a reply that cites a commit sha,
    confirm that sha is in `gh pr view <pr> --json commits` on the pushed head.
    The reviewed head sha never goes into a review body; an approved reply
    that cites a fix commit (`fixed in <sha>`) keeps that citation. For a
    review, `gh-review-post` repeats the head check itself just before the
-   POST and exits 64 on a mismatch. The header, including a skip header,
-   never goes into `--body-file`; step 7 still refuses a skip first.
-7. Skip refusal. For any draft from a `review-pr` report: if the header has
-   `Verdict: skip`, stop and print its `Skip-reason:` token and the
-   `Unreviewed:` line if present. If the report has no fenced block and is
-   not a skip, stop and report a malformed `review-pr` report. Post nothing
-   in either case. This applies to every destination. It is a prose rule: no
+   POST and exits 64 on a mismatch. The header and follow-up lines, including
+   a skip, never go into `--body-file`; step 7 still refuses a skip first.
+7. Skip refusal. For any draft from a `review-pr` report, judge only the
+   last section from step 6: if it has `Verdict: skip`, stop and print its
+   `Skip-reason:` token and the `Unreviewed:` line if present. If it has no
+   fenced block and is not a skip, stop and report a malformed `review-pr`
+   report. Post nothing in either case. A full-review follow-up after a skip
+   header is postable; a skip follow-up after a normal draft is refused. This applies to every destination. It is a prose rule: no
    hook or scanner enforces it.
 
 ## Not publishing
@@ -56,8 +60,8 @@ user does not own goes through this skill after the human approves it.
   <file>`, so the reply lands in the thread the comment lives in.
 - Top-level PR comment: `gh pr comment --body-file <file>`.
 - Review, from an approved `review-pr` block: one COMMENT review via
-  `gh-review-post <pr-url> --commit <Head: sha from the report header>
-  --body-file <fenced block only>`. A finding runs from its `### ` heading to
+  `gh-review-post <pr-url> --commit <last Head: sha outside code fences>
+  --body-file <last section's fenced block only>`. A finding runs from its `### ` heading to
   its `Reference:` line. A finding anchored as `path:head:<line>` or
   `path:base:<line>` on a line inside the diff becomes an inline comment made
   of the prose between those two lines, without the heading line and without
