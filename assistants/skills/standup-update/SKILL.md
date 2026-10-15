@@ -18,7 +18,8 @@ Run these in parallel.
 1. **Sessions.** Run `scripts/sessions-since.sh <window start>`. It prints one block per Claude Code session: `cwd | branch | short id | start -> end`, then `U`/`A` lines (user prompts, assistant replies) and `PR` URLs the session touched. It skips subagent sidecars and any transcript containing `[standup-update]`. If the output exceeds ~200 lines, hand it to one general-purpose subagent and ask for one line per project: what moved and what is in progress.
 2. **Session journal.** If `$NOTES_REPO/notes/<date>-sessions.md` exists for days in the window, read it (`NOTES_REPO` comes from `~/.config/notes-repo.env`, default `~/notes`). It covers Codex and Pi sessions too.
 3. **Open PRs.** `gh search prs --author=@me --state=open --updated ">=$(date -d '30 days ago' +%F)" --json url,title,isDraft,repository --limit 50`. The `--updated` filter drops stale PRs nobody is working on. For each non-draft PR, `gh pr view <url> --json reviewDecision,reviewRequests,latestReviews`.
-4. **Tracker.** If Linear is available, list the user's issues in progress or updated in the window.
+4. **Merged PRs.** `gh search prs --author=@me --merged --merged-at ">=<window start date>" --json url,title`.
+5. **Tracker.** If Linear is available, list the user's issues updated in the window and the issues they created in it. An issue counts as done only when its `completedAt` falls in the window; `updatedAt` moves on any edit, so a bulk relink makes old issues look fresh.
 
 ## Map evidence to fields
 
