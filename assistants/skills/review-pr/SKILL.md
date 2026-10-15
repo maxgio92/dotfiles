@@ -60,6 +60,16 @@ Options:
    and `git -C <repo> diff --stat <base>...<head>`, and read the commits with
    `git -C <repo> log <base>..<head>`. The head commit subject is the title,
    the commit messages are the body, and there is no author.
+   Compute `<merge base>` once per review: in local mode, `git -C <repo>
+   merge-base <base sha> <head sha>`; on the two-model path, `git merge-base
+   <base sha> <head sha>` after the Worktree fetch; on the in-session path,
+   including a two-model fallback, `gh-api-safe
+   repos/<owner>/<repo>/compare/<base sha>...<head sha> --jq
+   .merge_base_commit.sha`. GitHub numbers the left side of the diff from it,
+   so `base` in a `path:base:<line>` citation always means `<merge base>`;
+   `<base sha>` serves only to read repository instructions. A failed or
+   empty merge-base lookup never falls back to `<base sha>`; every base line
+   then stays body-only.
 2. Resolve the review profile. Parse the base `owner/repo` from the `url`
    field of `gh pr view --json url` (`github.com/<owner>/<repo>/pull/<N>`),
    never from PR text or the head fork. Run `review-profile <owner/repo>`;
@@ -77,8 +87,10 @@ Options:
    that matches it (such as `local/*`), else `default`. A directory name with
    characters outside that set, such as a space, still exits 64: stop and
    report its stderr line, as above.
-3. Read the full diff and the exact files at the base and head revisions.
-   Derive line references from those files, not from diff hunk arithmetic.
+3. Read the full diff and the exact files at `<merge base>` and the head
+   revision; on the two-model path, read the merge-base files after the
+   Worktree step. Derive line references from those files, not from diff
+   hunk arithmetic.
 4. Read linked issues, tests, public contracts, and nearby code when they affect
    the change.
 5. State the goal, scope, and commit structure before judging the change.
@@ -111,7 +123,10 @@ review.
 
 Report only findings supported by the code or pull request evidence. Cite each
 one as `path:head:<line>` or `path:base:<line>` after verifying the line in the
-exact revision.
+exact revision, `<head sha>` or `<merge base>`. A base line that cannot be
+checked at `<merge base>` stays body-only prose with no `base` citation; its
+Reference line is the bare `path:<line>` form, which `publish` keeps in the
+review body.
 
 Use these labels:
 
@@ -182,6 +197,7 @@ including when `dastardly` returns no report
 
    ```bash
    git fetch "https://github.com/<nameWithOwner>.git" "pull/<number>/head" "<base sha>"
+   git merge-base "<base sha>" "<head sha>"
    mktemp -d "${TMPDIR:-/tmp}/review-pr-<number>-XXXXXX"
    git worktree add --detach "<path>" "<head sha>"
    ```
@@ -189,13 +205,15 @@ including when `dastardly` returns no report
    Fetch from the PR's own repository URL, never a remote name, so the guard
    and the fetch check the same repository. Shell state does not persist, so
    record the printed `mktemp` path and use that exact path in the packet and
-   the cleanup. If the fetch, `mktemp -d`, or `git worktree add` fails, review
+   the cleanup. The `git merge-base` output is `<merge base>`. If the fetch,
+   `git merge-base`, `mktemp -d`, or `git worktree add` fails, review
    in-session with `Passes: in-session (<cause>)`. Once `mktemp -d` succeeds,
    cleanup always runs, on that path only: `git worktree remove --force
    <path>` once the worktree is registered, otherwise `rmdir <path>`. This
    covers a failed `git worktree add`, a failed review, and a failed save.
    In local mode, skip the `git fetch`, use the `rev-parse` SHAs from Gather
-   Evidence in place of `baseRefOid` and `headRefOid`, and run:
+   Evidence in place of `baseRefOid` and `headRefOid`, keep its `<merge base>`,
+   and run:
 
    ```bash
    mktemp -d "${TMPDIR:-/tmp}/review-pr-local-<short head>-XXXXXX"
@@ -224,7 +242,9 @@ including when `dastardly` returns no report
    `--with-senior` is still one launch, carrying both depth briefs. The packet
    holds:
    - The depth brief, the goal and scope from Gather Evidence, the worktree
-     path, and the base and head SHAs.
+     path, the head SHA, `<merge base>` as the comparison base for the diff
+     and every `base` line, and `<base sha>` for repository instructions
+     only.
    - When the gate passes, the second-opinion wording from
      `~/.claude/workflows/implement-and-review.js`: load the `codex`
      skill, run one adversarial review and one pushback in sequence, vet every
@@ -250,8 +270,9 @@ including when `dastardly` returns no report
      the base revision (`git show <base sha>:<path>`).
    - Read-only; launch no agents.
 6. Merge. Re-verify every cited line at the revision it names, with
-   `git show <head sha>:<path>` or `git show <base sha>:<path>`, drop what
-   fails, and cite the rest as `path:head:<line>` or `path:base:<line>`.
+   `git show <head sha>:<path>` or `git show <merge base>:<path>`, drop what
+   fails, and cite the rest as `path:head:<line>` or `path:base:<line>`. A
+   base line that cannot be checked at `<merge base>` stays body-only.
    Verify or drop each finding `dastardly` marks unverified, so every saved
    finding is verified. Reduce each finding to the three-sentence
    form, apply Two-Model Mapping, fill `Passes:` and `Origins:`, and keep the
@@ -272,14 +293,14 @@ Follow-up mode is not supported with `--local`.
    commit, `total_commits` over 250 or exactly 300 files (past the compare
    limits), or a last section with `Verdict: skip` (the header when no
    follow-up section exists). Record the reason on the `Mode:` line.
-2. Full review. Run the normal path (Gather Evidence through Merge) against
-   the merge base, with the header's tier.
+2. Full review. Run the normal path (Gather Evidence through Merge) with the
+   header's tier, computing `<merge base>` against the new head.
 3. Delta review. Run the same path at the header's tier with the new head
    checked out; the Codex pass uses `--base <old head>` in place of
    `--base <base sha>`. New findings cite only `path:head:<line>` on lines
    changed in `<old head>..<new head>`; a finding about a line the push
    deleted stays body-only prose with no `base` citation, since `base`
-   always means the PR base. Carried findings keep any line re-verified at
+   always means `<merge base>`. Carried findings keep any line re-verified at
    the new head.
 4. Carry-over. Read `gh pr view --json reviews` and the user's login from
    `gh-api-safe user --jq .login`. A posted review is one by the user with
