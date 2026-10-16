@@ -180,6 +180,61 @@ else
   fail "head-side context line goes inline" "stdin was: $(cat "$GH_SHIM_STDIN" 2>/dev/null)"
 fi
 
+# expect_inline NAME DRAFT LINE BODY: DRAFT posts one RIGHT comment on
+# src/a.go:LINE with exactly BODY, and the review body is just the verdict.
+expect_inline() {
+  local name="$1" draft="$2" status want
+  reset_shim
+  "$script" "$good" --commit "$head_sha" --body-file "$draft" >/dev/null 2>"$tmp/stderr"; status=$?
+  [ "$status" -eq 0 ] || { fail "$name" "exit $status: $(cat "$tmp/stderr")"; return; }
+  want="$(jq -nc --argjson l "$3" --arg b "$4" '[{path: "src/a.go", line: $l, side: "RIGHT", body: $b}]')"
+  [ "$(jq -c .comments < "$GH_SHIM_STDIN")" = "$want" ] || { fail "$name" "comments: $(jq -c .comments < "$GH_SHIM_STDIN")"; return; }
+  [ "$(jq -r .body < "$GH_SHIM_STDIN")" = "Approve." ] || { fail "$name" "body was: $(jq -r .body < "$GH_SHIM_STDIN")"; return; }
+  pass "$name"
+}
+
+# Heading and Reference lines inside a fence are prose, kept verbatim.
+fence_prose='Prose.
+```md
+### not a heading
+Reference: `src/a.go:head:5`
+```'
+printf 'Approve.\n\n### note: t\n%s\nReference: `src/a.go:head:12`\n' "$fence_prose" > "$tmp/fence.md"
+expect_inline "backtick fence hides heading and Reference" "$tmp/fence.md" 12 "$fence_prose"
+
+# A closing fence may be followed by tabs, as in CommonMark.
+tab_prose="$(printf 'Prose.\n```md\n### not a heading\n```\t')"
+printf 'Approve.\n\n### note: t\n%s\nReference: `src/a.go:head:12`\n' "$tab_prose" > "$tmp/tabfence.md"
+expect_inline "closing fence followed by a tab" "$tmp/tabfence.md" 12 "$tab_prose"
+
+# A tilde fence closes only on tildes at least as long, so the nested
+# backtick fence and the shorter ~~~ line stay inside it.
+tilde_prose='~~~~
+```
+### inner heading
+```
+~~~
+Reference: `src/a.go:head:5`
+~~~~'
+printf 'Approve.\n\n### note: t\n%s\n\nReference: `src/a.go:head:7`\n' "$tilde_prose" > "$tmp/tilde.md"
+expect_inline "tilde fence with a nested fence" "$tmp/tilde.md" 7 "$tilde_prose"
+
+# A longer backtick fence is not closed by a shorter one; the indented
+# closing line (three spaces) does close it.
+long_prose='````
+```
+### still fenced
+   ````'
+printf 'Approve.\n\n### note: t\n%s\nReference: `src/a.go:head:12`\n' "$long_prose" > "$tmp/long.md"
+expect_inline "longer backtick fence needs a matching close" "$tmp/long.md" 12 "$long_prose"
+
+# A backtick in a backtick fence's info string means the line opens no
+# fence, so the Reference line after it still closes the finding.
+info_prose='Prose.
+``` a`b'
+printf 'Approve.\n\n### note: t\n%s\nReference: `src/a.go:head:12`\n' "$info_prose" > "$tmp/info.md"
+expect_inline "backtick in the info string is not a fence" "$tmp/info.md" 12 "$info_prose"
+
 # More than 3000 changed files warns on stderr and still posts.
 reset_shim
 out="$(GH_SHIM_CHANGED=3001 "$script" "$good" --commit "$head_sha" --body-file "$mixed" 2>"$tmp/stderr")"; status=$?
@@ -291,6 +346,11 @@ expect_draft_policy "finding without Reference before next heading" "no Referenc
   $'Approve.\n\n### note: a\nProse.\n\n### note: b\nProse.\nReference: `src/a.go:head:5`\n'
 expect_draft_policy "text after a Reference line" "follows a Reference line" \
   $'Approve.\n\n### note: t\nProse.\nReference: `src/a.go:head:5`\nStray text.\n'
+
+expect_draft_policy "unclosed fence runs to EOF" "no Reference line" \
+  $'Approve.\n\n### note: t\nProse.\n```\nReference: `src/a.go:head:5`\n'
+expect_draft_policy "CRLF input refused" "carriage return" \
+  $'Approve.\r\n\r\n### note: t\r\nProse.\r\nReference: `src/a.go:head:12`\r\n'
 
 # Missing tools: a PATH with bash and only one of gh or jq.
 mkdir -p "$tmp/nogh" "$tmp/nojq"

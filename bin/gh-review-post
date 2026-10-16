@@ -8,16 +8,24 @@
 # lowercase hex. The text comes only from the file. Every other input shape
 # is a policy violation and exits 64; a bare or --help call exits 2. A body
 # line starting 'Verdict: skip' or 'Skip-reason:' (a skip report header)
-# exits 64 before any gh call.
+# exits 64 before any gh call, as does a line ending in a carriage return
+# (CRLF input): stripping it would change the posted bytes, so convert the
+# file to LF first.
 #
 # Split, deterministic and adding no text:
-# - Preamble: every line before the first line starting '### '. It holds the
-#   verdict and always goes to the review body; a missing or blank preamble
-#   exits 64.
-# - Finding: from a '### ' heading line through the first following line
-#   starting 'Reference: '. No such line before the next '### ' or EOF exits
-#   64, as does any non-blank line between a Reference line and the next
-#   '### ' heading.
+# - Fences: a line opening a code fence (up to 3 spaces, then 3 or more
+#   backticks or tildes; a backtick fence's info string holds no backtick)
+#   starts fenced text that runs through the first line closing it (up to 3
+#   spaces, the same character at least as many times, then only spaces or tabs) or
+#   EOF. Fenced lines, the fence lines included, are prose: a '### ' or
+#   'Reference: ' line inside a fence delimits nothing.
+# - Preamble: every line before the first unfenced line starting '### '. It
+#   holds the verdict and always goes to the review body; a missing or blank
+#   preamble exits 64.
+# - Finding: from an unfenced '### ' heading line through the first
+#   following unfenced line starting 'Reference: '. No such line before the
+#   next heading or EOF exits 64, as does any non-blank line between a
+#   Reference line and the next heading.
 # - Inline: a finding whose Reference line is exactly
 #   Reference: `<path>:head:<N>` (side RIGHT) or Reference: `<path>:base:<N>`
 #   (side LEFT), where <path> is in the PR files list with a patch and N is
@@ -129,7 +137,9 @@ pr="${BASH_REMATCH[3]}"
 
 mapfile -t lines < "$body_file"
 nlines=${#lines[@]}
-for line in "${lines[@]}"; do
+for ((i = 0; i < nlines; i++)); do
+  line="${lines[i]}"
+  [[ "$line" != *$'\r' ]] || policy "line $((i + 1)) ends in a carriage return (CRLF input); convert the body file to LF line endings"
   case "$line" in
     'Verdict: skip'*|'Skip-reason:'*)
       policy "body file holds a skip report header ('$line'); a skip report has nothing to post"
@@ -142,12 +152,32 @@ for tool in gh jq; do
 done
 
 is_blank() { [[ "$1" =~ ^[[:space:]]*$ ]]; }
-is_heading() { [[ "$1" == '### '* ]]; }
+
+# fenced[i] is 1 when line i opens, closes, or sits inside a code fence.
+open_re='^ {0,3}(`{3,}|~{3,})(.*)$'
+close_re='^ {0,3}(`{3,}|~{3,})[[:blank:]]*$'
+fenced=()
+fence=""
+for ((i = 0; i < nlines; i++)); do
+  if [ -n "$fence" ]; then
+    fenced+=(1)
+    if [[ "${lines[i]}" =~ $close_re ]] && [[ "${BASH_REMATCH[1]}" == "$fence"* ]]; then fence=""; fi
+  elif [[ "${lines[i]}" =~ $open_re ]] && ! [[ "${BASH_REMATCH[1]}" == '`'* && "${BASH_REMATCH[2]}" == *'`'* ]]; then
+    fenced+=(1)
+    fence="${BASH_REMATCH[1]}"
+  else
+    fenced+=(0)
+  fi
+done
+
+# is_heading I and is_reference I test line I as a delimiter.
+is_heading() { [ "${fenced[$1]}" -eq 0 ] && [[ "${lines[$1]}" == '### '* ]]; }
+is_reference() { [ "${fenced[$1]}" -eq 0 ] && [[ "${lines[$1]}" == 'Reference: '* ]]; }
 
 # Preamble: lines [0, first_heading).
 first_heading=$nlines
 for ((i = 0; i < nlines; i++)); do
-  if is_heading "${lines[i]}"; then first_heading=$i; break; fi
+  if is_heading "$i"; then first_heading=$i; break; fi
 done
 has_verdict=0
 for ((i = 0; i < first_heading; i++)); do
@@ -164,12 +194,12 @@ i=$first_heading
 while [ "$i" -lt "$nlines" ]; do
   ref=-1
   for ((j = i + 1; j < nlines; j++)); do
-    is_heading "${lines[j]}" && break
-    if [[ "${lines[j]}" == 'Reference: '* ]]; then ref=$j; break; fi
+    is_heading "$j" && break
+    if is_reference "$j"; then ref=$j; break; fi
   done
   [ "$ref" -ge 0 ] || policy "finding '${lines[i]}' has no Reference line before the next '### ' heading or the end of the file"
   for ((k = ref + 1; k < nlines; k++)); do
-    is_heading "${lines[k]}" && break
+    is_heading "$k" && break
     is_blank "${lines[k]}" || policy "line $((k + 1)) ('${lines[k]}') follows a Reference line outside any finding"
   done
   seg_start+=("$i")

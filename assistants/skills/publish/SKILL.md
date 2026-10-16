@@ -62,7 +62,8 @@ user does not own goes through this skill after the human approves it.
 - Review, from an approved `review-pr` block: one COMMENT review via
   `gh-review-post <pr-url> --commit <last Head: sha outside code fences>
   --body-file <last section's fenced block only>`. A finding runs from its `### ` heading to
-  its `Reference:` line. A finding anchored as `path:head:<line>` or
+  its `Reference:` line; either line inside a code fence is prose. The helper
+  refuses a CRLF body file. A finding anchored as `path:head:<line>` or
   `path:base:<line>` on a line inside the diff becomes an inline comment made
   of the prose between those two lines, without the heading line and without
   the Reference line, with leading and trailing blank lines trimmed. The
