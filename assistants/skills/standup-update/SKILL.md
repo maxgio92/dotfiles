@@ -29,13 +29,13 @@ Run these in parallel.
 - **Docs blocked:** design docs with open review feedback (draft or open `docs(...)` PRs with comments or changes requested, Linear documents) and docs the sessions say must exist but don't. Never invent a doc.
 - **Ask:** one concrete need from someone outside the team, only when the sessions show a blocker (access, a decision, another team's review). Otherwise delete the line.
 
-Report work only: `example-org` repositories, `maxgio92/xcover` (the team's coverage tool), and Linear. Leave out the user's personal repositories (every other `maxgio92/*` repository, such as `dotfiles`, `cg-notes`, and `resurgo`) and sessions under `~/.dotfiles` or the notes repo, in every field.
+Report work only: `example-org` repositories and Linear. Leave out the user's personal repositories (every `maxgio92/*` repository, such as `xcover`, `dotfiles`, and `cg-notes`) and sessions under `~/.dotfiles` or the notes repo, in every field.
 
 Delete every line with no evidence, as the template asks. Never guess; ask the user when a field depends on intent the logs can't show (often Today and Ask).
 
 ## Output
 
-Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, lowercase, no bold. Cite every pull request as its full bare URL, never a bare number. Never put punctuation right after a URL; Slack folds it into the link. Cite Linear issues by key only (`ABC-917`), no URL.
+Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, lowercase, no bold. Cite every pull request as its full bare URL each time it appears, including a repeat in the same line; never a bare number like `70016`. Never put punctuation right after a URL; Slack folds it into the link. Cite Linear issues by key only (`ABC-917`), no URL.
 
 ```
 Moved:
