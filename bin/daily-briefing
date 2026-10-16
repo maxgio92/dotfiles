@@ -1,0 +1,24 @@
+#!/bin/sh
+# Run the daily-briefing skill headless and save the result as
+# ~/.local/state/daily-briefing/briefings/<date>.md, plus a latest.md link.
+set -eu
+
+dir="${XDG_STATE_HOME:-$HOME/.local/state}/daily-briefing/briefings"
+mkdir -p "$dir"
+out="$dir/$(date +%F).md"
+tmp="$out.tmp"
+
+claude -p "Use the daily-briefing skill to give me my daily briefing. Return only the briefing Markdown." \
+	--allowedTools \
+	"Read" "Write" "Agent" "Skill" "ToolSearch" \
+	"Bash(date:*)" "Bash(mkdir:*)" "Bash(jq:*)" "Bash(cat:*)" \
+	"Bash(gh search prs:*)" "Bash(gh pr view:*)" \
+	"mcp__plugin_slack_slack__slack_list_user_channels" \
+	"mcp__plugin_slack_slack__slack_search_channels" \
+	"mcp__plugin_slack_slack__slack_read_channel" \
+	"mcp__plugin_slack_slack__slack_read_thread" \
+	"mcp__plugin_slack_slack__slack_search_public_and_private" \
+	>"$tmp"
+
+mv "$tmp" "$out"
+ln -sfn "$out" "$dir/latest.md"

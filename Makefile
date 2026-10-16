@@ -8,6 +8,7 @@ git := $(shell command -v git 2>/dev/null)
 
 include $(addprefix $(dir $(lastword $(MAKEFILE_LIST))), \
 	agent-notify/Makefile \
+	daily-briefing/Makefile \
 	standup-post/Makefile \
 	syncthing/Makefile \
 	assistants/Makefile \

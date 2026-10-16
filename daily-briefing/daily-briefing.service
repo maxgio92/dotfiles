@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily work briefing from Slack and GitHub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=TZ=Europe/Rome
+Environment=PATH=%h/.local/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/daily-briefing
+TimeoutStartSec=30min

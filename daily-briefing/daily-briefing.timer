@@ -1,0 +1,9 @@
+[Unit]
+Description=Run the daily briefing every weekday morning
+
+[Timer]
+OnCalendar=Mon..Fri 08:43 Europe/Rome
+Persistent=true
+
+[Install]
+WantedBy=timers.target
