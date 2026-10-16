@@ -1,19 +1,37 @@
 #!/bin/sh
 # Run the daily-briefing skill headless and save the result as
 # ~/.local/state/daily-briefing/briefings/<date>.md, plus a latest.md link.
+# Slack content is untrusted, so the agent gets no file tools: this script
+# passes in the config and window, and writes every file itself.
 set -eu
+umask 077
 
-dir="${XDG_STATE_HOME:-$HOME/.local/state}/daily-briefing/briefings"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/daily-briefing"
+dir="$state/briefings"
+config="$HOME/.config/daily-briefing/config.yaml"
 mkdir -p "$dir"
 out="$dir/$(date +%F).md"
-tmp="$out.tmp"
+tmp=$(mktemp "$dir/.briefing.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
 
-claude -p "Use the daily-briefing skill to give me my daily briefing. Return only the briefing Markdown." \
+started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+if [ -f "$state/last-run" ]; then
+	since=$(cat "$state/last-run")
+else
+	since=$(date -u -d 'yesterday 00:00' +%Y-%m-%dT%H:%M:%SZ)
+fi
+
+cd "$dir"
+claude -p "Use the daily-briefing skill to give me my daily briefing.
+Window start: $since. Config (do not read or edit the file):
+$(cat "$config")
+Do not write any files; return only the briefing Markdown." \
+	--permission-mode default \
+	--disallowedTools "Write" "Edit" "NotebookEdit" \
 	--allowedTools \
-	"Read" "Write" "Agent" "Skill" "ToolSearch" \
-	"Bash(date:*)" "Bash(mkdir:*)" "Bash(jq:*)" "Bash(cat:*)" \
+	"Skill" "ToolSearch" "Agent" \
+	"Bash(date:*)" "Bash(jq:*)" \
 	"Bash(gh search prs:*)" "Bash(gh pr view:*)" \
-	"mcp__plugin_slack_slack__slack_list_user_channels" \
 	"mcp__plugin_slack_slack__slack_search_channels" \
 	"mcp__plugin_slack_slack__slack_read_channel" \
 	"mcp__plugin_slack_slack__slack_read_thread" \
@@ -22,3 +40,9 @@ claude -p "Use the daily-briefing skill to give me my daily briefing. Return onl
 
 mv "$tmp" "$out"
 ln -sfn "$out" "$dir/latest.md"
+printf '%s\n' "$started" >"$state/last-run"
+
+notes="$HOME/notes"
+[ -f "$HOME/.config/notes-repo.env" ] && . "$HOME/.config/notes-repo.env" && notes="${NOTES_REPO:-$notes}"
+[ -d "$notes/notes" ] && cp "$out" "$notes/notes/$(date +%F)-briefing.md"
+exit 0

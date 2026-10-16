@@ -9,3 +9,8 @@ Environment=TZ=Europe/Rome
 Environment=PATH=%h/.local/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/.local/bin/daily-briefing
 TimeoutStartSec=30min
+# Slack content is untrusted: keep home read-only except what the run needs.
+ProtectHome=read-only
+ReadWritePaths=-%h/.local/state/daily-briefing -%h/notes/notes
+ReadWritePaths=-%h/.claude -%h/.claude.json -%h/.cache -%h/.local/state/gh -%h/.cache/gh
+NoNewPrivileges=yes
