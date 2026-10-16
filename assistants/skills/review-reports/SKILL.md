@@ -13,7 +13,7 @@ the XDG data home, not state, cache, or runtime:
 ${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports/<repo>/<YYYY-MM-DD>-<agent>-<slug>.md
 ```
 
-- `<repo>`: the repository directory name (e.g. `dotfiles`, `mono`).
+- `<repo>`: the repository directory name (e.g. `dotfiles`, `project`).
 - `<agent>`: who produced it (`blast`, `dastardly`, `penry`, ...).
 - `<slug>`: two to four kebab-case words naming the scope
   (e.g. `webhook-auth-audit`).

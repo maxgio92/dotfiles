@@ -94,7 +94,6 @@ fzf:
 .PHONY: git
 git:
 	@ln -sf $(DOTFILES)/git/gitconfig $(HOME)/.gitconfig
-	@ln -sf $(DOTFILES)/git/gitconfig-gitsign $(HOME)/.gitconfig-gitsign
 
 .PHONY: i3
 i3:

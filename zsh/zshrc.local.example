@@ -1,0 +1,9 @@
+# Copy to ~/.zshrc.local. zsh/zshrc sources it when it exists.
+# Keep work-specific paths, functions, and tool setup here, not in the repo.
+
+# Append work directories to CDPATH; do not redefine it.
+CDPATH="$CDPATH:$HOME/src/github.com/<work-org>"
+
+# Tool setup that lives in a work checkout.
+# [ -f "$HOME/src/github.com/<work-org>/<repo>/path.zsh.inc" ] && \
+# 	. "$HOME/src/github.com/<work-org>/<repo>/path.zsh.inc"

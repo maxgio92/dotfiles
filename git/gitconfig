@@ -28,15 +28,13 @@
 [tag]
 	gpgsign = true
 
-[includeif "gitdir:~/src/github.com/example-sandbox/"]
-	path = ~/.gitconfig-gitsign
-[includeif "gitdir:~/src/github.com/example-org/"]
-	path = ~/.gitconfig-gitsign
-[includeif "gitdir:~/src/github.com/wolfi-dev/"]
-	path = ~/.gitconfig-gitsign
 [credential "https://github.com"]
 	helper = 
 	helper = !/home/linuxbrew/.linuxbrew/bin/gh auth git-credential
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !/home/linuxbrew/.linuxbrew/bin/gh auth git-credential
+
+# Machine-local overrides; git skips a missing include. Last, so it wins.
+[include]
+	path = ~/.gitconfig.local

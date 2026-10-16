@@ -23,7 +23,7 @@ Read exactly one reference per task. Text after the argument is extra context, n
 
 Creation targets, for commands that file a new task: a Linear team or project name resolves to `references/linear.md`; `owner/repo` with no `#N` resolves to `references/github.md`; a directory resolves to `references/local.md`. An explicit target always wins.
 
-Work organisation: host `github.com`, owner `example-org`, in either the HTTPS (`https://github.com/example-org/<repo>`) or the SSH (`git@github.com:example-org/<repo>`) remote form. Edit this line to change it. The Linear team key `ABC` also appears in `references/linear.md` and `sizing`.
+Work organisation: read `~/.config/work-context.env` if present (`WORK_GITHUB_ORG=<work-org>`, `LINEAR_TEAM_KEY=<key>`; see `assistants/work-context.env.example`). The work organisation is host `github.com`, owner `$WORK_GITHUB_ORG`, in either the HTTPS (`https://github.com/<work-org>/<repo>`) or the SSH (`git@github.com:<work-org>/<repo>`) remote form, and the work team is the Linear team with key `$LINEAR_TEAM_KEY`. When the file or `WORK_GITHUB_ORG` is missing, no remote is under the work organisation. When the file or `LINEAR_TEAM_KEY` is missing, ask the user for the Linear team key before any Linear write.
 
 A blank creation target is the one inference allowed, and it reads the current repository's `origin` remote (`git remote get-url origin`):
 

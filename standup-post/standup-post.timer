@@ -1,5 +1,5 @@
 [Unit]
-Description=Post the Example-Team EU daily standup reply on weekdays
+Description=Post the team daily standup reply on weekdays
 
 [Timer]
 # The bot posts at 17:30 Rome time; the host clock is UTC.

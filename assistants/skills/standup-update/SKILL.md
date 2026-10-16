@@ -1,11 +1,15 @@
 ---
 name: standup-update
-description: Draft the Example-Team daily standup reply (Moved, Today, PRs waiting on review, Docs blocked, Ask) from Claude Code session logs and open pull requests. Use when the user asks for a standup, daily update, status for the standup thread, or "what did I do yesterday", or shares a Example-Team Daily Standup Slack link, even if they only say "answer the standup".
+description: Draft the user's reply to the team's daily standup thread (Moved, Today, PRs waiting on review, Docs blocked, Ask) from Claude Code session logs and open pull requests. Use when the user asks for a standup, daily update, status for the standup thread, or "what did I do yesterday", or shares a Daily Standup Slack link, even if they only say "answer the standup".
 ---
 
 # Standup Update
 
 Draft the standup thread reply from evidence: session logs, GitHub, and the tracker. This skill drafts and stops; posting goes through `publish` after approval.
+
+## Configuration
+
+Take the team name and the work GitHub organisation from the prompt when it states them. Otherwise read `~/.config/standup-post.env` if present (`STANDUP_TEAM=...`) and `~/.config/work-context.env` if present (`WORK_GITHUB_ORG=...`). With no team name, say "the team"; with no work organisation, see the work-only rule below.
 
 ## Window
 
@@ -29,13 +33,13 @@ Run these in parallel.
 - **Docs blocked:** design docs with open review feedback (draft or open `docs(...)` PRs with comments or changes requested, Linear documents) and docs the sessions say must exist but don't. Never invent a doc.
 - **Ask:** one concrete need from someone outside the team, only when the sessions show a blocker (access, a decision, another team's review). Otherwise delete the line.
 
-Report work only: `example-org` repositories and Linear. Leave out the user's personal repositories (every `maxgio92/*` repository, such as `xcover`, `dotfiles`, and `cg-notes`) and sessions under `~/.dotfiles` or the notes repo, in every field.
+Report work only: repositories in the work GitHub organisation, and Linear. When no work organisation is configured, no repository counts as work: report Linear only and leave out every pull request, repository, and session, or ask the user for the organisation when running interactively. Leave out the user's personal repositories (every `maxgio92/*` repository, such as `xcover`, `dotfiles`, and the notes repo) and sessions under `~/.dotfiles` or the notes repo, in every field.
 
 Delete every line with no evidence, as the template asks. Never guess; ask the user when a field depends on intent the logs can't show (often Today and Ask).
 
 ## Output
 
-Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as its full bare URL each time it appears, including a repeat in the same line; never a bare number like `70016`. Never put punctuation right after a URL; Slack folds it into the link. Cite Linear issues by key only (`ABC-917`), no URL.
+Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as its full bare URL each time it appears, including a repeat in the same line; never a bare number like `70016`. Never put punctuation right after a URL; Slack folds it into the link. Cite Linear issues by key only (`ABC-123`), no URL.
 
 ```
 Moved:

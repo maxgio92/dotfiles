@@ -23,7 +23,7 @@ One definition of the T-shirt scale. Size on what the work looks like, never on 
 - Index on what the work looks like, never on elapsed time. Do not estimate in days or weeks.
 - Unresolved design is not a size, it is a spike. File the spike at XS or S, then size the real work once the design is settled.
 - Parent tracking issues carry no estimate. The children carry the size.
-- Work stops at L. XL is for personal repositories only, never on the `ABC` team, and splitting into a parent plus children is still the better move.
+- Work stops at L. XL is for personal repositories only, never on the work Linear team (`LINEAR_TEAM_KEY` in `~/.config/work-context.env`), and splitting into a parent plus children is still the better move.
 - Confirm the scale against the live workspace before assigning.
 
 

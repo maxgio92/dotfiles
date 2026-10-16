@@ -1,5 +1,5 @@
 [Unit]
-Description=Post the Example-Team EU daily standup reply
+Description=Post the team daily standup reply
 After=network-online.target
 Wants=network-online.target
 

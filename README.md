@@ -40,6 +40,27 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Keep that PATH entry in your shell configuration.
 
+## Machine-local overlays
+
+The repository is public. Following the
+[public-content rule](assistants/review-profiles/prompts/dotfiles.md#L8), it
+holds no secrets, tokens, internal hostnames, or employer names. Values
+specific to one machine or employer live in untracked files outside the
+checkout. Copy each example, replace the placeholders, and keep the copy out
+of `~/.config/assistants`, which links into the repository.
+
+| Local file | Example | Read by |
+| --- | --- | --- |
+| `~/.config/standup-post.env` | [standup-post.env.example](standup-post/standup-post.env.example) | `bin/standup-post`; it stops with an error when the file or a key is missing |
+| `~/.config/work-context.env` | [work-context.env.example](assistants/work-context.env.example) | task-tracker, sizing, and standup-update skills; without it no repository counts as work |
+| `employer:` key in `~/.config/daily-briefing/config.yaml` | [daily-briefing skill](assistants/skills/daily-briefing/SKILL.md) | daily-briefing skill; without it the briefing says "the user's employer" |
+| `~/.zshrc.local` | [zshrc.local.example](zsh/zshrc.local.example) | `zsh/zshrc`, sourced when present |
+| `~/.gitconfig.local`, plus `~/.gitconfig-work` it includes | [gitconfig.local.example](git/gitconfig.local.example) | `git/gitconfig`, included last; git skips a missing file |
+| `~/.config/brew/Brewfile.local` | [Brewfile.local.example](linuxbrew/Brewfile.local.example) | `brew bundle --file ~/.config/brew/Brewfile.local` |
+
+`make -C linuxbrew brew-dump` removes every line of `~/.config/brew/Brewfile.local`
+from the dumped Brewfile, so a local package does not reach the tracked file.
+
 ## Choose what to configure
 
 Run these targets from `~/.dotfiles`. The table lists common entry points;

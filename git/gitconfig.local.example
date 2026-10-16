@@ -1,0 +1,20 @@
+# Copy to ~/.gitconfig.local. git/gitconfig includes it last, so its values win.
+
+# Use the work identity and signing setup inside work checkouts.
+[includeIf "gitdir:~/src/github.com/<work-org>/"]
+	path = ~/.gitconfig-work
+
+# Example ~/.gitconfig-work (a regular file outside the repository):
+#
+# [user]
+# 	email = you@example.com
+# [commit]
+# 	gpgsign = true
+# [tag]
+# 	gpgsign = true
+# [gpg]
+# 	format = x509
+# [gpg "x509"]
+# 	program = gitsign
+# [gitsign]
+# 	connectorID = https://accounts.google.com

@@ -1,6 +1,6 @@
 ---
 name: daily-briefing
-description: Build a daily briefing of what happened at the employer from the Slack channels the user follows and the pull requests proposed in the repositories they watch - announcements, launches, new features, decisions, incidents. Use when the user asks for a briefing, digest, catch-up, "what happened today", "what did I miss", "what's new at the employer", or wants to add or remove a followed channel or repository, even if they do not say "briefing".
+description: Build a daily briefing of what happened at the user's employer from the Slack channels the user follows and the pull requests proposed in the repositories they watch - announcements, launches, new features, decisions, incidents. Use when the user asks for a briefing, digest, catch-up, "what happened today", "what did I miss", "what's new at work", company news, or wants to add or remove a followed channel or repository, even if they do not say "briefing".
 ---
 
 # Daily Briefing
@@ -12,16 +12,19 @@ Read the followed Slack channels and watched repositories over a time window, ke
 The followed sources live in `~/.config/daily-briefing/config.yaml`:
 
 ```yaml
+employer: Example Corp # optional; names the company in the briefing
 channels:            # Slack channel names, no leading #
   - announcements
   - eng-announce
 repos:               # owner/name; PRs opened here in the window are scanned
-  - example-org/monorepo
+  - owner/repo
 ignore_authors:      # PR authors to drop (bots)
   - dependabot[bot]
   - renovate[bot]
-  - octo-sts[bot]
+  - example-bot[bot]
 ```
+
+The optional scalar `employer:` key names the company. When it is absent, say "the user's employer" instead; never add the key on your own.
 
 **First run.** If the file is missing, call `slack_list_user_channels` with `exclude_archived: true` and `format: names_only`. Propose the channels whose names suggest company-wide news (`announce`, `general`, `release`, `product`, `eng`, `launch`, `incident`) and ask the user which to follow and which repositories to watch. Write the file with their answer, then continue.
 

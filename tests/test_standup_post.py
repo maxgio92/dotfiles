@@ -28,7 +28,13 @@ TODAY = "2026-10-16"
 OLDEST = 1792162800
 LATEST = 1792188000
 SENT_TODAY = f"{TODAY} {OLDEST + 60}.000100"
-GATE_ARGS = (TODAY, str(OLDEST), str(LATEST))
+CHANNEL = "C0TEST00001"
+GATE_ARGS = (TODAY, str(OLDEST), str(LATEST), CHANNEL)
+STANDUP_ENV = f"""STANDUP_CHANNEL={CHANNEL}
+STANDUP_SUBTEAM=S0TEST00001
+STANDUP_SELF=U0TEST00001
+STANDUP_TEAM='Test Team'
+"""
 
 
 class StandupPost(unittest.TestCase):
@@ -42,6 +48,9 @@ class StandupPost(unittest.TestCase):
             {"matcher": "", "hooks": [{"type": "command", "command": SCANNER}]},
         ]}}
         (self.home / ".claude/settings.json").write_text(json.dumps(settings))
+        self.standup_env = self.home / ".config/standup-post.env"
+        self.standup_env.parent.mkdir(parents=True)
+        self.standup_env.write_text(STANDUP_ENV)
         self.rules = self.home / ".claude/hooks/communication-rules"
         self.rules.mkdir(parents=True)
         for name in ("scanner.py", "policy.json", "rules.md"):
@@ -132,7 +141,7 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(len(self.calls()), 1)
 
     def test_skip_writes_no_state(self):
-        result = self.run_script(output="SKIP: no EU standup today\n")
+        result = self.run_script(output="SKIP: no standup today\n")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(self.state.exists())
 
@@ -204,6 +213,20 @@ class StandupPost(unittest.TestCase):
         self.assertIn("latest 1792166400", prompt)
         self.assertIn("window starting 2026-10-15T00:00:00", prompt)
         self.assertIn('--updated ">=2026-09-16"', prompt)
+        self.assertIn(f"channel_id {CHANNEL}", prompt)
+        self.assertIn("S0TEST00001", prompt)
+        self.assertIn("from user U0TEST00001", prompt)
+        self.assertIn("The team is Test Team.", prompt)
+        self.assertIn("No work GitHub organisation is configured, so no repository counts as work: report Linear only and leave out all GitHub activity.", prompt)
+
+    def test_work_org_reaches_prompt(self):
+        (self.home / ".config/work-context.env").write_text(
+            "WORK_GITHUB_ORG=example-org\nSTANDUP_CHANNEL=C0OTHER\n")
+        self.run_script(output="SKIP: x\n")
+        prompt = self.flag(self.calls()[0]["argv"], "-p")
+        self.assertIn("The work GitHub organisation is example-org.", prompt)
+        self.assertNotIn("No work GitHub organisation", prompt)
+        self.assertIn(f"channel_id {CHANNEL}", prompt)
 
     def test_monday_window_starts_friday(self):
         self.run_script(output="SKIP: x\n", now="2026-10-19T15:31:00Z")
@@ -226,6 +249,53 @@ class StandupPost(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
                 (self.rules / name).write_text("")
 
+    def test_bad_standup_env_fails_closed(self):
+        cases = {
+            "missing file": (None, "missing"),
+            "missing key": (STANDUP_ENV.replace("STANDUP_SELF=U0TEST00001\n", ""),
+                            "does not set STANDUP_SELF"),
+            "bad channel": (STANDUP_ENV.replace(CHANNEL, "c0test00001"),
+                            "not a Slack channel ID"),
+            "bad team": (STANDUP_ENV.replace("'Test Team'", "'Team $(x)'"),
+                         "STANDUP_TEAM"),
+        }
+        for name, (content, message) in cases.items():
+            with self.subTest(name):
+                if content is None:
+                    self.standup_env.unlink()
+                else:
+                    self.standup_env.write_text(content)
+                result = self.run_script(output="POSTED https://x.slack.com/archives/C/p1\n")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(message, result.stderr)
+                self.assertEqual(self.calls(), [])
+                self.standup_env.write_text(STANDUP_ENV)
+
+    def test_send_gate_ignores_standup_env(self):
+        # A shell error in a sourced file exits with a status other than 2,
+        # which would let the send through, so the gate must not read the file.
+        good = {"channel_id": CHANNEL, "thread_ts": f"{OLDEST}.1"}
+        cases = {
+            "missing file": None,
+            "unquoted space": STANDUP_ENV.replace("'Test Team'", "Test Team"),
+            "unbound variable": STANDUP_ENV.replace(CHANNEL, "$NOPE"),
+            "unreadable file": STANDUP_ENV,
+        }
+        for name, content in cases.items():
+            with self.subTest(name):
+                if content is None:
+                    self.standup_env.unlink()
+                else:
+                    self.standup_env.write_text(content)
+                if name == "unreadable file":
+                    self.standup_env.chmod(0)
+                self.assertEqual(self.gate("pre", **good).returncode, 0)
+                wrong = self.gate("pre", **{**good, "channel_id": "C0OTHER"})
+                self.assertEqual(wrong.returncode, 2)
+                if self.standup_env.exists():
+                    self.standup_env.chmod(0o600)
+                self.standup_env.write_text(STANDUP_ENV)
+
     def gate(self, phase, *args, **tool_input):
         payload = {"tool_name": SEND, "tool_input": tool_input}
         return subprocess.run([str(SCRIPT), "--send-gate", phase, *(args or GATE_ARGS)],
@@ -233,7 +303,7 @@ class StandupPost(unittest.TestCase):
                               capture_output=True, text=True, timeout=30)
 
     def test_send_gate(self):
-        good = {"channel_id": "C0EXAMPLE01", "thread_ts": "1792162800.000100", "text": "Moved:"}
+        good = {"channel_id": CHANNEL, "thread_ts": "1792162800.000100", "text": "Moved:"}
         cases = {
             "wrong channel": {**good, "channel_id": "C0OTHER"},
             "missing thread_ts": {k: v for k, v in good.items() if k != "thread_ts"},
@@ -248,6 +318,10 @@ class StandupPost(unittest.TestCase):
                 self.assertEqual(self.gate("pre", **tool_input).returncode, 2)
         with self.subTest("missing bounds"):
             self.assertEqual(self.gate("pre", TODAY, **good).returncode, 2)
+        with self.subTest("missing channel"):
+            self.assertEqual(self.gate("pre", *GATE_ARGS[:3], **good).returncode, 2)
+        with self.subTest("bad channel"):
+            self.assertEqual(self.gate("pre", *GATE_ARGS[:3], "c0test", **good).returncode, 2)
         bad_json = subprocess.run([str(SCRIPT), "--send-gate", "pre", *GATE_ARGS],
                                   env=self.env, input="not json", capture_output=True,
                                   text=True, timeout=30)
@@ -260,7 +334,7 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(self.sent.read_text(), f"{TODAY} 1792162800.000100\n")
 
     def test_send_record_is_per_day(self):
-        good = {"channel_id": "C0EXAMPLE01", "thread_ts": f"{OLDEST + 60}.1"}
+        good = {"channel_id": CHANNEL, "thread_ts": f"{OLDEST + 60}.1"}
         self.gate("post", "2026-10-15", **good)
         self.assertEqual(self.gate("pre", **good).returncode, 0)
         self.run_script(output="SKIP: x\n")

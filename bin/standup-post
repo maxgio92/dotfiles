@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Reply to today's Example-Team EU daily standup thread through headless claude
-# and its Slack plugin. Run by standup-post.timer; --dry-run prints the draft
+# Reply to today's team daily standup thread through headless claude and its
+# Slack plugin. Run by standup-post.timer; --dry-run prints the draft
 # instead of posting it.
 set -euo pipefail
 
-CHANNEL=C0EXAMPLE01
-SUBTEAM=S0C3KJQT82K
-SELF=U0EXAMPLE01
 # The bot posts at 17:30 Europe/Rome while the host clock is UTC, so all date
 # maths runs in the bot's timezone.
 ZONE=Europe/Rome
@@ -27,23 +24,24 @@ die() { log "$*"; exit 1; }
 # thread of $CHANNEL started between $oldest and $latest, or after a send
 # landed today; the post hook records a landed send as "<today> <thread_ts>".
 # Counting in PostToolUse keeps a send another hook denied retryable. The
-# trusted bounds come from the main run as arguments, never from tool input.
+# trusted bounds and channel come from the main run as arguments, never from
+# tool input or the env file.
 send_gate() {
-  local phase=$1 day=$2 lo=$3 hi=$4 input channel thread
+  local phase=$1 day=$2 lo=$3 hi=$4 want=$5 input channel thread
   input=$(cat)
   case $phase in
     pre)
       # Exit 1 would let the call through, so bad arguments or unreadable
       # input deny too.
-      [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && $lo =~ ^[0-9]+$ && $hi =~ ^[0-9]+$ ]] || {
-        echo "standup-post --send-gate pre needs <today> <oldest> <latest>" >&2; exit 2
+      [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && $lo =~ ^[0-9]+$ && $hi =~ ^[0-9]+$ && $want =~ ^C[A-Z0-9]+$ ]] || {
+        echo "standup-post --send-gate pre needs <today> <oldest> <latest> <channel>" >&2; exit 2
       }
       channel=$(jq -r '.tool_input.channel_id // ""' <<<"$input") || exit 2
       thread=$(jq -r '.tool_input.thread_ts // ""' <<<"$input") || exit 2
-      if [ "$channel" != "$CHANNEL" ]; then
-        echo "standup-post only posts to channel $CHANNEL" >&2; exit 2
+      if [ "$channel" != "$want" ]; then
+        echo "standup-post only posts to channel $want" >&2; exit 2
       fi
-      if ! [[ $thread =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+      if ! [[ $thread =~ ^[0-9]{1,12}(\.[0-9]+)?$ ]]; then
         echo "standup-post only posts as a thread reply; set thread_ts to the parent ts" >&2; exit 2
       fi
       if [ "${thread%%.*}" -lt "$lo" ] || [ "${thread%%.*}" -ge "$hi" ]; then
@@ -57,7 +55,7 @@ send_gate() {
       [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "standup-post --send-gate post needs <today>"
       printf '%s %s\n' "$day" "$(jq -r '.tool_input.thread_ts // ""' <<<"$input")" >"$sent_file"
       ;;
-    *) die "usage: standup-post --send-gate pre|post <today> <oldest> <latest>" ;;
+    *) die "usage: standup-post --send-gate pre|post <today> <oldest> <latest> <channel>" ;;
   esac
   exit 0
 }
@@ -68,11 +66,38 @@ sent_on() {
   [ -f "$sent_file" ] && read -r day _ <"$sent_file" && [ "$day" = "$1" ]
 }
 
+if [ "${1:-}" = --send-gate ]; then
+  install -d -m 700 "$state_dir" || exit 2
+  send_gate "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}"
+fi
+
+# The Slack IDs and the team name are workspace-specific, so they live in a
+# local file outside the repository. Hook mode never reads it: a shell error
+# in a sourced file exits with a status other than 2, which lets the send
+# through, so the main run passes the channel to the hook instead.
+env_file="$HOME/.config/standup-post.env"
+[ -f "$env_file" ] ||
+  die "missing $env_file; copy standup-post/standup-post.env.example there and fill it in"
+# shellcheck source=/dev/null
+. "$env_file"
+for key in STANDUP_CHANNEL STANDUP_SUBTEAM STANDUP_SELF STANDUP_TEAM; do
+  [ -n "${!key:-}" ] || die "$env_file does not set $key"
+done
+# The IDs go into a hook command and the prompt, so allow only Slack ID shapes.
+[[ $STANDUP_CHANNEL =~ ^C[A-Z0-9]+$ ]] || die "STANDUP_CHANNEL in $env_file is not a Slack channel ID"
+[[ $STANDUP_SUBTEAM =~ ^S[A-Z0-9]+$ ]] || die "STANDUP_SUBTEAM in $env_file is not a Slack user group ID"
+[[ $STANDUP_SELF =~ ^U[A-Z0-9]+$ ]] || die "STANDUP_SELF in $env_file is not a Slack user ID"
+[[ $STANDUP_TEAM =~ ^[A-Za-z0-9][A-Za-z0-9\ ._-]*$ ]] ||
+  die "STANDUP_TEAM in $env_file may hold only letters, digits, spaces, dots, underscores and hyphens"
+CHANNEL=$STANDUP_CHANNEL
+SUBTEAM=$STANDUP_SUBTEAM
+SELF=$STANDUP_SELF
+TEAM=$STANDUP_TEAM
+
 install -d -m 700 "$state_dir"
 case "${1:-}" in
   '') ;;
   --dry-run) dry_run=true ;;
-  --send-gate) send_gate "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
   *) die "usage: standup-post [--dry-run]" ;;
 esac
 
@@ -121,8 +146,8 @@ user_settings="$HOME/.claude/settings.json"
 self=$(printf '%q' "$(readlink -f "$0")")
 send_tool=mcp__plugin_slack_slack__slack_send_message
 settings=$(jq -c --arg self "$self" --arg tool "$send_tool" \
-  --arg today "$today" --arg oldest "$oldest" --arg latest "$latest" '
-  def gate($phase): {matcher: $tool, hooks: [{type: "command", command: "\($self) --send-gate \($phase) \($today) \($oldest) \($latest)"}]};
+  --arg today "$today" --arg oldest "$oldest" --arg latest "$latest" --arg channel "$CHANNEL" '
+  def gate($phase): {matcher: $tool, hooks: [{type: "command", command: "\($self) --send-gate \($phase) \($today) \($oldest) \($latest) \($channel)"}]};
   {
     enabledPlugins: {"slack@claude-plugins-official": true},
     hooks: {
@@ -134,6 +159,18 @@ settings=$(jq -c --arg self "$self" --arg tool "$send_tool" \
   }' "$user_settings") || die "cannot read $user_settings"
 jq -e '.hooks.PreToolUse | length > 1' >/dev/null <<<"$settings" ||
   die "no Communication Rules PreToolUse hook in $user_settings"
+# The work organisation scopes what the skill reports. The file is optional and
+# read in a subshell so it cannot override the standup values.
+work_env="$HOME/.config/work-context.env"
+org=
+# shellcheck source=/dev/null
+[ -f "$work_env" ] && org=$(. "$work_env" && printf '%s' "${WORK_GITHUB_ORG:-}")
+[[ -z $org || $org =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]] || die "WORK_GITHUB_ORG in $work_env is not a GitHub organisation name"
+if [ -n "$org" ]; then
+  scope="The work GitHub organisation is $org."
+else
+  scope="No work GitHub organisation is configured, so no repository counts as work: report Linear only and leave out all GitHub activity."
+fi
 mcp_config='{"mcpServers":{"linear":{"type":"http","url":"https://mcp.linear.app/mcp"}}}'
 
 skill_real=$(readlink -f "$skill_dir")
@@ -146,9 +183,10 @@ else
   mode="Post the reply yourself as described in step d."
 fi
 
-prompt="You run unattended for the Example-Team EU daily standup. Do not ask the user anything. $mode [standup-update]
+prompt="You run unattended for the $TEAM daily standup. Do not ask the user anything. $mode [standup-update]
+The team is $TEAM. $scope
 
-a. Find today's Example-Team EU Daily Standup thread: call mcp__plugin_slack_slack__slack_read_channel with channel_id $CHANNEL, oldest $oldest, latest $window_end and response_format detailed. The thread is the bot message whose text contains $SUBTEAM and \"Please post your daily update\". If there is none, print SKIP: no EU standup today and stop.
+a. Find today's $TEAM Daily Standup thread: call mcp__plugin_slack_slack__slack_read_channel with channel_id $CHANNEL, oldest $oldest, latest $window_end and response_format detailed. The thread is the bot message whose text contains $SUBTEAM and \"Please post your daily update\". If there is none, print SKIP: no standup today and stop.
 b. Read that thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts). If any reply other than the parent is from user $SELF, print SKIP: already replied and stop.
 c. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since ($ZONE time). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Today and Ask when the evidence does not settle them. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop.
 d. Post the draft text, without the fence, the Sources line or the marker, as a thread reply with mcp__plugin_slack_slack__slack_send_message (channel_id $CHANNEL, thread_ts the parent ts). Then read the thread back to confirm the reply landed and get its permalink. Never post anything else, anywhere else, or twice. A call a hook denied did not post: revise the draft as the hook says and send once more; if it is denied again, print ERROR: <reason>.

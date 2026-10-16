@@ -1,0 +1,6 @@
+# Copy to ~/.config/brew/Brewfile.local for packages this machine needs but the
+# public Brewfile must not name. Install with:
+#   brew bundle --file ~/.config/brew/Brewfile.local
+# `make brew-dump` drops every line of this file from the tracked Brewfile, so
+# write each entry exactly as `brew bundle dump` prints it.
+go "example.com/tool"
