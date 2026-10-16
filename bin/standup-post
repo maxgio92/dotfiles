@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# Reply to today's Ful-Auto EU daily standup thread through headless claude
+# and its Slack plugin. Run by standup-post.timer; --dry-run prints the draft
+# instead of posting it.
+set -euo pipefail
+
+CHANNEL=C0ABEN38TRB
+SUBTEAM=S0C3KJQT82K
+SELF=U07K87ASM9B
+# The bot posts at 17:30 Europe/Rome while the host clock is UTC, so all date
+# maths runs in the bot's timezone.
+ZONE=Europe/Rome
+
+state_dir="$HOME/.local/state/standup-post"
+last_file="$state_dir/last-posted"
+sent_file="$state_dir/sent"
+skill_dir="$HOME/.claude/skills/standup-update"
+rules_dir="$HOME/.claude/hooks/communication-rules"
+dry_run=false
+
+log() { printf 'standup-post: %s\n' "$*" >&2; }
+die() { log "$*"; exit 1; }
+
+# Hook mode, called by claude for slack_send_message during a run. The prompt
+# alone cannot stop a model steered by Slack or transcript text from posting
+# elsewhere or twice, so the pre hook denies (exit 2) any send outside a
+# thread of $CHANNEL started between $oldest and $latest, or after a send
+# landed today; the post hook records a landed send as "<today> <thread_ts>".
+# Counting in PostToolUse keeps a send another hook denied retryable. The
+# trusted bounds come from the main run as arguments, never from tool input.
+send_gate() {
+  local phase=$1 day=$2 lo=$3 hi=$4 input channel thread
+  input=$(cat)
+  case $phase in
+    pre)
+      # Exit 1 would let the call through, so bad arguments or unreadable
+      # input deny too.
+      [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && $lo =~ ^[0-9]+$ && $hi =~ ^[0-9]+$ ]] || {
+        echo "standup-post --send-gate pre needs <today> <oldest> <latest>" >&2; exit 2
+      }
+      channel=$(jq -r '.tool_input.channel_id // ""' <<<"$input") || exit 2
+      thread=$(jq -r '.tool_input.thread_ts // ""' <<<"$input") || exit 2
+      if [ "$channel" != "$CHANNEL" ]; then
+        echo "standup-post only posts to channel $CHANNEL" >&2; exit 2
+      fi
+      if ! [[ $thread =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "standup-post only posts as a thread reply; set thread_ts to the parent ts" >&2; exit 2
+      fi
+      if [ "${thread%%.*}" -lt "$lo" ] || [ "${thread%%.*}" -ge "$hi" ]; then
+        echo "standup-post only replies to a thread started this evening" >&2; exit 2
+      fi
+      if sent_on "$day"; then
+        echo "standup-post already posted today" >&2; exit 2
+      fi
+      ;;
+    post)
+      [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "standup-post --send-gate post needs <today>"
+      printf '%s %s\n' "$day" "$(jq -r '.tool_input.thread_ts // ""' <<<"$input")" >"$sent_file"
+      ;;
+    *) die "usage: standup-post --send-gate pre|post <today> <oldest> <latest>" ;;
+  esac
+  exit 0
+}
+
+# True when the post hook recorded a landed send on day $1.
+sent_on() {
+  local day _
+  [ -f "$sent_file" ] && read -r day _ <"$sent_file" && [ "$day" = "$1" ]
+}
+
+install -d -m 700 "$state_dir"
+case "${1:-}" in
+  '') ;;
+  --dry-run) dry_run=true ;;
+  --send-gate) send_gate "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
+  *) die "usage: standup-post [--dry-run]" ;;
+esac
+
+exec 9>"$state_dir/lock"
+flock -n 9 || die "another standup-post run holds $state_dir/lock"
+
+# STANDUP_POST_NOW pins the clock for tests; it takes any date -d string.
+now=$(date -d "${STANDUP_POST_NOW:-now}" +%s)
+today=$(TZ=$ZONE date -d "@$now" +%F)
+
+if ! $dry_run; then
+  if sent_on "$today"; then
+    printf '%s\n' "$today" >"$last_file"
+  fi
+  if [ -f "$last_file" ] && [ "$(<"$last_file")" = "$today" ]; then
+    log "already posted today"
+    exit 0
+  fi
+fi
+
+case $(TZ=$ZONE date -d "@$now" +%u) in
+  1) back=3 ;;
+  7) back=2 ;;
+  *) back=1 ;;
+esac
+since=$(TZ=$ZONE date -d "$today -$back days" +%F)T00:00:00
+oldest=$(TZ=$ZONE date -d "$today 17:00" +%s)
+latest=$(TZ=$ZONE date -d "$today +1 day" +%s)
+# The channel reads newest first, so bound the read to the hour the bot posts.
+window_end=$(TZ=$ZONE date -d "$today 18:00" +%s)
+updated_since=$(TZ=$ZONE date -d "$today -30 days" +%F)
+
+# The PreToolUse hook skips screening when scanner.py is absent, so check
+# the files it needs here.
+for f in scanner.py policy.json rules.md; do
+  [ -f "$rules_dir/$f" ] || die "missing $rules_dir/$f; run make assistants"
+done
+
+# The user settings put slack_send_message under permissions.ask, and an ask
+# rule beats --allowedTools in -p mode, so the run skips user settings. That
+# also drops the user MCP servers, skills, plugins and hooks: Linear comes
+# back through --mcp-config, Slack through --settings, the skill is read as a
+# file, and the Communication Rules PreToolUse gate is copied from the user
+# settings so it still screens the post.
+user_settings="$HOME/.claude/settings.json"
+self=$(printf '%q' "$(readlink -f "$0")")
+send_tool=mcp__plugin_slack_slack__slack_send_message
+settings=$(jq -c --arg self "$self" --arg tool "$send_tool" \
+  --arg today "$today" --arg oldest "$oldest" --arg latest "$latest" '
+  def gate($phase): {matcher: $tool, hooks: [{type: "command", command: "\($self) --send-gate \($phase) \($today) \($oldest) \($latest)"}]};
+  {
+    enabledPlugins: {"slack@claude-plugins-official": true},
+    hooks: {
+      PreToolUse: ([.hooks.PreToolUse[]?
+        | select(any(.hooks[]?; (.command // "") | contains("communication-rules/scanner.py")))]
+        | if length > 0 then . + [gate("pre")] else . end),
+      PostToolUse: [gate("post")]
+    }
+  }' "$user_settings") || die "cannot read $user_settings"
+jq -e '.hooks.PreToolUse | length > 1' >/dev/null <<<"$settings" ||
+  die "no Communication Rules PreToolUse hook in $user_settings"
+mcp_config='{"mcpServers":{"linear":{"type":"http","url":"https://mcp.linear.app/mcp"}}}'
+
+skill_real=$(readlink -f "$skill_dir")
+skills_real=$(dirname "$skill_real")
+sessions="$skill_dir/scripts/sessions-since.sh"
+
+if $dry_run; then
+  mode="DRY RUN: do not post anything. After step c, print the draft as one fenced code block, then the final line DRAFT."
+else
+  mode="Post the reply yourself as described in step d."
+fi
+
+prompt="You run unattended for the Ful-Auto EU daily standup. Do not ask the user anything. $mode [standup-update]
+
+a. Find today's Ful-Auto EU Daily Standup thread: call mcp__plugin_slack_slack__slack_read_channel with channel_id $CHANNEL, oldest $oldest, latest $window_end and response_format detailed. The thread is the bot message whose text contains $SUBTEAM and \"Please post your daily update\". If there is none, print SKIP: no EU standup today and stop.
+b. Read that thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts). If any reply other than the parent is from user $SELF, print SKIP: already replied and stop.
+c. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since ($ZONE time). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Today and Ask when the evidence does not settle them. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop.
+d. Post the draft text, without the fence, the Sources line or the marker, as a thread reply with mcp__plugin_slack_slack__slack_send_message (channel_id $CHANNEL, thread_ts the parent ts). Then read the thread back to confirm the reply landed and get its permalink. Never post anything else, anywhere else, or twice. A call a hook denied did not post: revise the draft as the hook says and send once more; if it is denied again, print ERROR: <reason>.
+e. End with exactly one final line: POSTED <permalink>, SKIP: <reason>, DRAFT, or ERROR: <reason>."
+
+tools=(
+  mcp__plugin_slack_slack__slack_read_channel
+  mcp__plugin_slack_slack__slack_read_thread
+  # Read rules: ~/ is home-relative, // is absolute. Skills are symlinks, so
+  # the resolved skills directory is listed too.
+  "Read(~/.claude/skills/**)"
+  "Read(/$skills_real/**)"
+  "Read(~/.claude/projects/**)"
+  "Read(~/.config/notes-repo.env)"
+  "Read(~/notes/notes/**)"
+  Agent
+  mcp__linear__list_issues
+  "Bash(gh search:*)"
+  "Bash(gh pr view:*)"
+  "Bash(ls:*)"
+  "Bash($sessions:*)"
+  "Bash($skill_real/scripts/sessions-since.sh:*)"
+)
+$dry_run || tools+=("$send_tool")
+
+# Run outside $HOME so no project settings apply either.
+cd "$state_dir"
+log "drafting for the window starting $since"
+status=0
+output=$(timeout 20m claude -p "$prompt" \
+  --output-format text \
+  --setting-sources project,local \
+  --settings "$settings" \
+  --mcp-config "$mcp_config" \
+  --permission-mode dontAsk \
+  --no-session-persistence \
+  --max-turns 60 \
+  --max-budget-usd 5 \
+  --allowedTools "${tools[@]}" </dev/null) || status=$?
+
+fail() {
+  log "$*"
+  printf '%s\n' "$output" | tail -n 20 >&2
+  exit 1
+}
+
+last=$(printf '%s\n' "$output" | awk 'NF { line = $0 } END { print line }')
+
+# The post hook's record, not the model's final line, says whether a send
+# landed, so it settles the state even when the run failed after sending.
+if ! $dry_run && sent_on "$today"; then
+  printf '%s\n' "$today" >"$last_file"
+  [ "$status" -eq 0 ] || fail "claude exited with status $status after a send landed"
+  case $last in
+    'POSTED https://'*) log "posted ${last#POSTED }"; exit 0 ;;
+    *) fail "a send landed but claude reported: $last" ;;
+  esac
+fi
+
+[ "$status" -eq 0 ] || fail "claude exited with status $status"
+
+case $last in
+  'POSTED https://'*)
+    $dry_run && fail "dry run reported a post: $last"
+    fail "claude reported a post but no send landed: $last"
+    ;;
+  'SKIP: '*)
+    log "${last#SKIP: }"
+    ;;
+  DRAFT)
+    $dry_run || fail "claude returned a draft instead of posting"
+    printf '%s\n' "$output"
+    ;;
+  *)
+    fail "unexpected result: $last"
+    ;;
+esac

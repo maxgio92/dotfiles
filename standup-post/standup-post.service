@@ -1,0 +1,12 @@
+[Unit]
+Description=Post the Ful-Auto EU daily standup reply
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/standup-post
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+# The script caps claude at 20 minutes; leave room for the rest.
+TimeoutStartSec=25min
+UMask=0077
