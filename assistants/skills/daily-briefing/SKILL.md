@@ -36,7 +36,7 @@ Read `~/.local/state/daily-briefing/last-run` (an ISO timestamp). Start the wind
 Run these in parallel.
 
 1. **Channels.** Resolve each channel name to an ID once with `slack_search_channels` and cache the IDs in the config as `name: id` comments. Call `slack_read_channel` with `oldest` set to the window start and `response_format: detailed`; page with `cursor` until the window is covered. Open a thread with `slack_read_thread` when the parent has 5+ replies or 5+ reactions, or when it announces something and the outcome sits in the replies.
-2. **PRs.** For each watched repository: `gh search prs --repo <repo> --created ">=<window start date>" --json url,title,author,isDraft,labels,state --limit 100`. Also collect every GitHub PR URL found in the channel messages.
+2. **PRs.** For each watched repository: `gh search prs "feat in:title" --repo <repo> --created ">=<window start date>" --json url,title,author,isDraft,labels,state,commentsCount --limit 1000`. A monorepo opens hundreds of feature PRs a day, so never list them all: keep the PRs linked from the followed channels, then the 10 with the most comments, and report the rest as a count per top-level area (the scope in `feat(<scope>)`). Also collect every GitHub PR URL found in the channel messages.
 3. **Fan-out.** With more than 6 channels, give batches of 3 channels to general-purpose subagents. Each returns candidate items in the item format below, with the Slack permalink for each. Read the channels yourself otherwise.
 
 ## Keep
