@@ -29,6 +29,8 @@ Run these in parallel.
 - **Docs blocked:** design docs with open review feedback (draft or open `docs(...)` PRs with comments or changes requested, Linear documents) and docs the sessions say must exist but don't. Never invent a doc.
 - **Ask:** one concrete need from someone outside the team, only when the sessions show a blocker (access, a decision, another team's review). Otherwise delete the line.
 
+Report work only: `example-org` repositories, `maxgio92/xcover` (the team's coverage tool), and Linear. Leave out the user's personal repositories (every other `maxgio92/*` repository, such as `dotfiles`, `cg-notes`, and `resurgo`) and sessions under `~/.dotfiles` or the notes repo, in every field.
+
 Delete every line with no evidence, as the template asks. Never guess; ask the user when a field depends on intent the logs can't show (often Today and Ask).
 
 ## Output
