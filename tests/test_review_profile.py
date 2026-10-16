@@ -100,17 +100,17 @@ class Resolve(unittest.TestCase):
     def test_parent_file_rejected(self):
         (self.root / "outside.md").write_text("outside\n")
         self.write({"default": {"skills": [], "files": ["../outside.md"]}})
-        self.reject("octo/repo")
+        self.assertIn("file '../outside.md' is not a plain name", self.reject("octo/repo"))
 
     def test_symlink_escaping_prompts(self):
         (self.root / "outside.md").write_text("outside\n")
         (self.prompts / "link.md").symlink_to(self.root / "outside.md")
         self.write({"default": {"skills": [], "files": ["link.md"]}})
-        self.assertIn("outside", self.reject("octo/repo"))
+        self.assertIn("resolves outside", self.reject("octo/repo"))
 
     def test_missing_file(self):
         self.write({"default": {"skills": [], "files": ["absent.md"]}})
-        self.assertIn("missing", self.reject("octo/repo"))
+        self.assertIn("file 'absent.md' missing from", self.reject("octo/repo"))
 
     def test_skill_that_is_a_path(self):
         self.write({"default": {"skills": ["nested/rubric"], "files": []}})
@@ -119,7 +119,8 @@ class Resolve(unittest.TestCase):
     def test_skill_missing_from_one_present_dir(self):
         self.add_skill(self.skill_dirs[0], "partial")
         self.write({"default": {"skills": ["partial"], "files": []}})
-        self.assertIn(str(self.skill_dirs[1]), self.reject("octo/repo"))
+        self.assertIn(f"skill 'partial' missing from {self.skill_dirs[1]}",
+                      self.reject("octo/repo"))
 
     def test_absent_skill_dir_is_skipped(self):
         absent = self.base / "pi"
@@ -142,7 +143,43 @@ class Resolve(unittest.TestCase):
         self.write({"default": {"skills": [], "files": []}})
         self.assertIn("usage", self.reject())
         self.assertIn("usage", self.reject("octo/repo", "extra"))
-        self.assertIn("owner/repo", self.reject("not-a-repo"))
+        self.assertIn("is not owner/repo", self.reject("not-a-repo"))
+
+    def test_duplicate_key(self):
+        self.write('{"default": {"skills": [], "files": []}, '
+                   '"default": {"skills": [], "files": []}}')
+        self.assertIn("duplicate key 'default'", self.reject("octo/repo"))
+
+    def test_top_level_not_object(self):
+        self.write([])
+        self.assertIn("must be an object", self.reject("octo/repo"))
+
+    def test_profile_with_extra_key(self):
+        self.write({"default": {"skills": [], "files": [], "notes": []}})
+        self.assertIn("exactly skills and files", self.reject("octo/repo"))
+
+    def test_profile_not_object(self):
+        self.write({"default": []})
+        self.assertIn("exactly skills and files", self.reject("octo/repo"))
+
+    def test_non_string_list(self):
+        self.write({"default": {"skills": [1], "files": []}})
+        self.assertIn("skills must be a list of strings", self.reject("octo/repo"))
+        self.write({"default": {"skills": [], "files": "rules.md"}})
+        self.assertIn("files must be a list of strings", self.reject("octo/repo"))
+
+    def test_no_skills_directory_present(self):
+        self.env["REVIEW_PROFILE_SKILL_DIRS"] = str(self.base / "absent")
+        self.write({"default": {"skills": ["rubric"], "files": []}})
+        self.assertIn("no skills directory present", self.reject("octo/repo"))
+
+    def test_missing_prompts_directory(self):
+        self.prompts.rmdir()
+        self.write({"default": {"skills": [], "files": ["rules.md"]}})
+        self.assertIn("prompts directory missing", self.reject("octo/repo"))
+
+    def test_missing_profiles_json(self):
+        self.assertIn(str(self.root / "profiles.json"), self.reject("octo/repo"))
 
 
 if __name__ == "__main__":
