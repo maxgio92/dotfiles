@@ -1,8 +1,8 @@
 #!/bin/sh
 # Run the daily-briefing skill headless and save the result as
 # ~/.local/state/daily-briefing/briefings/<date>.md, plus a latest.md link.
-# Slack content is untrusted, so the agent gets no file tools: this script
-# passes in the config and window, and writes every file itself.
+# Slack content is untrusted, so the agent gets only read-only Slack tools:
+# this script reads the config, fetches PRs, and writes every file itself.
 set -eu
 umask 077
 
@@ -12,7 +12,8 @@ config="$HOME/.config/daily-briefing/config.yaml"
 mkdir -p "$dir"
 out="$dir/$(date +%F).md"
 tmp=$(mktemp "$dir/.briefing.XXXXXX")
-trap 'rm -f "$tmp"' EXIT
+prs=$(mktemp "$dir/.prs.XXXXXX")
+trap 'rm -f "$tmp" "$prs"' EXIT
 
 started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 if [ -f "$state/last-run" ]; then
@@ -20,18 +21,34 @@ if [ -f "$state/last-run" ]; then
 else
 	since=$(date -u -d 'yesterday 00:00' +%Y-%m-%dT%H:%M:%SZ)
 fi
+since_epoch=$(date -u -d "$since" +%s)
+
+# List items under a top-level YAML key: "key:" then "  - item" lines.
+yaml_list() {
+	awk -v key="$1:" '$0 == key { on = 1; next } /^[^ #]/ { on = 0 }
+		on && $1 == "-" { print $2 }' "$config"
+}
+
+ignore=$(yaml_list ignore_authors | jq -R . | jq -sc .)
+for repo in $(yaml_list repos); do
+	gh search prs "feat in:title" --repo "$repo" --created ">=${since%%T*}" \
+		--json url,title,author,isDraft,state,commentsCount --limit 1000
+done | jq -s --argjson ignore "$ignore" -c '
+	add // [] | map(select((.author.is_bot | not) and ((.author.login) as $a | $ignore | index($a) | not))
+		| {url, title, author: .author.login, isDraft, state, commentsCount})' >"$prs"
 
 cd "$dir"
 claude -p "Use the daily-briefing skill to give me my daily briefing.
-Window start: $since. Config (do not read or edit the file):
+Window start: $since (Unix $since_epoch). Do not read or write files and do not run commands.
+Config:
 $(cat "$config")
-Do not write any files; return only the briefing Markdown." \
+Feature PRs from the watched repositories, already fetched and filtered (JSON):
+$(cat "$prs")
+Return only the briefing Markdown." \
 	--permission-mode default \
-	--disallowedTools "Write" "Edit" "NotebookEdit" \
+	--disallowedTools "Bash" "Read" "Write" "Edit" "NotebookEdit" "WebFetch" "WebSearch" \
 	--allowedTools \
 	"Skill" "ToolSearch" "Agent" \
-	"Bash(date:*)" "Bash(jq:*)" \
-	"Bash(gh search prs:*)" "Bash(gh pr view:*)" \
 	"mcp__plugin_slack_slack__slack_search_channels" \
 	"mcp__plugin_slack_slack__slack_read_channel" \
 	"mcp__plugin_slack_slack__slack_read_thread" \

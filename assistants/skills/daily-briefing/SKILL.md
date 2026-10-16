@@ -76,7 +76,7 @@ Return the briefing as Markdown. Group by section; skip empty sections. One line
 
 Cap the briefing at 25 items; if more qualify, keep the ones with the most replies and reactions and end with `+N more in <channels>`.
 
-When the request supplies the config and window start (the scheduled `bin/daily-briefing` run), skip every file read and write in this skill; the wrapper saves the output and `last-run`. Otherwise, if `~/.config/notes-repo.env` sets `NOTES_REPO` (default `~/notes`) and `$NOTES_REPO/notes/` exists, also write the briefing to `$NOTES_REPO/notes/<YYYY-MM-DD>-briefing.md`, replacing that day's file. Then write the current ISO timestamp to `~/.local/state/daily-briefing/last-run` (create the directory first).
+When the request supplies the config, window start, and PR JSON (the scheduled `bin/daily-briefing` run), use them instead of reading files or running `gh`, and skip every file write; the wrapper saves the output and `last-run`. Otherwise, if `~/.config/notes-repo.env` sets `NOTES_REPO` (default `~/notes`) and `$NOTES_REPO/notes/` exists, also write the briefing to `$NOTES_REPO/notes/<YYYY-MM-DD>-briefing.md`, replacing that day's file. Then write the current ISO timestamp to `~/.local/state/daily-briefing/last-run` (create the directory first).
 
 ## Anti-patterns
 
