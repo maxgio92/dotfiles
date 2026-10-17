@@ -43,6 +43,15 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
    report. Post nothing in either case. A full-review follow-up after a skip
    header is postable; a skip follow-up after a normal draft is refused. This applies to every destination. It is a prose rule: no
    hook or scanner enforces it.
+8. PR readiness guard. For any post about a PR that asks for review or cites
+   a fix (PR reply, top-level PR comment, re-review @-mention, Slack share or
+   ping with a PR link), read `gh pr view <pr> --json
+   headRefOid,mergeable,changedFiles,statusCheckRollup` in the same command
+   as the post. Refuse when the head is not the expected sha, `mergeable` is
+   not MERGEABLE, or any check the repository does not document as noise is
+   pending or failed; report the blocking item instead of posting. The only
+   exception is a draft PR announcement the user explicitly asked to share
+   while CI runs, and only when the user says so for that post.
 
 ## Not publishing
 

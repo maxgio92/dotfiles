@@ -21,6 +21,19 @@ repositories they do not.
 - An open PR with pending or red checks, a conflict, or an unanswered review
   is active work, never an approval queue. Do not park on it.
 
+## Readiness gate
+
+Applies in every state. No re-review request, reply citing a fix commit,
+Slack ping, or `ready` or `merge-ready` claim until all hold for the PR's
+current `headRefOid`:
+
+- It equals the sha just pushed. The fork ref moving is not proof: GitHub can
+  fail to sync the PR head or keep a stale base, seen as a wrong
+  `changedFiles` count. Closing and reopening the PR fixes that.
+- `mergeable` is MERGEABLE.
+- Every check in `statusCheckRollup` on that head has finished, none red or
+  pending, except checks the repository documents as known noise.
+
 ## Loop
 
 Poll every 2 minutes for the first 10 minutes after a push, then every 5.
@@ -37,9 +50,13 @@ Each pass classifies the PR into exactly one state and acts on it:
    build, test, and lint gates in full (an auto-merge is a code change), and
    re-review the diff against the merge base
    (`git diff $(git merge-base <base> HEAD)...HEAD`), not against HEAD. Push
-   with an explicit refspec. A rebase dismisses approvals: re-request each
-   dismissed approver and, when the channel thread exists, tell them why in
-   one sentence through `publish`.
+   with an explicit refspec, then compare the PR's `changedFiles` and commit
+   count with the local `git diff --stat <base>...HEAD`; a mismatch is a stale
+   base (it also fires CODEOWNERS review requests across the repository) and
+   is fixed before anything else. A rebase dismisses approvals; after the
+   push, wait (state 5). Once the readiness gate holds on the pushed head,
+   re-request each dismissed approver and, when the channel thread exists,
+   tell them why in one sentence through `publish`.
 3. **Red check on the current head.** Read the failing job log. A failure
    caused by the change goes through the implement-and-review loop with the
    log quoted; a flake or an infrastructure failure (rate limit, stale
@@ -48,12 +65,14 @@ Each pass classifies the PR into exactly one state and acts on it:
    re-run, because a re-run reuses the original merge ref.
 4. **Review round.** Fetch every review body and inline comment without
    truncation. Classify each ask: fix, decline with a reason, or question.
-   Fixes go through the implement-and-review loop, then one push. Replies
-   are drafted with `pr-review-message` and posted through `publish`, one
-   inline reply per finding, citing the fix commit. Re-request the reviewer.
+   Fixes go through the implement-and-review loop, then one push, then wait
+   (state 5). Replies are drafted with `pr-review-message`; once the
+   readiness gate holds on the pushed head, post them through `publish`, one
+   inline reply per finding, citing the fix commit, and re-request the
+   reviewer.
 5. **Pending checks or pending review.** Wait one interval. Nothing to say.
-6. **Approved, green, mergeable.** Report `merge-ready` once, with the exact
-   command:
+6. **Approved, green, mergeable.** With the readiness gate holding, report
+   `merge-ready` once, with the exact command:
 
    ```
    gh pr merge <number> --repo <owner/repo> --squash --delete-branch
