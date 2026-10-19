@@ -22,7 +22,8 @@ PR to merge and cleanup.
 ## Title
 
 At most 72 characters, in Conventional Commits form:
-`<type>(<scope>): <description>`.
+`<type>(<scope>): <description>`. Prefer the shortest description; drop a
+leading verb when the noun phrase already states the change.
 
 ## Body
 
@@ -33,15 +34,20 @@ a section only when it has nothing to say.
 - `## Why`: the problem or motivation, and the linked task or issue.
 - `## How`: the approach and the notable decisions; before and after for UI
   or performance changes.
-- `## Tracking`: the tracker reference in the form the `task-tracker` Branch
-  link section gives: `Refs: <KEY>` for Linear, `Closes owner/repo#N` for a
-  GitHub issue. Omit when nothing is tracked.
 - `## Impact`: what changes for users or operators, risk and rollback,
   breaking changes when any, and the validation performed (tests, builds,
   manual checks).
+- `## Tracking`: the tracker reference in the form the `task-tracker` Branch
+  link section gives: `Refs: <KEY>` for Linear, `Closes owner/repo#N` for a
+  GitHub issue. Omit when nothing is tracked. It stays last so the reference
+  sits where Linear and the squash commit expect a trailer.
 
-Write each paragraph on one line; GitHub renders newlines, so a hard wrap
-renders ragged. Length follows the PR body budget in the communication rules.
+One idea per paragraph: prefer two or three one-sentence paragraphs over one
+dense one, and give a supporting number or fact its own sentence. Write each
+paragraph on one line; GitHub renders newlines, so a hard wrap renders
+ragged. Wrap paths, packages, symbols, flags, and commands in backticks.
+Write go/ links as markdown links (`[go/x](https://go/x)`), plain URLs
+otherwise. Length follows the PR body budget in the communication rules.
 The personal writing standards apply. No AI attribution anywhere: no
 Co-Authored-By trailers, no "Generated with" lines, no signatures.
 
