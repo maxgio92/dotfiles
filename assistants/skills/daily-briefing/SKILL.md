@@ -13,6 +13,7 @@ The followed sources live in `~/.config/daily-briefing/config.yaml`:
 
 ```yaml
 employer: Example Corp # optional; names the company in the briefing
+slack_domain: example.slack.com # workspace host for permalinks
 channels:            # Slack channel names, no leading #
   - announcements
   - eng-announce
@@ -25,6 +26,8 @@ ignore_authors:      # PR authors to drop (bots)
 ```
 
 The optional scalar `employer:` key names the company. When it is absent, say "the user's employer" instead; never add the key on your own.
+
+Build every Slack permalink as `https://<slack_domain>/archives/<channel id>/p<ts without the dot>`, and pass `slack_domain` to each subagent. Never guess the domain; if `slack_domain` is missing, take the host from a permalink a Slack tool returned and ask the user to add it.
 
 **First run.** If the file is missing, call `slack_list_user_channels` with `exclude_archived: true` and `format: names_only`. Propose the channels whose names suggest company-wide news (`announce`, `general`, `release`, `product`, `eng`, `launch`, `incident`) and ask the user which to follow and which repositories to watch. Write the file with their answer, then continue.
 
@@ -56,7 +59,7 @@ Drop greetings, kudos-only posts, bot noise with no human reply, and anything al
 
 ## Output
 
-Return the briefing as Markdown. Group by section; skip empty sections. One line per item: what happened, then why it matters if not obvious, then the link. Cite Slack items by permalink and PRs by full URL.
+Return the briefing as Markdown, starting at the `# Briefing` heading, with no progress notes before it. Group by section; skip empty sections. One line per item: what happened, then why it matters if not obvious, then the link. Cite Slack items by permalink and PRs by full URL.
 
 ```
 # Briefing <YYYY-MM-DD> (<window start> to now)

@@ -55,7 +55,9 @@ Return only the briefing Markdown." \
 	"mcp__plugin_slack_slack__slack_search_public_and_private" \
 	>"$tmp"
 
-mv "$tmp" "$out"
+# Drop any progress notes the agent printed before the heading.
+sed -n '/^# Briefing/,$p' "$tmp" >"$out"
+[ -s "$out" ] || { cat "$tmp" >"$out"; echo "daily-briefing: no # Briefing heading" >&2; exit 1; }
 ln -sfn "$out" "$dir/latest.md"
 printf '%s\n' "$started" >"$state/last-run"
 
