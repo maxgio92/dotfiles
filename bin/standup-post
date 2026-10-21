@@ -25,9 +25,11 @@ die() { log "$*"; exit 1; }
 # landed today; the post hook records a landed send as "<today> <thread_ts>".
 # Counting in PostToolUse keeps a send another hook denied retryable. The
 # trusted bounds and channel come from the main run as arguments, never from
-# tool input or the env file.
+# tool input or the env file. The pre hook also denies a message that cites a
+# pull request as a bare number (see pr_refs), since the standup-update skill
+# requires the full URL.
 send_gate() {
-  local phase=$1 day=$2 lo=$3 hi=$4 want=$5 input channel thread
+  local phase=$1 day=$2 lo=$3 hi=$4 want=$5 input channel thread message refs
   input=$(cat)
   case $phase in
     pre)
@@ -38,6 +40,7 @@ send_gate() {
       }
       channel=$(jq -r '.tool_input.channel_id // ""' <<<"$input") || exit 2
       thread=$(jq -r '.tool_input.thread_ts // ""' <<<"$input") || exit 2
+      message=$(jq -r '.tool_input.message // ""' <<<"$input") || exit 2
       if [ "$channel" != "$want" ]; then
         echo "standup-post only posts to channel $want" >&2; exit 2
       fi
@@ -46,6 +49,10 @@ send_gate() {
       fi
       if [ "${thread%%.*}" -lt "$lo" ] || [ "${thread%%.*}" -ge "$hi" ]; then
         echo "standup-post only replies to a thread started this evening" >&2; exit 2
+      fi
+      refs=$(pr_refs "$message") || exit 2
+      if [ -n "$refs" ]; then
+        echo "standup-post denied a bare pull request reference: ${refs//$'\n'/, }. Replace each with the full https://github.com/<owner>/<repo>/pull/<n> URL, or reword a number that is not a pull request" >&2; exit 2
       fi
       if sent_on "$day"; then
         echo "standup-post already posted today" >&2; exit 2
@@ -58,6 +65,20 @@ send_gate() {
     *) die "usage: standup-post --send-gate pre|post <today> <oldest> <latest> <channel>" ;;
   esac
   exit 0
+}
+
+# Prints, one per line, the bare pull request references left in $1 once every
+# https://github.com/ URL is removed: #<digits>, with or without a repository
+# prefix (#39, mono#70016), PR, PRs or pull, one space and digits (PR 70016,
+# pull 385710), in any case, or a standalone number of 5 or more digits
+# (stereo 385710), since mono and stereo pull requests have 5 and 6 digits.
+# A shorter count after any other word (reviewed 120 files) passes. The digits
+# must end the token, so 100%, 17:31 and #2024-planning pass. Linear keys
+# (FUL-917, ECO-12345) never match.
+pr_refs() {
+  sed -E 's#https://github\.com/[^[:space:]<>|]*##g' <<<"$1" |
+    grep -oiE '([[:alnum:]_.-]*#[0-9]+|\b(prs?|pull) [0-9]+|(^|[^[:alnum:]_.#/-])[0-9]{5,})([^[:alnum:]_%-]|$)' |
+    sed -E 's/^[^[:alnum:]#]//; s/[^[:alnum:]]$//' || true
 }
 
 # True when the post hook recorded a landed send on day $1.

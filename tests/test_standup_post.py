@@ -303,7 +303,7 @@ class StandupPost(unittest.TestCase):
                               capture_output=True, text=True, timeout=30)
 
     def test_send_gate(self):
-        good = {"channel_id": CHANNEL, "thread_ts": "1792162800.000100", "text": "Moved:"}
+        good = {"channel_id": CHANNEL, "thread_ts": "1792162800.000100", "message": "Moved:"}
         cases = {
             "wrong channel": {**good, "channel_id": "C0OTHER"},
             "missing thread_ts": {k: v for k, v in good.items() if k != "thread_ts"},
@@ -332,6 +332,34 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(second.returncode, 2)
         self.assertIn("already posted", second.stderr)
         self.assertEqual(self.sent.read_text(), f"{TODAY} 1792162800.000100\n")
+
+    def test_send_gate_denies_bare_pr_numbers(self):
+        good = {"channel_id": CHANNEL, "thread_ts": f"{OLDEST}.1"}
+        url = "https://github.com/acme/{}/pull/{}"
+        cases = [
+            ("385710", "root-caused the stereo 385710 halt",
+             f"root-caused the {url.format('stereo', 385710)} halt"),
+            ("pull 385710", "root-caused the stereo pull 385710 halt",
+             f"root-caused the stereo {url.format('stereo', 385710)} halt"),
+            ("mono#70016", "rebased mono#70016 today",
+             f"rebased {url.format('mono', 70016)} today"),
+            ("#39", "• merged #39", f"• merged {url.format('dotfiles', 39)}"),
+            ("PR 70016", "opened PR 70016, waiting on review",
+             f"opened {url.format('mono', 70016)} waiting on review"),
+            ("PR 70016", "PR 70016: ready", f"{url.format('mono', 70016)}: ready"),
+            ("#39", "merged #39: done", f"merged {url.format('dotfiles', 39)}: done"),
+        ]
+        for ref, bare, cited in cases:
+            with self.subTest(ref):
+                denied = self.gate("pre", **good, message=bare)
+                self.assertEqual(denied.returncode, 2)
+                self.assertIn(ref, denied.stderr)
+                self.assertIn("https://github.com/<owner>/<repo>/pull/<n>", denied.stderr)
+                self.assertEqual(self.gate("pre", **good, message=cited).returncode, 0)
+        for text in ("filed FUL-917", "blocked on ECO-5500", "filed ECO-12345", "triaged 48 feedback items",
+                     "reviewed 120 files", "over 1500 tests", "issue 4567", "70% merge-rate", "standup at 17:31", "planned for October 2026"):
+            with self.subTest(text):
+                self.assertEqual(self.gate("pre", **good, message=text).returncode, 0)
 
     def test_send_record_is_per_day(self):
         good = {"channel_id": CHANNEL, "thread_ts": f"{OLDEST + 60}.1"}
