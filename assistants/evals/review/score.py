@@ -9,7 +9,8 @@ Output formats, from the prompts that produce them:
 - dastardly (``assistants/agents/dastardly.md``): finding lines
   ``[<design|block|strong|nit>] <file>:<line>: <title>`` with a body up to the
   next finding, and a closing ``Verdict: approve|request-changes|reject-design``.
-  Findings carry no base or head side.
+  Findings carry no base or head side. The report may arrive framed and
+  indented, as described at ``_dedent_report``.
 - review-pr (``assistants/skills/review-pr/SKILL.md``, Draft Format): a header
   with ``Verdict: skip`` for a skip, otherwise a fenced markdown block whose
   first line is ``Approve`` or ``Request changes``, and findings
@@ -49,6 +50,9 @@ BLOCK_RANK = SEVERITY_RANK["block"]
 _DASTARDLY_FINDING = re.compile(r"^\[(design|block|strong|nit)\] (.+?):(\d+): (.+)$", re.MULTILINE)
 _DASTARDLY_VERDICT = re.compile(r"^Verdict: (approve|request-changes|reject-design)\s*$", re.MULTILINE)
 _CODEX_UNAVAILABLE_NIT = re.compile(r"^\[nit\][^\n]*codex[- ]unavailable", re.MULTILINE | re.IGNORECASE)
+# dastardly's output format opens with the Problem: line; in a framed report
+# its indentation is the margin.
+_DASTARDLY_HEADER = re.compile(r"([ \t]+)Problem: ")
 
 _REVIEW_PR_SKIP = re.compile(r"^Verdict: skip\s*$", re.MULTILINE)
 _REVIEW_PR_FENCE_OPEN = re.compile(r"^```markdown\s*$", re.MULTILINE)
@@ -251,7 +255,41 @@ def _normalize_path(path: str) -> str:
     return path.removeprefix("./")
 
 
+def _dedent_report(text: str) -> str:
+    """Return the report with its frame dropped and its margin stripped.
+
+    The Agent tool_result can reach the parent session framed: at most one
+    preface line at column zero, then every report line indented by the same
+    margin, then optional trailer lines such as ``agentId:``. The margin is
+    the indentation of the report's ``Problem:`` header, which must be the
+    first or second non-blank line. Text without that shape, such as a plain
+    report that quotes an indented ``Verdict:`` line, or a block with
+    unindented prose between its first and last indented line, is returned
+    unchanged. Lines indented deeper than the margin, such as nested finding
+    bodies, stay indented, so the line-anchored patterns still match only
+    report-level lines.
+    """
+    lines = text.split("\n")
+    body = [i for i, line in enumerate(lines) if line.strip()]
+    for n, first in enumerate(body[:2]):
+        header = _DASTARDLY_HEADER.match(lines[first])
+        if header:
+            break
+    else:
+        return text
+    margin = header.group(1)
+    # A preface is never itself a header: a column-zero Problem: line means a
+    # plain report whose second line quotes an indented one.
+    if n == 1 and (lines[body[0]].startswith(margin) or lines[body[0]].startswith("Problem: ")):
+        return text
+    last = max(i for i in body if lines[i].startswith(margin))
+    if any(not lines[i].startswith(margin) for i in body if first < i < last):
+        return text
+    return "\n".join(line.removeprefix(margin) for line in lines[first : last + 1])
+
+
 def parse_dastardly(text: str) -> Review:
+    text = _dedent_report(text)
     matches = list(_DASTARDLY_FINDING.finditer(text))
     findings = []
     for i, match in enumerate(matches):

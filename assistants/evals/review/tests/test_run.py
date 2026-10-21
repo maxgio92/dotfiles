@@ -18,7 +18,7 @@ import run  # noqa: E402
 
 DAY = datetime.date(2026, 1, 2)
 
-DASTARDLY_FINAL = "[block] series.py:5: loop bound reads past the end\n\nIndexError.\n\nVerdict: request-changes\n"
+DASTARDLY_FINAL = "Problem: sum a series.\n\n[block] series.py:5: loop bound reads past the end\n\nIndexError.\n\nVerdict: request-changes\n"
 
 REVIEW_PR_FINAL = """\
 # Review: series
@@ -243,7 +243,7 @@ class ShimTest(unittest.TestCase):
 
         args = run.parse_args([])
         loaded = run.load_case(CASES_DIR / "off-by-one-loop" / "case.json")
-        run.run_trial(loaded, CASES_DIR / "off-by-one-loop", run.ROWS[0], args, execute, {"PATH": "/usr/bin", "GH_TOKEN": "x"}, lambda: DAY)
+        run.run_trial(loaded, CASES_DIR / "off-by-one-loop", run.ROWS[0], args, execute, {"PATH": "/usr/bin", "GH_TOKEN": "x"}, lambda: DAY, self.tmp / "s.stream.jsonl")
         self.assertEqual(seen["shims"], sorted(run.SHIM_NAMES))
         self.assertEqual((seen["config"], seen["tokens"]), ([], []))
         self.assertNotEqual(seen["shim_dir"], seen["repo_parent"])
@@ -303,6 +303,35 @@ class MainTest(unittest.TestCase):
                 code, lines = self.main(["--row", "dastardly-single"], FakeExecutor(self.env, gh_argv=argv))
                 self.assertEqual((code, lines[0]), (1, "loop dastardly-single 0.00"))
                 self.assertIn(f"write call: {' '.join(argv)}", run.summary_path(self.env, DAY).read_text())
+
+    def test_failed_and_error_rows_cite_the_saved_stream(self) -> None:
+        write_case(self.cases, "loop", OFF_BY_ONE)
+        fake = FakeExecutor(self.env, dastardly="Verdict: approve\n", review_pr=None, gh_argv=["gh", "pr", "view", "1"])
+        code, _ = self.main(["--trials", "2", "--row", "dastardly-single", "--row", "review-pr-single"], fake)
+        self.assertEqual(code, 1)
+        summary = run.summary_path(self.env, DAY)
+        text = summary.read_text()
+        for row in ("dastardly-single", "review-pr-single"):
+            for trial in (1, 2):
+                with self.subTest(row=row, trial=trial):
+                    stream = run.stream_path(self.env, DAY, "loop", row, trial)
+                    self.assertEqual(stream.parent, summary.parent)
+                    self.assertIn(f"- loop {row}: stream: {stream}\n", text)
+                    self.assertIn(result_event("Report saved." if row.startswith("review-pr") else RELAY), stream.read_text())
+                    calls = [json.loads(line) for line in run.calls_path(stream).read_text().splitlines()]
+                    self.assertEqual(calls, [{"name": "gh", "args": ["pr", "view", "1"]}])
+
+    def test_passing_row_keeps_the_stream_without_citing_it(self) -> None:
+        write_case(self.cases, "loop", OFF_BY_ONE)
+        self.main(["--row", "dastardly-single"], FakeExecutor(self.env))
+        self.assertTrue(run.stream_path(self.env, DAY, "loop", "dastardly-single", 1).is_file())
+        self.assertNotIn("stream:", run.summary_path(self.env, DAY).read_text())
+
+    def test_framed_dastardly_report_scores_like_the_plain_one(self) -> None:
+        write_case(self.cases, "loop", OFF_BY_ONE)
+        framed = "Report from the dastardly agent:\n" + "".join(f"  {line}" if line.strip() else line for line in DASTARDLY_FINAL.splitlines(keepends=True))
+        code, lines = self.main(["--row", "dastardly-single"], FakeExecutor(self.env, dastardly=framed))
+        self.assertEqual((code, lines[0]), (0, "loop dastardly-single 1.00"))
 
     def test_logged_read_passes_the_row(self) -> None:
         write_case(self.cases, "loop", OFF_BY_ONE)

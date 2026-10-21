@@ -57,6 +57,8 @@ Verdict: request-changes
 """
 
 DASTARDLY_CODEX_DOWN = """\
+Problem: sum the first n items of a list.
+
 [nit] src/total.py:0: codex-unavailable
 
 The companion script exited non-zero, so this is a Claude-only review.
@@ -118,6 +120,12 @@ Unreviewed: vendor/lock.json
 """
 
 
+def framed(report, margin="  "):
+    """``report`` as an Agent tool_result can reach the parent: a preface line, then every line indented."""
+    body = "".join(margin + line if line.strip() else line for line in report.splitlines(keepends=True))
+    return "Report from the dastardly agent:\n" + body
+
+
 def case(**overrides):
     data = {"must_flag": [], "must_not_flag": [], "verdict": "request-changes", "min_score": 1.0}
     data.update(overrides)
@@ -138,6 +146,89 @@ class ParserTest(unittest.TestCase):
         self.assertNotIn("module name", review.findings[0].body)
         self.assertIsNone(review.findings[0].side)
         self.assertFalse(review.degraded)
+
+    def test_framed_dastardly_report_parses_like_the_plain_one(self) -> None:
+        plain = parse_dastardly(DASTARDLY_OUTPUT)
+        for margin in ("  ", "    ", "\t"):
+            for suffix in ("", "agentId: a1b2c3\n"):
+                with self.subTest(margin=margin, suffix=suffix):
+                    review = parse_dastardly(framed(DASTARDLY_OUTPUT, margin) + suffix)
+                    self.assertEqual(review, plain)
+                    self.assertEqual(review.verdict, "request-changes")
+                    self.assertEqual(len(review.findings), 2)
+        self.assertTrue(parse_dastardly(framed(DASTARDLY_CODEX_DOWN)).degraded)
+
+    def test_nested_finding_body_parses_and_stays_body(self) -> None:
+        report = """\
+Problem: x
+
+[block] src/total.py:4: loop bound reads past the end
+
+  The loop visits index n:
+
+      for i in range(n + 1):
+          [nit] quoted.py:1: not a finding
+      Verdict: approve
+
+Verdict: request-changes
+"""
+        for text in (report, framed(report)):
+            with self.subTest(framed=text is not report):
+                review = parse_dastardly(text)
+                self.assertEqual(review.verdict, "request-changes")
+                self.assertEqual([(f.severity, f.file, f.line) for f in review.findings], [("block", "src/total.py", 4)])
+                self.assertIn("    for i in range(n + 1):", review.findings[0].body)
+
+    def test_quoted_indented_verdict_before_findings_is_not_the_margin(self) -> None:
+        report = """\
+Problem: x
+Solution fit: the old code did
+
+    Verdict: approve
+    [nit] quoted.py:1: not a finding
+
+which is wrong.
+
+[block] a.py:3: t
+
+body
+
+Verdict: request-changes
+"""
+        for text in (report, framed(report)):
+            with self.subTest(framed=text is not report):
+                review = parse_dastardly(text)
+                self.assertEqual(review.verdict, "request-changes")
+                self.assertEqual([(f.severity, f.file, f.line) for f in review.findings], [("block", "a.py", 3)])
+
+    def test_plain_report_quoting_an_indented_header_is_not_framed(self) -> None:
+        text = (
+            "Problem: the old prompt produced\n\n"
+            "    Problem: x\n"
+            "    [nit] q.py:1: codex-unavailable\n"
+            "    Verdict: approve\n\n"
+            "Solution fit: fine\n\n"
+            "[block] a.py:3: t\n\n"
+            "body\n\n"
+            "Verdict: request-changes\n"
+        )
+        review = parse_dastardly(text)
+        self.assertEqual(review.verdict, "request-changes")
+        self.assertEqual([(f.severity, f.file, f.line) for f in review.findings], [("block", "a.py", 3)])
+        self.assertFalse(review.degraded)
+
+    def test_indented_quoted_verdict_without_a_report_verdict_is_ignored(self) -> None:
+        text = "I reviewed it. Example output:\n\n    Verdict: approve\n\nI could not complete the review.\n"
+        review = parse_dastardly(text)
+        self.assertIsNone(review.verdict)
+        self.assertEqual(review.findings, ())
+
+    def test_framed_report_with_unindented_prose_inside_is_not_dedented(self) -> None:
+        lines = framed(DASTARDLY_OUTPUT).splitlines(keepends=True)
+        lines.insert(len(lines) // 2, "I could not complete the review.\n")
+        review = parse_dastardly("".join(lines))
+        self.assertIsNone(review.verdict)
+        self.assertEqual(review.findings, ())
 
     def test_review_pr_verdicts(self) -> None:
         for text, verdict in (

@@ -9,7 +9,9 @@ Per row and trial the runner builds a throwaway git repository from the case's
 repository as its working directory and gh shims first on PATH, and scores the
 result with ``score.py``:
 dastardly's own Agent tool_result for dastardly rows, the saved local-mode
-report for review-pr rows. A gh write logged by a shim zeroes the row.
+report for review-pr rows. A gh write logged by a shim zeroes the row. Each
+trial's raw stream-json and shim log are kept next to the summary, and the
+summary cites the stream for a row that fails or errors.
 
 Accepted residual: only gh calls that reach a shim are scored. In dastardly
 rows a command form the allowlist does not grant, such as ``env gh`` or
@@ -255,6 +257,16 @@ def summary_path(env: Mapping[str, str], day: datetime.date) -> Path:
     return data_home(env) / "agent-reports" / "dotfiles" / f"{day.isoformat()}-eval-reviews.md"
 
 
+def stream_path(env: Mapping[str, str], day: datetime.date, case_name: str, row: str, trial: int) -> Path:
+    """Where one trial's raw stream-json is kept, next to the summary."""
+    return summary_path(env, day).with_name(f"{day.isoformat()}-eval-reviews-{case_name}-{row}-{trial}.stream.jsonl")
+
+
+def calls_path(stream: Path) -> Path:
+    """Where the shim log of the trial whose stream is ``stream`` is kept."""
+    return stream.with_name(stream.name.removesuffix(".stream.jsonl") + ".calls.jsonl")
+
+
 def _events(stream: str) -> list[dict]:
     events = []
     for line in stream.splitlines():
@@ -309,7 +321,9 @@ def run_trial(
     execute: Executor,
     env: Mapping[str, str],
     today: Callable[[], datetime.date],
+    saved: Path,
 ) -> RowResult:
+    """Run one trial and score it; the raw stream goes to ``saved`` and the shim log to ``calls_path(saved)``."""
     # The shim directory is separate from the fixture parent so the reviewer
     # does not find it next to the repository; both go when the row ends.
     with tempfile.TemporaryDirectory(prefix="review-eval-") as tmp, tempfile.TemporaryDirectory(prefix="review-eval-gh-") as gh_tmp:
@@ -325,10 +339,16 @@ def run_trial(
             reports = [report_path(env, repo, days[0])]
             # A report left by an earlier trial must not be scored as this one.
             reports[0].unlink(missing_ok=True)
+        # A stream left by an earlier run today must not be cited for this one.
+        saved.unlink(missing_ok=True)
+        calls_path(saved).unlink(missing_ok=True)
         try:
             stream = execute(command, repo, row_env(env, shim_dir, gh_config_dir))
         except OSError as exc:
             return RowResult(0.0, error=f"cannot run claude: {exc}")
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        saved.write_text(stream, encoding="utf-8")
+        shutil.copyfile(log, calls_path(saved))
         if row.reviewer == DASTARDLY:
             text = agent_report(stream, DASTARDLY)
             if text is None:
@@ -419,13 +439,16 @@ def main(
                 lines.append((case_dir.name, row.name, "ERROR", "error", [str(exc)]))
             continue
         for row in rows:
-            trials = [run_trial(case, case_dir, row, args, execute, env, today) for _ in range(args.trials)]
+            streams = [stream_path(env, day, case_dir.name, row.name, n) for n in range(1, args.trials + 1)]
+            trials = [run_trial(case, case_dir, row, args, execute, env, today, saved) for saved in streams]
             result = trial_mean(trials)
             ok = row_passed(case, result)
             passed.append(ok)
             shown = "ERROR" if result.is_error else f"{result.score:.2f}"
             print(f"{case_dir.name} {row.name} {shown}")
-            reasons = [result.error] if result.is_error else result.reasons
+            reasons = [result.error] if result.is_error else list(result.reasons)
+            if not ok:
+                reasons += [f"stream: {saved}" for saved in streams if saved.is_file()]
             lines.append((case_dir.name, row.name, shown, "pass" if ok else "fail", reasons))
 
     rate = sum(passed) / len(passed) if passed else 0.0
