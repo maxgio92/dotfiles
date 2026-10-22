@@ -4,9 +4,11 @@
 # instead of posting it.
 set -euo pipefail
 
-# The bot posts at 17:30 Europe/Rome while the host clock is UTC, so all date
+# The bot posts at $POST_HOUR:30 Europe/Rome while the host clock is UTC, so all date
 # maths runs in the bot's timezone.
 ZONE=Europe/Rome
+# The hour the bot posts the EU standup thread, in $ZONE.
+POST_HOUR=11
 
 state_dir="$HOME/.local/state/standup-post"
 last_file="$state_dir/last-posted"
@@ -48,7 +50,7 @@ send_gate() {
         echo "standup-post only posts as a thread reply; set thread_ts to the parent ts" >&2; exit 2
       fi
       if [ "${thread%%.*}" -lt "$lo" ] || [ "${thread%%.*}" -ge "$hi" ]; then
-        echo "standup-post only replies to a thread started this evening" >&2; exit 2
+        echo "standup-post only replies to a thread started in today's standup hour" >&2; exit 2
       fi
       refs=$(pr_refs "$message") || exit 2
       if [ -n "$refs" ]; then
@@ -145,10 +147,10 @@ case $(TZ=$ZONE date -d "@$now" +%u) in
   *) back=1 ;;
 esac
 since=$(TZ=$ZONE date -d "$today -$back days" +%F)T00:00:00
-oldest=$(TZ=$ZONE date -d "$today 17:00" +%s)
+oldest=$(TZ=$ZONE date -d "$today $POST_HOUR:00" +%s)
 latest=$(TZ=$ZONE date -d "$today +1 day" +%s)
 # The channel reads newest first, so bound the read to the hour the bot posts.
-window_end=$(TZ=$ZONE date -d "$today 18:00" +%s)
+window_end=$(TZ=$ZONE date -d "$today $((POST_HOUR + 1)):00" +%s)
 updated_since=$(TZ=$ZONE date -d "$today -30 days" +%F)
 
 # The PreToolUse hook skips screening when scanner.py is absent, so check

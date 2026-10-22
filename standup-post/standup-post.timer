@@ -2,8 +2,8 @@
 Description=Post the team daily standup reply on weekdays
 
 [Timer]
-# The bot posts at 17:30 Rome time; the host clock is UTC.
-OnCalendar=Mon..Fri 17:31 Europe/Rome
+# The bot posts at 11:30 Rome time; the host clock is UTC.
+OnCalendar=Mon..Fri 11:31 Europe/Rome
 # A day missed while the machine is off is skipped, not posted late.
 Persistent=false
 

@@ -21,11 +21,11 @@ if os.environ.get("FAKE_SENT"):
 sys.stdout.write(os.environ.get("FAKE_OUTPUT", ""))
 sys.exit(int(os.environ.get("FAKE_STATUS", "0")))
 """
-# Friday 2026-10-16 17:31 in Rome.
-FRIDAY = "2026-10-16T15:31:00Z"
+# Friday 2026-10-16 11:31 in Rome.
+FRIDAY = "2026-10-16T09:31:00Z"
 TODAY = "2026-10-16"
-# 17:00 Rome on 2026-10-16, and the following midnight in Rome.
-OLDEST = 1792162800
+# 11:00 Rome on 2026-10-16, and the following midnight in Rome.
+OLDEST = 1792141200
 LATEST = 1792188000
 SENT_TODAY = f"{TODAY} {OLDEST + 60}.000100"
 CHANNEL = "C0TEST00001"
@@ -207,10 +207,10 @@ class StandupPost(unittest.TestCase):
             self.assertFalse(tool.startswith(("Bash(jq", "Bash(date")), tool)
         self.assertIn("Read(~/.claude/projects/**)", tools)
         prompt = self.flag(argv, "-p")
-        # 17:00 Rome on 2026-10-16 is 15:00 UTC.
-        self.assertIn("oldest 1792162800", prompt)
-        # The read is bounded to 17:00-18:00 Rome so the newest-first page holds the post.
-        self.assertIn("latest 1792166400", prompt)
+        # 11:00 Rome on 2026-10-16 is 09:00 UTC.
+        self.assertIn("oldest 1792141200", prompt)
+        # The read is bounded to 11:00-12:00 Rome so the newest-first page holds the post.
+        self.assertIn("latest 1792144800", prompt)
         self.assertIn("window starting 2026-10-15T00:00:00", prompt)
         self.assertIn('--updated ">=2026-09-16"', prompt)
         self.assertIn(f"channel_id {CHANNEL}", prompt)
@@ -303,14 +303,14 @@ class StandupPost(unittest.TestCase):
                               capture_output=True, text=True, timeout=30)
 
     def test_send_gate(self):
-        good = {"channel_id": CHANNEL, "thread_ts": "1792162800.000100", "message": "Moved:"}
+        good = {"channel_id": CHANNEL, "thread_ts": "1792141200.000100", "message": "Moved:"}
         cases = {
             "wrong channel": {**good, "channel_id": "C0OTHER"},
             "missing thread_ts": {k: v for k, v in good.items() if k != "thread_ts"},
             "empty thread_ts": {**good, "thread_ts": ""},
             "non-numeric thread_ts": {**good, "thread_ts": "abc"},
             "yesterday's thread": {**good, "thread_ts": f"{OLDEST - 86400}.000100"},
-            "before 17:00": {**good, "thread_ts": f"{OLDEST - 1}.000100"},
+            "before 11:00": {**good, "thread_ts": f"{OLDEST - 1}.000100"},
             "tomorrow's thread": {**good, "thread_ts": f"{LATEST}.000100"},
         }
         for name, tool_input in cases.items():
@@ -331,7 +331,7 @@ class StandupPost(unittest.TestCase):
         second = self.gate("pre", **good)
         self.assertEqual(second.returncode, 2)
         self.assertIn("already posted", second.stderr)
-        self.assertEqual(self.sent.read_text(), f"{TODAY} 1792162800.000100\n")
+        self.assertEqual(self.sent.read_text(), f"{TODAY} 1792141200.000100\n")
 
     def test_send_gate_denies_bare_pr_numbers(self):
         good = {"channel_id": CHANNEL, "thread_ts": f"{OLDEST}.1"}
