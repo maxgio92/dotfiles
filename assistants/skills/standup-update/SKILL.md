@@ -28,14 +28,14 @@ Run these in parallel.
 ## Map evidence to fields
 
 - **Moved:** one line per project (repository or Linear project), named by outcome: merged, opened, reviewed, filed, decided. Drive it from later prompts and final assistant replies, not session titles. Fold review-only work into one line.
-- **Today:** what the latest sessions left unfinished, plus in-progress tracker issues. One line.
+- **Today:** never empty. List the work planned for today: in-progress and in-review tracker issues, open pull requests still to land, and what the latest sessions left unfinished. When those are thin, add the next `Todo` issue from the team's projects. One bullet per item.
 - **PRs waiting on review:** non-draft PRs with `reviewDecision` of `REVIEW_REQUIRED` or empty and no approval. Give the link and who is needed: `reviewRequests` (team or login), else the repository's usual reviewers from `latestReviews`. Skip PRs that are approved or have changes requested; those wait on the user.
 - **Docs blocked:** design docs with open review feedback (draft or open `docs(...)` PRs with comments or changes requested, Linear documents) and docs the sessions say must exist but don't. Never invent a doc.
 - **Ask:** one concrete need from someone outside the team, only when the sessions show a blocker (access, a decision, another team's review). Otherwise delete the line.
 
-Report work only: repositories in the work GitHub organisation, and Linear. When no work organisation is configured, no repository counts as work: report Linear only and leave out every pull request, repository, and session, or ask the user for the organisation when running interactively. Leave out the user's personal repositories (every `maxgio92/*` repository, such as `xcover`, `dotfiles`, and the notes repo) and sessions under `~/.dotfiles` or the notes repo, in every field.
+Report work only: repositories in the work GitHub organisation, and Linear. When no work organisation is configured, no repository counts as work: report Linear only and leave out every pull request, repository, and session, or ask the user for the organisation when running interactively. Leave out the user's personal repositories (every `maxgio92/*` repository, such as `xcover`, `dotfiles`, and the notes repo) and sessions under `~/.dotfiles` or the notes repo, in every field. Leave out the user's own initiatives too: Linear issues labelled `design` (such as DOCked and docfootprint) and the pull requests and sessions behind them, in every field, including PRs waiting on review. They are not part of the team's plans.
 
-Delete every line with no evidence, as the template asks. Never guess; ask the user when a field depends on intent the logs can't show (often Today and Ask).
+Delete every line with no evidence, as the template asks. Today is the exception: it always stays. Never guess; ask the user when a field depends on intent the logs can't show (often Ask).
 
 ## Output
 
