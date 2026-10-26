@@ -51,8 +51,12 @@ it.
 
 Mark a PR filtered, and name the filter, when it matches one of these:
 
-- `bot`: `author.type == "Bot"`, or the login is `dependabot[bot]`,
-  `renovate[bot]`, or `github-actions[bot]`.
+- `bot`: read `author` from `gh pr view`, which names an app author
+  `app/<name>` (`app/dependabot`). The PR is a bot PR when `author.login`
+  starts with `app/` or `author.is_bot` is true. Search results name the
+  same author `dependabot[bot]` with `author.type == "Bot"`; match those
+  too, and the logins `dependabot[bot]`, `renovate[bot]`, and
+  `github-actions[bot]`.
 - `docs-only`: every file from
   `gh-api-safe repos/OWNER/REPO/pulls/N/files --paginate` matches `**/*.md`,
   `**/*.rst`, `docs/**`, or `LICENSE*`. `**/` also matches the repository
