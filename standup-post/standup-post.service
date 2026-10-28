@@ -1,5 +1,5 @@
 [Unit]
-Description=Post the team daily standup reply
+Description=Draft the team daily standup reply for approval
 After=network-online.target
 Wants=network-online.target
 
@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=oneshot
 ExecStart=%h/.local/bin/standup-post
 Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-# The script caps claude at 20 minutes; leave room for the rest.
-TimeoutStartSec=25min
+# The script caps each claude run at 20 minutes and redrafts at most once,
+# so allow two runs plus room for the rest.
+TimeoutStartSec=45min
 UMask=0077

@@ -1,10 +1,10 @@
 [Unit]
-Description=Post the team daily standup reply on weekdays
+Description=Draft the team daily standup reply on weekdays
 
 [Timer]
 # The bot posts at 11:30 Rome time; the host clock is UTC.
 OnCalendar=Mon..Fri 11:31 Europe/Rome
-# A day missed while the machine is off is skipped, not posted late.
+# A day missed while the machine is off is skipped, not drafted late.
 Persistent=false
 
 [Install]

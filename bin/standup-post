@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Reply to today's team daily standup thread through headless claude and its
-# Slack plugin. Run by standup-post.timer; --dry-run prints the draft
-# instead of posting it.
+# Slack plugin, after the user approves the draft.
+#
+#   standup-post            draft today's reply, save it, notify (standup-post.timer)
+#   standup-post --show     print the saved draft and its thread ts
+#   standup-post --approve  post the saved draft verbatim
+#   standup-post --discard  drop the saved draft
+#   standup-post --dry-run  print a draft without saving it
 set -euo pipefail
 
 # The bot posts at $POST_HOUR:30 Europe/Rome while the host clock is UTC, so all date
@@ -13,9 +18,11 @@ POST_HOUR=11
 state_dir="$HOME/.local/state/standup-post"
 last_file="$state_dir/last-posted"
 sent_file="$state_dir/sent"
+# The saved draft, and "<today> <thread_ts>" for the thread it answers.
+draft_file="$state_dir/draft"
+pending_file="$state_dir/pending"
 skill_dir="$HOME/.claude/skills/standup-update"
 rules_dir="$HOME/.claude/hooks/communication-rules"
-dry_run=false
 
 log() { printf 'standup-post: %s\n' "$*" >&2; }
 die() { log "$*"; exit 1; }
@@ -29,9 +36,11 @@ die() { log "$*"; exit 1; }
 # trusted bounds and channel come from the main run as arguments, never from
 # tool input or the env file. The pre hook also denies a message that cites a
 # pull request as a bare number (see pr_refs), since the standup-update skill
-# requires the full URL.
+# requires the full URL, and anything but the saved draft, verbatim, to the
+# thread it was drafted for: only --approve offers the send tool, so every
+# send needs a pending draft for today.
 send_gate() {
-  local phase=$1 day=$2 lo=$3 hi=$4 want=$5 input channel thread message refs
+  local phase=$1 day=$2 lo=$3 hi=$4 want=$5 input channel thread message refs draft
   input=$(cat)
   case $phase in
     pre)
@@ -51,6 +60,13 @@ send_gate() {
       fi
       if [ "${thread%%.*}" -lt "$lo" ] || [ "${thread%%.*}" -ge "$hi" ]; then
         echo "standup-post only replies to a thread started in today's standup hour" >&2; exit 2
+      fi
+      if ! pending_on "$day" || [ "$thread" != "$pending_ts" ]; then
+        echo "standup-post only replies to the thread of today's approved draft" >&2; exit 2
+      fi
+      draft=$(<"$draft_file") || exit 2
+      if [ "$(trim "$message")" != "$(trim "$draft")" ]; then
+        echo "standup-post only posts the approved draft verbatim" >&2; exit 2
       fi
       refs=$(pr_refs "$message") || exit 2
       if [ -n "$refs" ]; then
@@ -81,6 +97,20 @@ pr_refs() {
   sed -E 's#https://github\.com/[^[:space:]<>|]*##g' <<<"$1" |
     grep -oiE '([[:alnum:]_.-]*#[0-9]+|\b(prs?|pull) [0-9]+|(^|[^[:alnum:]_.#/-])[0-9]{5,})([^[:alnum:]_%-]|$)' |
     sed -E 's/^[^[:alnum:]#]//; s/[^[:alnum:]]$//' || true
+}
+
+# Prints $1 without leading and trailing whitespace.
+trim() {
+  local s=$1
+  s=${s#"${s%%[![:space:]]*}"}
+  printf '%s' "${s%"${s##*[![:space:]]}"}"
+}
+
+# True when a draft for day $1 is saved; sets pending_ts to its thread.
+pending_on() {
+  local day
+  [ -f "$pending_file" ] && [ -f "$draft_file" ] &&
+    read -r day pending_ts <"$pending_file" && [ "$day" = "$1" ]
 }
 
 # True when the post hook recorded a landed send on day $1.
@@ -119,26 +149,49 @@ TEAM=$STANDUP_TEAM
 
 install -d -m 700 "$state_dir"
 case "${1:-}" in
-  '') ;;
-  --dry-run) dry_run=true ;;
-  *) die "usage: standup-post [--dry-run]" ;;
+  '') mode=draft ;;
+  --dry-run) mode=dry-run ;;
+  --show) mode=show ;;
+  --approve) mode=approve ;;
+  --discard) mode=discard ;;
+  *) die "usage: standup-post [--dry-run|--show|--approve|--discard]" ;;
 esac
-
-exec 9>"$state_dir/lock"
-flock -n 9 || die "another standup-post run holds $state_dir/lock"
 
 # STANDUP_POST_NOW pins the clock for tests; it takes any date -d string.
 now=$(date -d "${STANDUP_POST_NOW:-now}" +%s)
 today=$(TZ=$ZONE date -d "@$now" +%F)
 
-if ! $dry_run; then
+if [ "$mode" = show ]; then
+  pending_on "$today" || die "no draft waiting for today"
+  printf 'thread %s\n\n%s\n' "$pending_ts" "$(<"$draft_file")"
+  exit 0
+fi
+
+exec 9>"$state_dir/lock"
+flock -n 9 || die "another standup-post run holds $state_dir/lock"
+
+if [ "$mode" = discard ]; then
+  rm -f "$pending_file" "$draft_file"
+  log "discarded the saved draft"
+  exit 0
+fi
+
+if [ "$mode" != dry-run ]; then
   if sent_on "$today"; then
     printf '%s\n' "$today" >"$last_file"
   fi
   if [ -f "$last_file" ] && [ "$(<"$last_file")" = "$today" ]; then
+    [ "$mode" = approve ] && die "already posted today"
     log "already posted today"
     exit 0
   fi
+fi
+if [ "$mode" = approve ]; then
+  pending_on "$today" || die "no draft waiting for today; run standup-post first"
+  draft=$(<"$draft_file")
+elif [ "$mode" = draft ] && pending_on "$today"; then
+  log "a draft for today is waiting: standup-post --show, then standup-post --approve"
+  exit 0
 fi
 
 case $(TZ=$ZONE date -d "@$now" +%u) in
@@ -200,55 +253,72 @@ skill_real=$(readlink -f "$skill_dir")
 skills_real=$(dirname "$skill_real")
 sessions="$skill_dir/scripts/sessions-since.sh"
 
-if $dry_run; then
-  mode="DRY RUN: do not post anything. After step c, print the draft as one fenced code block, then the final line DRAFT."
-else
-  mode="Post the reply yourself as described in step d."
-fi
+draft_mode="DRAFT ONLY: do not post anything. After step c, print the draft as one fenced code block, then a line THREAD <the parent ts>, then the final line DRAFT."
 
-prompt="You run unattended for the $TEAM daily standup. Do not ask the user anything. $mode [standup-update]
+if [ "$mode" = approve ]; then
+  # The draft is a plain parameter value, so the shell never expands its contents.
+  prompt="You run unattended to post the approved $TEAM daily standup reply. Do not ask the user anything. [standup-update]
+
+a. First read the thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts $pending_ts). If any reply other than the parent is from user $SELF, print SKIP: already replied and stop without sending.
+   Otherwise call mcp__plugin_slack_slack__slack_send_message once with channel_id $CHANNEL, thread_ts $pending_ts and message set to exactly the text between the BEGIN DRAFT and END DRAFT lines below, unchanged. Never post anything else, anywhere else, or twice. If a hook denies the call, do not retry: print ERROR: <reason> and stop.
+b. Read the thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts $pending_ts) to confirm the reply landed and get its permalink.
+c. End with exactly one final line: POSTED <permalink>, SKIP: already replied, or ERROR: <reason>.
+
+BEGIN DRAFT
+$draft
+END DRAFT"
+  tools=("$send_tool" mcp__plugin_slack_slack__slack_read_thread)
+else
+  prompt="You run unattended for the $TEAM daily standup. Do not ask the user anything. $draft_mode [standup-update]
 The team is $TEAM. $scope
 
 a. Find today's $TEAM Daily Standup thread: call mcp__plugin_slack_slack__slack_read_channel with channel_id $CHANNEL, oldest $oldest, latest $window_end and response_format detailed. The thread is the bot message whose text contains $SUBTEAM and \"Please post your daily update\". If there is none, print SKIP: no standup today and stop.
 b. Read that thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts). If any reply other than the parent is from user $SELF, print SKIP: already replied and stop.
-c. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since ($ZONE time). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Ask when the evidence does not settle it, but never Today: fill it with the team work planned for today as the skill says. Leave out the user's own initiatives (Linear issues labelled design and their pull requests). Put a blank line between sections. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop.
-d. Post the draft text, without the fence, the Sources line or the marker, as a thread reply with mcp__plugin_slack_slack__slack_send_message (channel_id $CHANNEL, thread_ts the parent ts). Then read the thread back to confirm the reply landed and get its permalink. Never post anything else, anywhere else, or twice. A call a hook denied did not post: revise the draft as the hook says and send once more; if it is denied again, print ERROR: <reason>.
-e. End with exactly one final line: POSTED <permalink>, SKIP: <reason>, DRAFT, or ERROR: <reason>."
+c. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since ($ZONE time). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Ask when the evidence does not settle it, but never Today: fill it with the team work planned for today as the skill says. Leave out the user's own initiatives (Linear issues labelled design and their pull requests). Put a blank line between sections. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop. The fenced block holds only the reply text: no Sources line and no marker.
+d. End with exactly one final line: SKIP: <reason>, DRAFT, or ERROR: <reason>."
 
-tools=(
-  mcp__plugin_slack_slack__slack_read_channel
-  mcp__plugin_slack_slack__slack_read_thread
-  # Read rules: ~/ is home-relative, // is absolute. Skills are symlinks, so
-  # the resolved skills directory is listed too.
-  "Read(~/.claude/skills/**)"
-  "Read(/$skills_real/**)"
-  "Read(~/.claude/projects/**)"
-  "Read(~/.config/notes-repo.env)"
-  "Read(~/notes/notes/**)"
-  Agent
-  mcp__linear__list_issues
-  "Bash(gh search:*)"
-  "Bash(gh pr view:*)"
-  "Bash(ls:*)"
-  "Bash($sessions:*)"
-  "Bash($skill_real/scripts/sessions-since.sh:*)"
-)
-$dry_run || tools+=("$send_tool")
+  tools=(
+    mcp__plugin_slack_slack__slack_read_channel
+    mcp__plugin_slack_slack__slack_read_thread
+    # Read rules: ~/ is home-relative, // is absolute. Skills are symlinks, so
+    # the resolved skills directory is listed too.
+    "Read(~/.claude/skills/**)"
+    "Read(/$skills_real/**)"
+    "Read(~/.claude/projects/**)"
+    "Read(~/.config/notes-repo.env)"
+    "Read(~/notes/notes/**)"
+    Agent
+    mcp__linear__list_issues
+    "Bash(gh search:*)"
+    "Bash(gh pr view:*)"
+    "Bash(ls:*)"
+    "Bash($sessions:*)"
+    "Bash($skill_real/scripts/sessions-since.sh:*)"
+  )
+fi
 
 # Run outside $HOME so no project settings apply either.
 cd "$state_dir"
-log "drafting for the window starting $since"
-status=0
-output=$(timeout 20m claude -p "$prompt" \
-  --output-format text \
-  --setting-sources project,local \
-  --settings "$settings" \
-  --mcp-config "$mcp_config" \
-  --permission-mode dontAsk \
-  --no-session-persistence \
-  --max-turns 60 \
-  --max-budget-usd 5 \
-  --allowedTools "${tools[@]}" </dev/null) || status=$?
+if [ "$mode" = approve ]; then
+  log "posting the approved draft to thread $pending_ts"
+else
+  log "drafting for the window starting $since"
+fi
+# Sets output, status and last from one claude run of $1.
+run_claude() {
+  status=0
+  output=$(timeout 20m claude -p "$1" \
+    --output-format text \
+    --setting-sources project,local \
+    --settings "$settings" \
+    --mcp-config "$mcp_config" \
+    --permission-mode dontAsk \
+    --no-session-persistence \
+    --max-turns 60 \
+    --max-budget-usd 5 \
+    --allowedTools "${tools[@]}" </dev/null) || status=$?
+  last=$(printf '%s\n' "$output" | awk 'NF { line = $0 } END { print line }')
+}
 
 fail() {
   log "$*"
@@ -256,12 +326,60 @@ fail() {
   exit 1
 }
 
-last=$(printf '%s\n' "$output" | awk 'NF { line = $0 } END { print line }')
+# Prints the last fenced block of $output; fails when there is none.
+fenced_draft() {
+  printf '%s\n' "$output" | awk '
+    /^[[:space:]]*```/ { if (open) { last = buf; found = 1; open = 0 } else { open = 1; buf = "" } next }
+    open { buf = buf $0 "\n" }
+    END { printf "%s", last; exit !found }'
+}
+
+# Prints why the send gate or the Communication Rules hook would deny
+# posting $1, or nothing when both would let it through. The draft run never
+# offers the send tool, and --approve may not reword the draft, so a saved
+# draft must already pass both. The scanner must print "pass", so a scanner
+# that cannot run denies.
+draft_violations() {
+  local refs verdict rules
+  local scanner=(python3 "$rules_dir/scanner.py" --policy-json "$rules_dir/policy.json" --rules "$rules_dir/rules.md")
+  refs=$(pr_refs "$1")
+  if [ -n "$refs" ]; then
+    printf 'It cites a pull request as a bare number: %s. Replace each with the full https://github.com/<owner>/<repo>/pull/<n> URL, or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
+  fi
+  verdict=$(printf '%s' "$1" | "${scanner[@]}" scan-text 2>/dev/null) || true
+  if [ "$verdict" != pass ]; then
+    rules=$("${scanner[@]}" block-message 2>/dev/null) || true
+    printf '%s\n' "${rules:-The Communication Rules scanner blocked it.}"
+  fi
+  return 0
+}
+
+run_claude "$prompt"
+# One redraft with the reasons, since the timer runs once a day and a denied
+# draft could never be posted.
+if [ "$mode" = draft ] && [ "$status" -eq 0 ] && [ "$last" = DRAFT ] &&
+  draft=$(fenced_draft) && reasons=$(draft_violations "$draft") && [ -n "$reasons" ]; then
+  log "the draft would be denied at --approve; redrafting once"
+  run_claude "$prompt
+
+Your earlier draft was rejected for these reasons, so draft it again without them:
+$reasons"
+fi
+
+# Writes $2 to $1 through a mode 600 temporary file, so a reader never sees
+# a partial file.
+save() {
+  local tmp
+  tmp=$(mktemp "$1.XXXXXX")
+  printf '%s\n' "$2" >"$tmp"
+  mv -f "$tmp" "$1"
+}
 
 # The post hook's record, not the model's final line, says whether a send
 # landed, so it settles the state even when the run failed after sending.
-if ! $dry_run && sent_on "$today"; then
+if [ "$mode" = approve ] && sent_on "$today"; then
   printf '%s\n' "$today" >"$last_file"
+  rm -f "$pending_file" "$draft_file"
   [ "$status" -eq 0 ] || fail "claude exited with status $status after a send landed"
   case $last in
     'POSTED https://'*) log "posted ${last#POSTED }"; exit 0 ;;
@@ -273,15 +391,45 @@ fi
 
 case $last in
   'POSTED https://'*)
-    $dry_run && fail "dry run reported a post: $last"
+    [ "$mode" = approve ] || fail "$mode run reported a post: $last"
     fail "claude reported a post but no send landed: $last"
     ;;
   'SKIP: '*)
+    if [ "$mode" = approve ]; then
+      # The user replied by hand after the draft; drop it so it is never posted twice.
+      [ "$last" = 'SKIP: already replied' ] || fail "unexpected result: $last"
+      rm -f "$pending_file" "$draft_file"
+    fi
     log "${last#SKIP: }"
     ;;
   DRAFT)
-    $dry_run || fail "claude returned a draft instead of posting"
-    printf '%s\n' "$output"
+    case $mode in
+      dry-run) printf '%s\n' "$output" ;;
+      draft)
+        # The model's text proposes the thread; the window check and the send
+        # gate bound it to today's standup hour.
+        thread=$(printf '%s\n' "$output" | sed -nE 's/^THREAD ([0-9]{1,12}\.[0-9]+)[[:space:]]*$/\1/p' | tail -n 1)
+        [ -n "$thread" ] || fail "the draft names no THREAD <ts> line"
+        if [ "${thread%%.*}" -lt "$oldest" ] || [ "${thread%%.*}" -ge "$latest" ]; then
+          fail "thread $thread did not start in today's standup hour"
+        fi
+        # The last fenced block is the draft.
+        draft=$(fenced_draft) || fail "the draft has no fenced block"
+        [ -n "$(trim "$draft")" ] || fail "the fenced draft is empty"
+        reasons=$(draft_violations "$draft")
+        [ -z "$reasons" ] || fail "the redraft would still be denied at --approve: ${reasons%%$'\n'*}"
+        save "$draft_file" "$draft"
+        save "$pending_file" "$today $thread"
+        log "standup draft ready: standup-post --show, then standup-post --approve"
+        # agent-notify reports its own errors and exits 0, so a missing
+        # receiver never fails the run.
+        if command -v agent-notify >/dev/null; then
+          printf '{"notification_type":"permission_prompt","cwd":"standup-post"}\n' |
+            agent-notify send || true
+        fi
+        ;;
+      *) fail "claude returned a draft instead of posting" ;;
+    esac
     ;;
   *)
     fail "unexpected result: $last"
