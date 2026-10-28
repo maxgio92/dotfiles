@@ -56,6 +56,13 @@ POST_COMMANDS = {
     ("release", "create"),
     ("release", "edit"),
 }
+# Edit subcommands that also carry metadata-only forms (labels, assignees,
+# milestone, reviewers). Such an edit has no prose; it is a post only when a
+# body or title flag is present.
+METADATA_EDIT_COMMANDS = {
+    ("issue", "edit"),
+    ("pr", "edit"),
+}
 # Leading tokens that can post to GitHub. gh-review-reply wraps the review
 # thread reply endpoint and gh-review-post the pull request review endpoint;
 # both take their body only via --body-file. gh-api-safe is
@@ -468,6 +475,8 @@ def is_known_post_command(argv: list[str]) -> bool:
     name = command_name(argv)
     if name == "gh":
         if len(argv) >= 3 and (argv[1], argv[2]) in POST_COMMANDS:
+            if (argv[1], argv[2]) in METADATA_EDIT_COMMANDS:
+                return any(has_body_flag(argv, index) for index in range(len(argv)))
             return True
         if len(argv) >= 2 and argv[1] == "api":
             return has_api_post_signal(argv[2:])

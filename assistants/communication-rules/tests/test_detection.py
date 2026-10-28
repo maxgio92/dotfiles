@@ -173,5 +173,23 @@ class ExternalTargetTest(unittest.TestCase):
                 self.assertEqual(external_target("Bash", {"command": command}, config), want)
 
 
+class MetadataOnlyEditTests(unittest.TestCase):
+    def test_label_only_pr_edit_is_not_a_post(self) -> None:
+        argv = ["gh", "pr", "edit", "42", "--repo", "o/r", "--add-label", "x:y"]
+        self.assertFalse(is_known_post_command(argv))
+
+    def test_assignee_only_issue_edit_is_not_a_post(self) -> None:
+        argv = ["gh", "issue", "edit", "42", "--add-assignee", "me"]
+        self.assertFalse(is_known_post_command(argv))
+
+    def test_pr_edit_with_body_is_a_post(self) -> None:
+        argv = ["gh", "pr", "edit", "42", "--add-label", "x", "--body", "hello"]
+        self.assertTrue(is_known_post_command(argv))
+
+    def test_pr_edit_with_title_is_a_post(self) -> None:
+        argv = ["gh", "pr", "edit", "42", "--title", "hello"]
+        self.assertTrue(is_known_post_command(argv))
+
+
 if __name__ == "__main__":
     unittest.main()
