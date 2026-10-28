@@ -13,7 +13,7 @@ Take the team name and the work GitHub organisation from the prompt when it stat
 
 ## Window
 
-Cover activity since the start of the previous working day (Monday covers Friday through Sunday). Use local time, ISO format, e.g. `2026-10-13T00:00:00`. A date or range in the request overrides this.
+Cover activity since the user's last standup post: their latest reply in a previous standup thread, so work finished after it on the same day is not dropped. When there is none in the past week, start at the previous working day's midnight (Monday covers Friday through Sunday). Use UTC in ISO format, e.g. `2026-10-13T10:43:57`, since transcripts and GitHub use UTC. A date or range in the request overrides this.
 
 ## Gather
 

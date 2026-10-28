@@ -406,7 +406,8 @@ class StandupPost(unittest.TestCase):
         self.assertIn("oldest 1792141200", prompt)
         # The read is bounded to 11:00-12:00 Rome so the newest-first page holds the post.
         self.assertIn("latest 1792144800", prompt)
-        self.assertIn("window starting 2026-10-15T00:00:00", prompt)
+        # Midnight Rome on Thursday is 22:00 UTC the day before.
+        self.assertIn("window starting 2026-10-14T22:00:00", prompt)
         self.assertIn('--updated ">=2026-09-16"', prompt)
         self.assertIn(f"channel_id {CHANNEL}", prompt)
         self.assertIn("S0TEST00001", prompt)
@@ -426,7 +427,31 @@ class StandupPost(unittest.TestCase):
     def test_monday_window_starts_friday(self):
         self.run_script(output="SKIP: x\n", now="2026-10-19T15:31:00Z")
         prompt = self.flag(self.calls()[0]["argv"], "-p")
-        self.assertIn("window starting 2026-10-16T00:00:00", prompt)
+        self.assertIn("window starting 2026-10-15T22:00:00", prompt)
+
+    def test_window_starts_at_last_post(self):
+        posted_at = self.state.parent / "posted-at"
+        posted_at.parent.mkdir(parents=True, exist_ok=True)
+        posted_at.write_text("2026-10-15T10:43:57\n")
+        self.run_script(output="SKIP: x\n")
+        prompt = self.flag(self.calls()[0]["argv"], "-p")
+        self.assertIn("window starting 2026-10-15T10:43:57", prompt)
+
+    def test_stale_or_bad_post_time_falls_back(self):
+        posted_at = self.state.parent / "posted-at"
+        posted_at.parent.mkdir(parents=True, exist_ok=True)
+        for value in ("2026-10-01T10:00:00", "garbage", "2026-10-20T10:00:00"):
+            with self.subTest(value):
+                posted_at.write_text(value + "\n")
+                self.run_script(output="SKIP: x\n")
+                prompt = self.flag(self.calls()[-1]["argv"], "-p")
+                self.assertIn("window starting 2026-10-14T22:00:00", prompt)
+
+    def test_approve_records_post_time(self):
+        result = self.approve(output=POSTED, sent=SENT_TODAY)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.state.parent / "posted-at").read_text().strip(),
+                         "2026-10-16T09:31:00")
 
     def test_missing_scanner_hook_fails_closed(self):
         (self.home / ".claude/settings.json").write_text("{}")
