@@ -56,6 +56,11 @@ Prompt templates expand into the editor when invoked.
 | `/orientate` | Read project guidance and report the stack, commands, conventions, and constraints |
 | `/onboard` | Review a handover document, ask questions, and recommend the first task |
 | `/botsnack` | Insert the short bot-snack message |
+| `/orchestrate` | Coordinate a plan across agents in separate worktrees and panes, with a live task table |
+| `/spawn-work` | Launch one task in a fresh agent session, worktree, and pane in this window |
+| `/check-work` | Refresh the worker table from panes, tickets, PRs, reviews, and current CI |
+| `/steer-work` | Route a user instruction to the worker assigned to a task |
+| `/review-queue` | Draft reviews for open pull requests that request the user's review |
 
 ## Skills
 
@@ -199,7 +204,7 @@ ephemeral run.
 | `pi/extensions/` | `~/.pi/agent/extensions/` | Custom commands and lifecycle behaviour |
 | `assistants/agents/` | `~/.pi/agent/agents/` | Shared agent definitions |
 | `assistants/skills/` | `~/.pi/agent/skills/` | Shared skills, except Claude-only ones (`CLAUDE_ONLY_SKILLS` in the Makefile) |
-| `assistants/commands/{orientate,onboard,botsnack}.md` | `~/.pi/agent/prompts/` | Pi prompt templates |
+| `assistants/commands/{orientate,onboard,botsnack,orchestrate,spawn-work,check-work,steer-work,review-queue}.md` | `~/.pi/agent/prompts/` | Pi prompt templates |
 
 Run `make pi` after adding a managed agent, skill, prompt, or extension. Run
 `/reload` inside Pi after editing an existing resource.

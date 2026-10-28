@@ -14,6 +14,8 @@ codex-legacy-skills:
 		fi; \
 	done
 
+# Codex custom prompts are deprecated in favor of skills; these stay thin
+# wrappers until each moves to a skill.
 .PHONY: codex-prompts
 codex-prompts:
 	@mkdir -p $(HOME)/.codex/prompts
