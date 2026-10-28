@@ -243,6 +243,21 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(settings["hooks"]["PreToolUse"][-1]["hooks"][0]["command"],
                          f"{SCRIPT} --send-gate pre {' '.join(GATE_ARGS)}")
 
+    def test_draft_with_control_characters_is_refused(self):
+        fenced = "```\nMoved:\n\u2022 fine\x1b[8m hidden\n```\n"
+        result = self.run_script(output=fenced + f"THREAD {THREAD_TS}\nDRAFT\n")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("control characters", result.stderr)
+        self.assertFalse(self.pending.exists())
+        self.assertFalse(self.draft.exists())
+
+    def test_show_refuses_control_characters(self):
+        self.save_pending(text="Moved:\n\u2022 a\x1b[8mb")
+        result = self.run_script("--show")
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn("\x1b", result.stdout)
+        self.assertIn("--discard", result.stderr)
+
     def test_approve_skips_when_user_already_replied(self):
         # A reply posted by hand after the draft drops the draft instead of posting twice.
         result = self.approve(output="SKIP: already replied\n")

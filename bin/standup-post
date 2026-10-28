@@ -163,6 +163,10 @@ today=$(TZ=$ZONE date -d "@$now" +%F)
 
 if [ "$mode" = show ]; then
   pending_on "$today" || die "no draft waiting for today"
+  # A control character could hide text that --approve would post, so the
+  # text approved must be the text seen.
+  ! LC_ALL=C grep -q $'[\x01-\x08\x0b-\x1f\x7f]' "$draft_file" ||
+    die "the draft holds control characters; run standup-post --discard"
   printf 'thread %s\n\n%s\n' "$pending_ts" "$(<"$draft_file")"
   exit 0
 fi
@@ -416,6 +420,9 @@ case $last in
         # The last fenced block is the draft.
         draft=$(fenced_draft) || fail "the draft has no fenced block"
         [ -n "$(trim "$draft")" ] || fail "the fenced draft is empty"
+        # Control characters could hide text from --show while --approve posts it.
+        ! LC_ALL=C grep -q $'[\x01-\x08\x0b-\x1f\x7f]' <<<"$draft" ||
+          fail "the draft holds control characters"
         reasons=$(draft_violations "$draft")
         [ -z "$reasons" ] || fail "the redraft would still be denied at --approve: ${reasons%%$'\n'*}"
         save "$draft_file" "$draft"
