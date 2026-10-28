@@ -27,7 +27,7 @@ Run these in parallel.
 
 ## Map evidence to fields
 
-- **Moved:** one line per project (repository or Linear project), named by outcome: merged, opened, reviewed, filed, decided. Drive it from later prompts and final assistant replies, not session titles. Fold review-only work into one line.
+- **Moved:** one line per project (repository or Linear project), named by outcome: merged, opened, filed, decided. Drive it from later prompts and final assistant replies, not session titles. Leave out reviews the user gave on other people's pull requests; the team does not track them.
 - **Today:** never empty. List the work planned for today: in-progress and in-review tracker issues, open pull requests still to land, and what the latest sessions left unfinished. When those are thin, add the next `Todo` issue from the team's projects. One bullet per item.
 - **PRs waiting on review:** non-draft PRs with `reviewDecision` of `REVIEW_REQUIRED` or empty and no approval. Give the link and who is needed: `reviewRequests` (team or login), else the repository's usual reviewers from `latestReviews`. Skip PRs that are approved or have changes requested; those wait on the user.
 - **Docs blocked:** design docs with open review feedback (draft or open `docs(...)` PRs with comments or changes requested, Linear documents) and docs the sessions say must exist but don't. Never invent a doc.
