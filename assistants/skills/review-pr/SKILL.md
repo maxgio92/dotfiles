@@ -180,10 +180,25 @@ A skip still saves the report file.
 
 ## Two-Model Pass
 
-Senior and staff reviews on Claude Code run through `dastardly` and Codex.
-Junior always stays in-session, and so does pi, because the `codex` skill is
-Claude Code only. The in-session review above stays the fallback path,
-including when `dastardly` returns no report
+Senior and staff reviews follow the running harness's `/code-review`. Junior
+always stays in-session.
+
+- Claude Code follows `assistants/commands/code-review.md`: `dastardly`
+  through the Agent tool, plus the `codex` skill's adversarial review and
+  pushback. Run every step below.
+- Codex follows `codex/prompts/code-review.md`: apply the `dastardly` skill
+  in-session, with no `codex` skill and no Agent tool. Run steps 1 to 3, skip
+  the trust gate, and review read-only with step 5's depth brief, scope,
+  SHAs, profile skills and files, and untrusted-data and base-revision rules,
+  but none of its Codex bullets. Map labels through Two-Model Mapping and run
+  Merge. Record `Passes: in-session (codex harness)` and no `Origins:` line.
+- pi reviews in-session. Its `/code-review` is a TUI-only extension command
+  (`pi/extensions/implement-review/index.ts`) that a skill cannot call, and
+  the `codex` skill is Claude Code only (`CLAUDE_ONLY_SKILLS` in
+  `assistants/Makefile`).
+
+The in-session review above stays the fallback path, including when
+`dastardly` returns no report
 (`Passes: in-session (dastardly returned no report)`).
 
 1. Order. Run Gather Evidence, then decide on a skip. A skip launches neither
@@ -229,33 +244,31 @@ including when `dastardly` returns no report
    instructions and skills from it, so only authors GitHub associates with
    the repository get a Codex pass. The association does not prove write
    access: an organization member or collaborator can hold read access.
-   Otherwise the packet says "Review
-   alone; do not consult Codex" in place of the three Codex bullets in step 5,
-   and the session records `Passes: dastardly; codex unavailable (untrusted
-   author)`. A failed lookup or an empty value is a gate miss, recorded as
+   Otherwise the scope text says "Claude only", which is `code-review.md`'s
+   opt-out, and the packet drops the Codex bullets in step 5. The session
+   then records `Passes: dastardly; codex unavailable (untrusted author)`.
+   A failed lookup or an empty value is a gate miss, recorded as
    `codex unavailable (author lookup failed)`. Local mode skips the lookup and
    passes the gate as a trusted author, because there is no PR author and the
    repository is the user's own checkout, such as an eval fixture. Run
    `--local` only on a repository whose head commits the user trusts, since
    Codex loads instructions and skills from that checkout.
-5. Launch `dastardly` once through the Agent tool. A staff run with
-   `--with-senior` is still one launch, carrying both depth briefs. The packet
-   holds:
+5. Launch `dastardly` once per `assistants/commands/code-review.md`, which
+   owns the shared Codex rules and the "Claude only" opt-out. A staff run with
+   `--with-senior` is still one launch, carrying both depth briefs. review-pr
+   takes `dastardly`'s report for Merge and does not relay it. The packet
+   adds:
    - The depth brief, the goal and scope from Gather Evidence, the worktree
      path, the head SHA, `<merge base>` as the comparison base for the diff
      and every `base` line, and `<base sha>` for repository instructions
-     only.
-   - When the gate passes, the second-opinion wording from
-     `~/.claude/workflows/implement-and-review.js`: load the `codex`
-     skill, run one adversarial review and one pushback in sequence, vet every
-     Codex claim against the code, and keep your own severities. Its "Do not
-     pass --base" sentence becomes `--base <base sha>`, since the PR head is
-     committed.
+     only. This explicit scope replaces `code-review.md`'s working-tree
+     default.
+   - When the gate passes, the Codex pass uses `--base <base sha>`, since the
+     PR head is committed.
    - When the gate passes, run `cd <worktree>` and the Codex companion call
      in one Bash command: cwd resets between calls, and the companion resolves
-     the repository from the current directory (`codex/SKILL.md:55`).
-   - When the gate passes and Codex cannot run, review alone and add one
-     `codex-unavailable` nit.
+     the repository from the current directory
+     (`assistants/skills/codex/SKILL.md:55`).
    - The profile skills and files from Gather Evidence, for `dastardly` to
      read; they add to its rule and never replace it. When the gate passes,
      the Codex focus text names each profile skill as a `$name` mention and
@@ -275,7 +288,7 @@ including when `dastardly` returns no report
    base line that cannot be checked at `<merge base>` stays body-only.
    Verify or drop each finding `dastardly` marks unverified, so every saved
    finding is verified. Reduce each finding to the three-sentence
-   form, apply Two-Model Mapping, fill `Passes:` and `Origins:`, and keep the
+   form, apply Two-Model Mapping, fill `Passes:`, and `Origins:` on two-model passes, and keep the
    block within the review body budget. Safety is unchanged: the result is a
    draft and nothing posts. After the save, run the step 3 cleanup.
 
@@ -323,7 +336,7 @@ PR: <url>
 Head: <full head sha>
 Tier: <tier>
 Profile: <name>
-Passes: <dastardly, codex | dastardly; codex unavailable (<reason>) | in-session (<reason>)>
+Passes: <dastardly, codex | dastardly; codex unavailable (<reason>) | in-session (codex harness) | in-session (<reason>)>
 Origins: <title>: <codex|claude|both>; one entry per finding, omitted on in-session passes
 Unreviewed: <comma-separated repo paths or globs; omitted when every part was reviewed>
 
@@ -352,7 +365,8 @@ in the header: `publish` posts the block unedited and cannot trim them out.
 
 `Passes:` and `Origins:` hold the provenance and any fallback note, and live
 only in the header for the same reason. Junior, pi, and a run with no checkout
-or a repository mismatch use `Passes: in-session (<reason>)`.
+or a repository mismatch use `Passes: in-session (<reason>)`. The Codex
+harness uses `Passes: in-session (codex harness)`.
 
 A skip report is the header alone, with no `Looks good:` line and no fenced
 block:
