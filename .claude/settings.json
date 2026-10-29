@@ -14,7 +14,7 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(node:*)",
+      "Bash(codex-companion:*)",
       "Bash(gh-api-safe:*)"
     ],
     "deny": [

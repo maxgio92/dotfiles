@@ -13,17 +13,14 @@ Codex is a **second opinion**, not an authority. You are the primary agent; Code
 
 Codex runs through OpenAI's official Claude Code plugin, `codex@openai-codex` (openai/codex-plugin-cc, pinned at 1.0.6). The plugin drives `codex app-server` from a Node companion script. The removed `codex mcp-server` and the old `mcp__codex__*` tools are gone; do not look for them.
 
-The plugin's slash commands are not model-invocable, so call the script directly:
+The plugin's slash commands are not model-invocable, so call the script through `codex-companion` (`bin/codex-companion`, installed to `~/.local/bin` by `make bin`). It runs `$CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs` when that file exists, else the newest version in the plugin cache, and passes arguments and stdin to node. With no script it prints one error line and exits non-zero.
 
-```bash
-COMPANION="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs}"
-[ -f "$COMPANION" ] || COMPANION=$(ls -d "$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | sort -V | tail -1)
-```
+Run each companion command below as its own Bash call, with placeholders such as `<base ref>`, `<repo dir>`, and the focus text written inline as literal text: no `cd`, variable assignment, or other command chained before or after it. Permission allow-lists match the first program in the call, so a chained call can be denied. To run against another directory, pass `-C <dir>`, which every companion subcommand accepts, instead of `cd <dir> &&`.
 
 Check readiness once per session:
 
 ```bash
-node "$COMPANION" setup --json
+codex-companion setup --json
 ```
 
 `ready: false` means Codex is missing or logged out. Report that and continue without Codex; never run `npm install` or `codex login` on the user's behalf.
@@ -41,10 +38,10 @@ Do not consult Codex for routine edits, small refactors, or anything faster to d
 Read-only. The plugin picks the diff itself: staged, unstaged, and untracked changes by default; with `--base <ref>` only the commits since the merge base, never the working tree. In the implement-and-review loop the work is uncommitted, so do not pass `--base` there. Your text travels as focus text inside the plugin's adversarial prompt.
 
 ```bash
-node "$COMPANION" adversarial-review --wait [--base "$BASE_REF"] "$FOCUS"
+codex-companion adversarial-review --wait [--base <base ref>] [-C <repo dir>] '$dastardly $cross-system-rubric <task, summary, instruction file, priorities>'
 ```
 
-Build `FOCUS` from, in this order:
+Build the focus text from, in this order:
 
 1. Skill mentions so Codex loads the shared rubric from its own skills directory: `$dastardly $cross-system-rubric`, plus `$effective-go` only when the diff contains Go files.
 2. The task in one or two sentences.
@@ -52,7 +49,7 @@ Build `FOCUS` from, in this order:
 4. The repository instruction file path (`AGENTS.md` or `CLAUDE.md`) and any repo-local standards skill the instructions name for the languages in the diff.
 5. The review priorities you want weighted: design fit, trust boundaries, silent failures, test coverage, convention breaks, AI-shaped prose.
 
-Keep it under a few thousand characters and pass it as one quoted argument; `--base`, `--scope`, `--model`, and `-C` inside unquoted focus text would eat the next word. Run from the repository root; the script resolves the git repo from the current directory. Check that Codex's summary names the skills it loaded; a `$name` mention is dropped silently when two loaded skills share the name.
+Keep it under a few thousand characters and pass it as one single-quoted argument, writing each embedded apostrophe as `'\''`. Inside double quotes bash expands `$dastardly` and `$cross-system-rubric` as unset variables, so Codex receives ` -system-rubric ...` and the skill mentions vanish without an error; `adversarial-review` reads no stdin, so a heredoc is not an alternative. Quoting also matters because `--base`, `--scope`, `--model`, and `-C` inside unquoted focus text would eat the next word. The script resolves the git repo from the current directory, or from `-C <dir>` when given; pass `-C` when the repository is not the current directory. Check that Codex's summary names the skills it loaded; a `$name` mention is dropped silently when two loaded skills share the name.
 
 Output is Codex's findings with severity (critical, high, medium, low), file, line range, confidence, and recommendation, plus a verdict of approve or needs-attention. Assign severity by your own definitions, ignoring Codex's label: a confirmed reachable failure is `block` whatever Codex rated it; verified complexity or prose findings are `strong`; the rest are `nit` or dropped; a needs-attention verdict on design grounds feeds your design verdict. Verify every finding against the code first.
 
@@ -63,7 +60,7 @@ Codex's first answer is often a survey. Push back once when it is generic or hed
 `task` takes the prompt as an argument, a file, or piped stdin. It has no `--wait` flag and no `-` marker; anything unrecognised becomes prompt text.
 
 ```bash
-node "$COMPANION" task <<'EOF'
+codex-companion task <<'EOF'
 Earlier adversarial review output:
 <paste the findings>
 

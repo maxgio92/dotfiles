@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Run the official Codex plugin's companion script (codex@openai-codex).
+#
+# Usage: codex-companion <subcommand> [args...]
+#
+# The script is $CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs when that
+# variable is set and the file exists, else the highest version under
+# ~/.claude/plugins/cache/openai-codex/codex/*/scripts/ by version sort.
+# Arguments and stdin pass through to node unchanged, so the heredoc form of
+# `task` works. Exits 127 with one stderr line when no script is found.
+#
+# A single program name gives permission allow-lists one rule to match
+# (Bash(codex-companion:*)) instead of the shell lines that locate the script.
+
+set -euo pipefail
+
+script=""
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "$CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs" ]; then
+  script="$CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs"
+else
+  shopt -s nullglob
+  candidates=("$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs)
+  shopt -u nullglob
+  if [ "${#candidates[@]}" -gt 0 ]; then
+    script="$(printf '%s\n' "${candidates[@]}" | sort -V | tail -n 1)"
+  fi
+fi
+
+if [ -z "$script" ]; then
+  echo "codex-companion: no codex-companion.mjs found; install the codex@openai-codex plugin" >&2
+  exit 127
+fi
+
+exec node "$script" "$@"

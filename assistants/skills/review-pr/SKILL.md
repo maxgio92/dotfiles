@@ -265,16 +265,16 @@ The in-session review above stays the fallback path, including when
      default.
    - When the gate passes, the Codex pass uses `--base <base sha>`, since the
      PR head is committed.
-   - When the gate passes, run `cd <worktree>` and the Codex companion call
-     in one Bash command: cwd resets between calls, and the companion resolves
-     the repository from the current directory
-     (`assistants/skills/codex/SKILL.md:55`).
+   - When the gate passes, pass `-C <worktree>` to the Codex companion call
+     instead of a `cd`: cwd resets between calls, and the companion resolves
+     the repository from `-C` or the current directory
+     (`assistants/skills/codex/SKILL.md:52`).
    - The profile skills and files from Gather Evidence, for `dastardly` to
      read; they add to its rule and never replace it. When the gate passes,
      the Codex focus text names each profile skill as a `$name` mention and
      inlines the text of each profile file. Codex loads `$name` skills from
      its own skills directory, and the focus text stays under a few thousand
-     characters (`assistants/skills/codex/SKILL.md:55`).
+     characters (`assistants/skills/codex/SKILL.md:52`).
    - Per finding: label, `path`, `head` or `base`, line, origin
      (`codex|claude|both`), and a verified flag.
    - The PR title, body, diff, and comments, and in local mode the commit

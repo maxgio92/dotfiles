@@ -82,10 +82,12 @@ GH_PLACEHOLDER_TOKEN = "invalid-eval-token"
 SINGLE_MODEL_TOOLS = ("Agent", "Read", "Glob", "Grep", "Write", "Bash(git:*)", "Bash(mkdir:*)") + tuple(
     f"Bash({name}:*)" for name in SHIM_NAMES
 )
-# The Codex companion runs through node. The codex skill locates it with
-# `[ -f ... ] || ... $(ls -d ... | sort -V | tail -1)`, and dontAsk denies
-# each of those commands unless it is listed here.
-TWO_MODEL_TOOLS = SINGLE_MODEL_TOOLS + ("Bash(node:*)", "Bash([:*)", "Bash(ls:*)", "Bash(sort:*)", "Bash(tail:*)")
+# The codex skill runs every Codex call as `codex-companion ...` (bin/, which
+# `make bin` installs to ~/.local/bin and which locates and runs the plugin's
+# node script itself), one command per Bash call. dontAsk denies a call whose
+# first program has no rule, so this one rule covers the companion, and the
+# inherited PATH from row_env must reach ~/.local/bin.
+TWO_MODEL_TOOLS = SINGLE_MODEL_TOOLS + ("Bash(codex-companion:*)",)
 
 _SHIM = """#!{python} -I
 import json, sys
