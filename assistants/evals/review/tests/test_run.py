@@ -166,7 +166,7 @@ class CommandTest(unittest.TestCase):
                 )
                 shims = ["Bash(gh:*)", "Bash(gh-review-post:*)", "Bash(gh-review-reply:*)", "Bash(gh-api-safe:*)"]
                 single = ["Agent", "Read", "Glob", "Grep", "Write", "Bash(git:*)", "Bash(mkdir:*)", *shims]
-                companion = ["Bash(node:*)", "Bash([:*)", "Bash(ls:*)", "Bash(sort:*)", "Bash(tail:*)"]
+                companion = ["Bash(codex-companion:*)"]
                 self.assertEqual(tools, single + companion if two_model else single)
                 self.assertNotIn("--bare", command)
 
