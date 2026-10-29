@@ -50,8 +50,8 @@ BLOCK_RANK = SEVERITY_RANK["block"]
 _DASTARDLY_FINDING = re.compile(r"^\[(design|block|strong|nit)\] (.+?):(\d+): (.+)$", re.MULTILINE)
 _DASTARDLY_VERDICT = re.compile(r"^Verdict: (approve|request-changes|reject-design)\s*$", re.MULTILINE)
 _CODEX_UNAVAILABLE_NIT = re.compile(r"^\[nit\][^\n]*codex[- ]unavailable", re.MULTILINE | re.IGNORECASE)
-# dastardly's output format opens with the Problem: line; in a framed report
-# its indentation is the margin.
+# dastardly's output format carries a Problem: line; in a framed report it
+# sits at the margin.
 _DASTARDLY_HEADER = re.compile(r"([ \t]+)Problem: ")
 
 _REVIEW_PR_SKIP = re.compile(r"^Verdict: skip\s*$", re.MULTILINE)
@@ -258,34 +258,37 @@ def _normalize_path(path: str) -> str:
 def _dedent_report(text: str) -> str:
     """Return the report with its frame dropped and its margin stripped.
 
-    The Agent tool_result can reach the parent session framed: at most one
-    preface line at column zero, then every report line indented by the same
-    margin, then optional trailer lines such as ``agentId:``. The margin is
-    the indentation of the report's ``Problem:`` header, which must be the
-    first or second non-blank line. Text without that shape, such as a plain
-    report that quotes an indented ``Verdict:`` line, or a block with
-    unindented prose between its first and last indented line, is returned
-    unchanged. Lines indented deeper than the margin, such as nested finding
-    bodies, stay indented, so the line-anchored patterns still match only
-    report-level lines.
+    The Agent tool_result can reach the parent session framed: one preface
+    line at column zero, then every report line indented, then optional
+    column-zero trailer lines, such as ``<usage>``, starting at the first
+    column-zero ``agentId:`` line. The margin is the shortest leading
+    whitespace in the block, every block line must start with it, and the
+    block must hold a ``Problem:`` line at exactly that margin. Text without
+    that shape is returned unchanged: a plain report that quotes indented
+    report lines, a block with a column-zero line inside it, or a preface
+    that is itself a ``Problem:`` line. Lines indented deeper than the margin,
+    such as nested finding bodies, stay indented, so the line-anchored
+    patterns still match only report-level lines.
     """
     lines = text.split("\n")
     body = [i for i, line in enumerate(lines) if line.strip()]
-    for n, first in enumerate(body[:2]):
-        header = _DASTARDLY_HEADER.match(lines[first])
-        if header:
-            break
-    else:
+    if not body or lines[body[0]][0] in " \t" or lines[body[0]].startswith("Problem: "):
         return text
-    margin = header.group(1)
-    # A preface is never itself a header: a column-zero Problem: line means a
-    # plain report whose second line quotes an indented one.
-    if n == 1 and (lines[body[0]].startswith(margin) or lines[body[0]].startswith("Problem: ")):
+    preface = body[0]
+    # The trailer starts at the first column-zero agentId: line; any other
+    # column-zero line before it falls inside the block and rejects the frame.
+    trailer = next((i for i in body if i > preface and lines[i].startswith("agentId:")), len(lines))
+    if any(lines[i][0] in " \t" for i in body if i > trailer):
         return text
-    last = max(i for i in body if lines[i].startswith(margin))
-    if any(not lines[i].startswith(margin) for i in body if first < i < last):
+    block = [i for i in body if preface < i < trailer]
+    if not block or any(lines[i][0] not in " \t" for i in block):
         return text
-    return "\n".join(line.removeprefix(margin) for line in lines[first : last + 1])
+    margin = min((lines[i][: len(lines[i]) - len(lines[i].lstrip(" \t"))] for i in block), key=len)
+    if any(not lines[i].startswith(margin) for i in block):
+        return text
+    if not any((h := _DASTARDLY_HEADER.match(lines[i])) and h.group(1) == margin for i in block):
+        return text
+    return "\n".join(line.removeprefix(margin) for line in lines[preface + 1 : trailer])
 
 
 def parse_dastardly(text: str) -> Review:
