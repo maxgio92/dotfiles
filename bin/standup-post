@@ -270,7 +270,7 @@ skill_real=$(readlink -f "$skill_dir")
 skills_real=$(dirname "$skill_real")
 sessions="$skill_dir/scripts/sessions-since.sh"
 
-draft_mode="DRAFT ONLY: do not post anything. After step c, print the draft as one fenced code block, then a line THREAD <the parent ts>, then the final line DRAFT."
+draft_mode="DRAFT ONLY: do not post anything. After step c, print the draft as one fenced code block, then the IMAGE_REQUESTS line from step c, then a line THREAD <the parent ts>, then the final line DRAFT."
 
 if [ "$mode" = approve ]; then
   # The draft is a plain parameter value, so the shell never expands its contents.
@@ -292,6 +292,7 @@ The team is $TEAM. $scope
 a. Find today's $TEAM Daily Standup thread: call mcp__plugin_slack_slack__slack_read_channel with channel_id $CHANNEL, oldest $oldest, latest $window_end and response_format detailed. The thread is the bot message whose text contains $SUBTEAM and \"Please post your daily update\". If there is none, print SKIP: no standup today and stop.
 b. Read that thread with mcp__plugin_slack_slack__slack_read_thread (channel_id $CHANNEL, the parent ts). If any reply other than the parent is from user $SELF, print SKIP: already replied and stop.
 c. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since (UTC). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Ask when the evidence does not settle it, but never Today: fill it with the team work planned for today as the skill says. Leave out the user's own initiatives (Linear issues labelled design and their pull requests). Put a blank line between sections. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop. The fenced block holds only the reply text: no Sources line and no marker.
+   Image requests are the user's issues in the Linear team named Delivery: call mcp__linear__list_issues with assignee \"me\" and team \"Delivery\", and keep the issues whose status type is neither completed nor canceled. When any are left, the first bullet under Today: must be \"• image requests: <key> <name>, <key> <name>\" listing every one of them. Outside the fenced block, print one line IMAGE_REQUESTS followed by their space-separated keys, or IMAGE_REQUESTS none when there are none.
 d. End with exactly one final line: SKIP: <reason>, DRAFT, or ERROR: <reason>."
 
   tools=(
@@ -371,12 +372,68 @@ draft_violations() {
   return 0
 }
 
+# Prints the issue keys of the last IMAGE_REQUESTS line outside the fenced
+# blocks of $output, "none", or nothing when there is no such line.
+image_request_line() {
+  printf '%s\n' "$output" | awk '/^[[:space:]]*```/ { open = !open; next } !open' |
+    sed -nE 's/^IMAGE_REQUESTS[[:space:]]+(.*[^[:space:]])[[:space:]]*$/\1/p' | tail -n 1
+}
+
+# Keys from the first attempt's IMAGE_REQUESTS line, which a redraft must
+# still lead Today with, so answering "none" cannot dodge the rejection.
+earlier_keys=()
+
+# Prints why draft $1 does not lead Today with the image requests that the
+# IMAGE_REQUESTS line of $output and earlier_keys list, or nothing when it
+# does. The model reports the keys itself, so this checks the draft against
+# its own Linear query, which it often skips otherwise.
+image_request_violations() {
+  local line keys=() key first
+  # --approve posts the draft verbatim, so the marker must stay out of it.
+  if grep -qE '^[[:space:]]*IMAGE_REQUESTS' <<<"$1"; then
+    printf 'Print IMAGE_REQUESTS outside the fenced block.\n'
+    return 0
+  fi
+  line=$(image_request_line)
+  if [ -z "$line" ]; then
+    printf 'It has no IMAGE_REQUESTS line. Query the Delivery issues assigned to you and print IMAGE_REQUESTS <keys> or IMAGE_REQUESTS none.\n'
+    return 0
+  fi
+  [ "$line" = none ] || read -ra keys <<<"$line"
+  for key in "${keys[@]}"; do
+    if ! [[ $key =~ ^[A-Z]+-[0-9]+$ ]]; then
+      printf 'Its IMAGE_REQUESTS line is not a list of issue keys such as DELI-123, or none.\n'
+      return 0
+    fi
+  done
+  for key in "${earlier_keys[@]}"; do
+    [[ " ${keys[*]} " == *" $key "* ]] || keys+=("$key")
+  done
+  [ "${#keys[@]}" -eq 0 ] && return 0
+  # The first non-blank line after Today:.
+  first=$(printf '%s\n' "$1" | awk 'seen && NF { print; exit } /^[[:space:]]*Today:[[:space:]]*$/ { seen = 1 }')
+  if [[ $first == "• image requests:"* ]]; then
+    for key in "${keys[@]}"; do
+      [[ $first =~ (^|[^A-Z0-9-])$key([^A-Z0-9-]|$) ]] || { first=; break; }
+    done
+    [ -n "$first" ] && return 0
+  fi
+  printf 'Today must start with • image requests: listing %s by key and name.\n' "${keys[*]}"
+}
+
 run_claude "$prompt"
 # One redraft with the reasons, since the timer runs once a day and a denied
 # draft could never be posted.
 if [ "$mode" = draft ] && [ "$status" -eq 0 ] && [ "$last" = DRAFT ] &&
-  draft=$(fenced_draft) && reasons=$(draft_violations "$draft") && [ -n "$reasons" ]; then
-  log "the draft would be denied at --approve; redrafting once"
+  draft=$(fenced_draft) && reasons=$(draft_violations "$draft"; image_request_violations "$draft") && [ -n "$reasons" ]; then
+  log "the draft was rejected; redrafting once"
+  line=$(image_request_line)
+  if [ "$line" != none ]; then
+    read -ra earlier_keys <<<"$line"
+    for key in "${earlier_keys[@]}"; do
+      [[ $key =~ ^[A-Z]+-[0-9]+$ ]] || { earlier_keys=(); break; }
+    done
+  fi
   run_claude "$prompt
 
 Your earlier draft was rejected for these reasons, so draft it again without them:
@@ -437,8 +494,8 @@ case $last in
         # Control characters could hide text from --show while --approve posts it.
         ! LC_ALL=C grep -q $'[\x01-\x08\x0b-\x1f\x7f]' <<<"$draft" ||
           fail "the draft holds control characters"
-        reasons=$(draft_violations "$draft")
-        [ -z "$reasons" ] || fail "the redraft would still be denied at --approve: ${reasons%%$'\n'*}"
+        reasons=$(draft_violations "$draft"; image_request_violations "$draft")
+        [ -z "$reasons" ] || fail "the redraft was still rejected: ${reasons%%$'\n'*}"
         save "$draft_file" "$draft"
         save "$pending_file" "$today $thread"
         log "standup draft ready: standup-post --show, then standup-post --approve"

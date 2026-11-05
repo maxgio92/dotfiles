@@ -10,7 +10,8 @@ SEND = "mcp__plugin_slack_slack__slack_send_message"
 SCANNER = ("python3 $HOME/.claude/hooks/communication-rules/scanner.py "
            "claude-code PreToolUse")
 # Records argv and cwd, writes FAKE_SENT to the send record as the post hook
-# would, then prints the scripted output and exit status.
+# would, then prints the scripted output and exit status. A redraft prompt
+# prints FAKE_REDRAFT_OUTPUT instead when it is set.
 FAKE_CLAUDE = """#!/usr/bin/env python3
 import json, os, sys
 with open(os.environ["FAKE_ARGV"], "a") as f:
@@ -18,7 +19,10 @@ with open(os.environ["FAKE_ARGV"], "a") as f:
 if os.environ.get("FAKE_SENT"):
     with open("sent", "w") as f:
         f.write(os.environ["FAKE_SENT"] + "\\n")
-sys.stdout.write(os.environ.get("FAKE_OUTPUT", ""))
+out = os.environ.get("FAKE_OUTPUT", "")
+if "rejected for these reasons" in sys.argv[2] and "FAKE_REDRAFT_OUTPUT" in os.environ:
+    out = os.environ["FAKE_REDRAFT_OUTPUT"]
+sys.stdout.write(out)
 sys.exit(int(os.environ.get("FAKE_STATUS", "0")))
 """
 # Records argv and stdin of each agent-notify call.
@@ -46,7 +50,11 @@ LATEST = 1792188000
 THREAD_TS = f"{OLDEST + 60}.000100"
 SENT_TODAY = f"{TODAY} {THREAD_TS}"
 DRAFT_TEXT = "Moved:\n• merged https://github.com/acme/mono/pull/70016\n\nToday:\n• review"
-DRAFT_OUTPUT = f"drafting\n```\n{DRAFT_TEXT}\n```\nSources: s1\nTHREAD {THREAD_TS}\nDRAFT\n"
+DRAFT_OUTPUT = f"drafting\n```\n{DRAFT_TEXT}\n```\nSources: s1\nIMAGE_REQUESTS none\nTHREAD {THREAD_TS}\nDRAFT\n"
+IMAGE_TEXT = DRAFT_TEXT.replace(
+    "Today:\n", "Today:\n• image requests: DELI-4882 bump go, DELI-4787 add jq\n")
+IMAGE_OUTPUT = DRAFT_OUTPUT.replace(DRAFT_TEXT, IMAGE_TEXT).replace(
+    "IMAGE_REQUESTS none", "IMAGE_REQUESTS DELI-4882 DELI-4787")
 POSTED = "POSTED https://x.slack.com/archives/C/p1\n"
 CHANNEL = "C0TEST00001"
 GATE_ARGS = (TODAY, str(OLDEST), str(LATEST), CHANNEL)
@@ -100,9 +108,11 @@ class StandupPost(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_script(self, *args, output="", status=0, now=FRIDAY, sent=""):
+    def run_script(self, *args, output="", status=0, now=FRIDAY, sent="", redraft=None):
         env = {**self.env, "FAKE_OUTPUT": output, "FAKE_STATUS": str(status),
                "STANDUP_POST_NOW": now, "FAKE_SENT": sent}
+        if redraft is not None:
+            env["FAKE_REDRAFT_OUTPUT"] = redraft
         return subprocess.run([str(SCRIPT), *args], env=env, capture_output=True,
                               text=True, timeout=30)
 
@@ -183,13 +193,72 @@ class StandupPost(unittest.TestCase):
                 self.argv_file.unlink(missing_ok=True)
                 result = self.run_script(output=DRAFT_OUTPUT.replace(DRAFT_TEXT, text))
                 self.assertEqual(result.returncode, 1)
-                self.assertIn("would still be denied", result.stderr)
+                self.assertIn("still rejected", result.stderr)
                 self.assertFalse(self.pending.exists())
                 self.assertFalse(self.draft.exists())
                 self.assertEqual(self.calls(self.notify_file), [])
                 calls = self.calls()
                 self.assertEqual(len(calls), 2)
                 self.assertIn(reason, self.flag(calls[1]["argv"], "-p"))
+
+    def test_draft_leading_with_image_requests_saves(self):
+        result = self.run_script(output=IMAGE_OUTPUT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.draft.read_text(), IMAGE_TEXT + "\n")
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_draft_prompt_asks_for_image_requests(self):
+        self.run_script(output="SKIP: x\n")
+        prompt = self.flag(self.calls()[0]["argv"], "-p")
+        self.assertIn('mcp__linear__list_issues with assignee "me" and team "Delivery"', prompt)
+        self.assertIn("neither completed nor canceled", prompt)
+        self.assertIn("IMAGE_REQUESTS none", prompt)
+        self.assertIn("• image requests:", prompt)
+        self.assertIn("then the IMAGE_REQUESTS line from step c, then a line THREAD", prompt)
+
+    def test_missing_image_requests_redrafts_once(self):
+        no_bullet = IMAGE_OUTPUT.replace(IMAGE_TEXT, DRAFT_TEXT)
+        cases = {
+            "no bullet": (no_bullet, "Today must start with • image requests: listing DELI-4882 DELI-4787"),
+            "bullet not first": (IMAGE_OUTPUT.replace(
+                "Today:\n", "Today:\n• review first\n"), "listing DELI-4882 DELI-4787"),
+            "missing key": (IMAGE_OUTPUT.replace("DELI-4787 add jq", "DELI-47870 add jq"),
+                            "listing DELI-4882 DELI-4787"),
+            "suffixed key": (IMAGE_OUTPUT.replace("DELI-4787 add jq", "DELI-4787-x add jq"),
+                             "listing DELI-4882 DELI-4787"),
+            "no line": (DRAFT_OUTPUT.replace("IMAGE_REQUESTS none\n", ""),
+                        "It has no IMAGE_REQUESTS line"),
+            "bad key": (IMAGE_OUTPUT.replace("DELI-4882 DELI-4787\n", "DELI-4882 $(x)\n"),
+                        "not a list of issue keys"),
+            "line inside the fence": (DRAFT_OUTPUT.replace(
+                "• review\n```", "• review\nIMAGE_REQUESTS none\n```"),
+                "Print IMAGE_REQUESTS outside the fenced block"),
+        }
+        for name, (output, reason) in cases.items():
+            with self.subTest(name):
+                self.argv_file.unlink(missing_ok=True)
+                result = self.run_script(output=output)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("still rejected", result.stderr)
+                self.assertFalse(self.pending.exists())
+                self.assertFalse(self.draft.exists())
+                calls = self.calls()
+                self.assertEqual(len(calls), 2)
+                self.assertIn(reason, self.flag(calls[1]["argv"], "-p"))
+        with self.subTest("redraft drops the earlier keys"):
+            self.argv_file.unlink(missing_ok=True)
+            result = self.run_script(output=no_bullet, redraft=DRAFT_OUTPUT)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("listing DELI-4882 DELI-4787", result.stderr)
+            self.assertFalse(self.pending.exists())
+            self.assertFalse(self.draft.exists())
+            self.assertEqual(len(self.calls()), 2)
+        with self.subTest("redraft fixes it"):
+            self.argv_file.unlink(missing_ok=True)
+            result = self.run_script(output=no_bullet, redraft=IMAGE_OUTPUT)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(self.draft.read_text(), IMAGE_TEXT + "\n")
+            self.assertEqual(len(self.calls()), 2)
 
     def test_broken_scanner_denies_draft(self):
         (self.rules / "scanner.py").write_text("")
