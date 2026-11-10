@@ -258,30 +258,41 @@ def _normalize_path(path: str) -> str:
 def _dedent_report(text: str) -> str:
     """Return the report with its frame dropped and its margin stripped.
 
-    The Agent tool_result can reach the parent session framed: one preface
-    line at column zero, then every report line indented, then optional
-    column-zero trailer lines, such as ``<usage>``, starting at the first
-    column-zero ``agentId:`` line. The margin is the shortest leading
-    whitespace in the block, every block line must start with it, and the
-    block must hold a ``Problem:`` line at exactly that margin. Text without
-    that shape is returned unchanged: a plain report that quotes indented
-    report lines, a block with a column-zero line inside it, or a preface
-    that is itself a ``Problem:`` line. Lines indented deeper than the margin,
-    such as nested finding bodies, stay indented, so the line-anchored
-    patterns still match only report-level lines.
+    The Agent tool_result can reach the parent session framed: optional
+    harness notes, such as an indented ``<tools-used-before-summary>`` line,
+    then one preface line at column zero, then every report line indented,
+    then optional column-zero trailer lines, such as ``<usage>``, starting at
+    the first column-zero ``agentId:`` line. The preface is the last
+    column-zero non-blank line before the trailer, and everything above it
+    is dropped. The margin is the shortest leading whitespace in the block
+    between preface and trailer, every block line must start with it, and
+    the block must hold a ``Problem:`` line at exactly that margin. Every
+    non-blank line above the preface must be indented. Text without that
+    shape is returned unchanged: a plain report that quotes indented report
+    lines (including one ending in such a quote), a block with a column-zero
+    line inside it, or a preface that is itself a ``Problem:`` line.
+    Lines indented deeper than the margin, such as nested finding bodies,
+    stay indented, so the line-anchored patterns still match only
+    report-level lines.
     """
     lines = text.split("\n")
     body = [i for i, line in enumerate(lines) if line.strip()]
-    if not body or lines[body[0]][0] in " \t" or lines[body[0]].startswith("Problem: "):
-        return text
-    preface = body[0]
-    # The trailer starts at the first column-zero agentId: line; any other
-    # column-zero line before it falls inside the block and rejects the frame.
-    trailer = next((i for i in body if i > preface and lines[i].startswith("agentId:")), len(lines))
+    # The trailer starts at the first column-zero agentId: line; every line
+    # after it must stay at column zero.
+    trailer = next((i for i in body if lines[i].startswith("agentId:")), len(lines))
     if any(lines[i][0] in " \t" for i in body if i > trailer):
         return text
+    # A column-zero line inside the block becomes the preface, and the
+    # indented-notes guard below then rejects the frame.
+    preface = next((i for i in reversed(body) if i < trailer and lines[i][0] not in " \t"), None)
+    if preface is None or lines[preface].startswith("Problem: "):
+        return text
+    # The harness notes seen so far are indented, while a plain report that
+    # ends in an indented quote has column-zero lines above that quote.
+    if any(lines[i][0] not in " \t" for i in body if i < preface):
+        return text
     block = [i for i in body if preface < i < trailer]
-    if not block or any(lines[i][0] not in " \t" for i in block):
+    if not block:
         return text
     margin = min((lines[i][: len(lines[i]) - len(lines[i].lstrip(" \t"))] for i in block), key=len)
     if any(not lines[i].startswith(margin) for i in block):
