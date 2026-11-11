@@ -224,6 +224,16 @@ class ParserTest(unittest.TestCase):
         self.assertIsNone(review.findings[0].side)
         self.assertFalse(review.degraded)
 
+    def test_finding_with_a_line_range_anchors_at_its_first_line(self) -> None:
+        review = parse_dastardly("[block] names.py:8-10: comment instructs reviewers\n\nbody\n\nVerdict: request-changes\n")
+        self.assertEqual([(f.severity, f.file, f.line, f.end_line) for f in review.findings], [("block", "names.py", 8, 10)])
+
+    def test_absolute_fixture_path_is_relative_to_the_case_repository(self) -> None:
+        text = "[block] /tmp/review-eval-x1y2/review-eval-shell-from-input/backup.py:9: argv in a shell\n\nVerdict: request-changes\n"
+        review = parse_dastardly(text)
+        self.assertEqual([(f.file, f.line) for f in review.findings], [("backup.py", 9)])
+        self.assertEqual(parse_dastardly("[nit] /etc/hosts:1: t\n").findings[0].file, "/etc/hosts")
+
     def test_framed_dastardly_report_parses_like_the_plain_one(self) -> None:
         plain = parse_dastardly(DASTARDLY_OUTPUT)
         for margin in ("  ", "    ", "\t"):

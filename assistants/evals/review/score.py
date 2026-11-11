@@ -47,7 +47,10 @@ SEVERITY_RANK = {
 }
 BLOCK_RANK = SEVERITY_RANK["block"]
 
-_DASTARDLY_FINDING = re.compile(r"^\[(design|block|strong|nit)\] (.+?):(\d+): (.+)$", re.MULTILINE)
+# A finding may cite a line range (`path:8-10:`); it matches lines it overlaps.
+_DASTARDLY_FINDING = re.compile(r"^\[(design|block|strong|nit)\] (.+?):(\d+)(?:-(\d+))?: (.+)$", re.MULTILINE)
+# Reviewers sometimes cite the absolute path of the throwaway case repository.
+_FIXTURE_ROOT = re.compile(r"^/.*/review-eval-[^/]+/")
 _DASTARDLY_VERDICT = re.compile(r"^Verdict: (approve|request-changes|reject-design)\s*$", re.MULTILINE)
 _CODEX_UNAVAILABLE_NIT = re.compile(r"^\[nit\][^\n]*codex[- ]unavailable", re.MULTILINE | re.IGNORECASE)
 # dastardly's output format carries a Problem: line; in a framed report it
@@ -123,6 +126,8 @@ class Finding:
     title: str
     body: str
     side: str | None = None
+    # Last cited line for a `path:8-10:` range; None for a single line.
+    end_line: int | None = None
 
     @property
     def rank(self) -> int:
@@ -252,7 +257,7 @@ def load_case(path: str | Path) -> Case:
 
 
 def _normalize_path(path: str) -> str:
-    return path.removeprefix("./")
+    return _FIXTURE_ROOT.sub("", path).removeprefix("./")
 
 
 def _dedent_report(text: str) -> str:
@@ -313,8 +318,9 @@ def parse_dastardly(text: str) -> Review:
                 severity=match.group(1),
                 file=_normalize_path(match.group(2)),
                 line=int(match.group(3)),
-                title=match.group(4).strip(),
+                title=match.group(5).strip(),
                 body=text[match.end() : end].strip(),
+                end_line=int(match.group(4)) if match.group(4) else None,
             )
         )
     verdicts = _DASTARDLY_VERDICT.findall(text)
@@ -464,7 +470,8 @@ def _matches(matcher: Matcher, finding: Finding, reviewer: str) -> bool:
         return False
     if matcher.file is not None and finding.file != matcher.file:
         return False
-    if matcher.lines is not None and not matcher.lines[0] <= finding.line <= matcher.lines[1]:
+    last = max(finding.line, finding.end_line or finding.line)
+    if matcher.lines is not None and (last < matcher.lines[0] or finding.line > matcher.lines[1]):
         return False
     # dastardly findings have no side, so a side applies to review-pr only.
     if matcher.side is not None and reviewer == REVIEW_PR and finding.side != matcher.side:
