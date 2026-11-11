@@ -34,18 +34,19 @@ a section only when it has nothing to say.
 - `## Why`: the problem or motivation, and the linked task or issue.
 - `## How`: the approach and the notable decisions; before and after for UI
   or performance changes.
-- `## Impact`: what changes for users or operators, risk and rollback,
-  breaking changes when any, and the validation performed (tests, builds,
-  manual checks).
+- `## Impact`: what changes for users or operators, and the one risk a
+  reviewer must weigh; rollback and breaking changes only when they are not a
+  plain revert. Validation is one clause, never a checklist.
 - `## Tracking`: the tracker reference in the form the `task-tracker` Branch
   link section gives: `Refs: <KEY>` for Linear, `Closes owner/repo#N` for a
   GitHub issue. Omit when nothing is tracked. It stays last so the reference
   sits where Linear and the squash commit expect a trailer.
 
-One idea per paragraph: prefer two or three one-sentence paragraphs over one
-dense one, and give a supporting number or fact its own sentence. Write each
-paragraph on one line; GitHub renders newlines, so a hard wrap renders
-ragged. Wrap paths, packages, symbols, flags, and commands in backticks.
+Each section is one to three sentences and the body stays under about 180
+words. The How names the mechanism and the single decision a reviewer must
+know; a review round's corner cases, accepted misses and test shapes belong in
+the code comments and the ticket record. Write each paragraph on one line;
+GitHub renders newlines, so a hard wrap renders ragged. Wrap paths, packages, symbols, flags, and commands in backticks.
 Write go/ links as markdown links (`[go/x](https://go/x)`), plain URLs
 otherwise. Length follows the PR body budget in the communication rules.
 The personal writing standards apply. No AI attribution anywhere: no

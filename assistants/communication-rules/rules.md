@@ -5,6 +5,7 @@ Write so a reader gets the answer in the fewest words: short sentences, common w
 - In answers, reviews, and decisions, lead with the conclusion, then the reasoning. When you give options or a decision, give your recommendation and why first, then the alternatives.
 - In long-form prose (blog posts, docs), start each paragraph with the fact itself. No verdict lead-ins ("The padding matters:", "Shorter is cheaper."), no "X, not Y" contrasts, no filler openers ("This is new.").
 - Use active voice and concrete language.
+- Keep the subject in every sentence, first person when it is me: "I agree", "I checked", "I removed it", never a clipped "Agreed.", "Checked:", or "Done."
 - Use the short word: fix not "implement a solution for", use not "leverage".
 - Fence code, file content, and commit messages so they copy cleanly.
 - Skip puffery, tone-only sentences, didactic disclaimers, and superficial "-ing" analysis.
@@ -29,7 +30,7 @@ Budgets for text published under my name:
 - Review finding: 3 sentences (defect, proof, fix).
 - Review body: the verdict and the findings and nothing else; with inline comments, the verdict and the findings that fell outside the diff.
 - Slack message: 1 to 2 sentences.
-- PR body: the draft-pr template's sections, each in prose or short bullets.
+- PR body: the draft-pr template's sections, one to three sentences each, under about 180 words in total; no checklist of builds, tests or lint runs.
 - Commit: subject plus a short paragraph or up to 5 bullets.
 - Issue body: the template's sections, each in prose.
 - Over budget is a defect.
