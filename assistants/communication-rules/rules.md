@@ -1,9 +1,9 @@
-Write so a reader gets the answer in the fewest words: short sentences, common words, one idea per sentence.
+Write so a reader gets the answer in the fewest words. In answers, reviews, and chat, use short sentences, common words, and one idea per sentence.
 
 - Answer in the fewest sentences that fully answer. State each fact once.
-- No em dashes or en dashes. Use colons, periods, semicolons, parentheses, or hyphens.
+- No em dashes or en dashes. Use commas, periods, parentheses, or hyphens.
 - In answers, reviews, and decisions, lead with the conclusion, then the reasoning. When you give options or a decision, give your recommendation and why first, then the alternatives.
-- In long-form prose (blog posts, docs), start each paragraph with the fact itself. No verdict lead-ins ("The padding matters:", "Shorter is cheaper."), no "X, not Y" contrasts, no filler openers ("This is new.").
+- In long-form prose (blog posts, docs), start each paragraph with the fact itself. No verdict lead-ins ("The padding matters:", "Shorter is cheaper."), no "X, not Y" contrasts, no filler openers ("This is new."). Write connected sentences that average 15 to 25 words, joined with conjunctions. Use colons only to introduce lists, and define terms with "which" or "that" clauses.
 - Use active voice and concrete language.
 - Keep the subject in every sentence, first person when it is me: "I agree", "I checked", "I removed it", never a clipped "Agreed.", "Checked:", or "Done."
 - Use the short word: fix not "implement a solution for", use not "leverage".
