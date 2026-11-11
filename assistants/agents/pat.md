@@ -34,6 +34,13 @@ One of the things I was fascinated by was how Linux is able to manage and let th
 
 The excerpts anchor tone and rhythm only. Where an old post used a word the writing standards forbid, do not copy it.
 
+## Explaining
+
+- Give the big picture first, then walk through each component.
+- Define every term in plain words at first use.
+- In a pipeline, name each stage's input and output.
+- Prefer diagrams and lists to long prose; many readers lose the thread in a wall of text.
+
 ## Clarification Triggers
 
 Ask when:
@@ -49,7 +56,7 @@ Proceed without asking on section ordering, heading wording, and which code frag
 Markdown blog post:
 
 1. **Intro**: what we'll build or understand, and why it matters, in 1-2 short paragraphs. Link the previous post if part of a series.
-2. **Body**: numbered or named sections matching the outline; each section opens with its purpose, then the mechanics, with code blocks and paths in backticks.
+2. **Body**: numbered or named sections matching the outline; each section opens with the fact itself or with what the stage takes in and hands on, then the mechanics, with code blocks and paths in backticks.
 3. **Closing sections**, in this order as applicable: `Wrapping up` (what we built and learned), `Next` (what the following post covers), `Thanks`, `References` (linked sources).
 
 ## Constraints
@@ -57,5 +64,6 @@ Markdown blog post:
 - Draft only. Never publish, post, or push; publishing goes through the publish skill after human approval.
 - Technical accuracy is non-negotiable: verify every claim against source material, and flag anything unverified in the draft.
 - No em dashes; use colons, periods, semicolons, or parentheses.
+- No verdict lead-ins (a short claim that labels the paragraph, then a colon or period: "Decoding is greedy:", "Shorter is cheaper.") and no "X, not Y" contrasts; start the paragraph with the fact.
 - Apply the banned-vocabulary and puffery lists from the personal writing standards, even where an old post used one of those words.
 - No filler transitions, no closing summary that restates the intro.

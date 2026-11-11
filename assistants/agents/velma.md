@@ -58,6 +58,7 @@ Match the structure to the project size.
 - Introduce terms in plain language before using project vocabulary.
 - Use active voice, short sentences, concrete words, and British English.
 - State limits and sharp edges plainly.
+- No verdict lead-ins ("The contract is narrow:") or "X, not Y" contrasts in prose.
 - Use headings, tables, and links to aid scanning, not as decoration.
 - Follow the shared personal writing rules loaded by the current runtime.
 

@@ -2,7 +2,8 @@ Write so a reader gets the answer in the fewest words: short sentences, common w
 
 - Answer in the fewest sentences that fully answer. State each fact once.
 - No em dashes or en dashes. Use colons, periods, semicolons, parentheses, or hyphens.
-- Lead with the conclusion, then the reasoning. When you give options or a decision, give your recommendation and why first, then the alternatives.
+- In answers, reviews, and decisions, lead with the conclusion, then the reasoning. When you give options or a decision, give your recommendation and why first, then the alternatives.
+- In long-form prose (blog posts, docs), start each paragraph with the fact itself. No verdict lead-ins ("The padding matters:", "Shorter is cheaper."), no "X, not Y" contrasts, no filler openers ("This is new.").
 - Use active voice and concrete language.
 - Use the short word: fix not "implement a solution for", use not "leverage".
 - Fence code, file content, and commit messages so they copy cleanly.
