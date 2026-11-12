@@ -17,9 +17,10 @@ grant written by ``claude-grant``:
 What a grant approves, as ``&&``-joined segments that each match SPECS
 exactly (listed flags only, no abbreviations, no unknown options):
 
-* publish: ``git push`` (``-q`` allowed; ``--force-with-lease`` only with an
-  explicit remote and destination that is not HEAD, main, master or the
-  remote's default branch; no --force, no +refspec, no branch deletion,
+* publish: ``git push`` (``-q`` allowed; ``--force-with-lease`` only as
+  ``git push --force-with-lease REMOTE SRC:refs/heads/BRANCH`` where BRANCH
+  is not HEAD, main, master or the remote's default branch, read locally
+  or with ``git ls-remote``; no --force, no +refspec, no branch deletion,
   and refused when the repository config has a push refspec starting
   with + or : or a mirror remote; an explicit remote must be a name and must not exist as a path
   relative to the payload ``cwd``, since git treats a word that is not a
@@ -28,11 +29,12 @@ exactly (listed flags only, no abbreviations, no unknown options):
   ``gh issue create|comment|edit|close|reopen``, which take a PR or issue
   number only (a URL would reach another repository);
 * commit: ``git commit``;
-* ``cd`` must name an absolute directory (a relative one goes through
-  CDPATH); the hook follows it and checks later segments against that
+* ``cd`` must name an absolute, normalised directory (a relative one goes
+  through CDPATH, and ``..`` resolves differently in bash); the hook follows it and checks later segments against that
   directory. By default a grant covers any directory, including a
   repository the agent set up with its own hooks. ``claude-grant --root
-  DIR`` limits publish and commit to directories under DIR;
+  DIR`` limits publish and commit to directories under DIR, checked
+  against the worktree and git directory as well;
 * around them: ``cd``, ``git add|status|rev-parse|log|show``,
   ``gh pr view|checks|list|status|diff`` and ``gh issue|run view|list``.
   ``git push`` also runs the client ``pre-push`` hook.
@@ -212,6 +214,21 @@ def grant_info(session_id, now):
 def under(path, roots):
     """True when ROOTS is None or PATH is one of ROOTS or below one."""
     return roots is None or any(os.path.commonpath([path, r]) == r for r in roots)
+
+
+def repo_under(base, roots):
+    """True when ROOTS is None, or BASE and the repository git uses there are under ROOTS.
+
+    git walks up from BASE and follows a ``.git`` file, so the worktree top
+    level and the common git directory are checked as well as BASE.
+    """
+    if roots is None:
+        return True
+    out = git_out(base, "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir")
+    if out is None:
+        return False
+    paths = [base] + [os.path.realpath(p) for p in out.splitlines() if p]
+    return len(paths) == 3 and all(under(p, roots) for p in paths)
 
 
 def segments(command):
@@ -399,37 +416,66 @@ def push_args(argv):
     return (positionals[0] if positionals else None), positionals[1:], lease
 
 
-def default_branch(base, remote):
-    """Return the branch REMOTE/HEAD points at in the repository at BASE, or None."""
+BRANCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+
+def git_out(base, *args, timeout=5):
+    """Return stdout of ``git -C BASE ARGS`` on success, else None."""
     try:
-        res = subprocess.run(
-            ["git", "-C", base, "symbolic-ref", "--quiet", "--short", "refs/remotes/%s/HEAD" % remote],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception:  # noqa: BLE001 - unknown default
+        res = subprocess.run(["git", "-C", base, *args], capture_output=True, text=True, timeout=timeout)
+    except Exception:  # noqa: BLE001 - no answer
         return None
-    name = res.stdout.strip()
-    return name[len(remote) + 1:] if res.returncode == 0 and name.startswith(remote + "/") else None
+    return res.stdout if res.returncode == 0 else None
+
+
+def default_branch(base, remote):
+    """Return the default branch of REMOTE for the repository at BASE, or None.
+
+    The local refs/remotes/REMOTE/HEAD symref is read in full (``--short``
+    can shorten it ambiguously). Without it the remote is asked with
+    ``git ls-remote --symref``. None means unknown, and the caller refuses.
+    """
+    prefix = "refs/remotes/%s/" % remote
+    out = git_out(base, "symbolic-ref", "--quiet", prefix + "HEAD")
+    if out and out.strip().startswith(prefix):
+        return out.strip()[len(prefix):]
+    out = git_out(base, "ls-remote", "--symref", remote, "HEAD", timeout=7)
+    for line in (out or "").splitlines():
+        # ref: refs/heads/main<TAB>HEAD
+        head, _, name = line.partition("\t")
+        if name == "HEAD" and head.startswith("ref: refs/heads/"):
+            return head[len("ref: refs/heads/"):]
+    return None
 
 
 def unsafe_lease(argv, base):
-    """True when git push ARGV force-pushes with a lease to a protected or unnamed branch.
+    """True when git push ARGV is a lease push the hook cannot prove safe.
 
-    A lease push must name its remote and every destination. A destination
-    of HEAD, main, master, the remote's default branch, or anything outside
-    refs/heads is refused.
+    git resolves short destinations (``heads/main``), ``@`` and
+    ``remote.<name>.push`` mappings on its own, so a lease push must spell
+    every refspec as ``<src>:refs/heads/<name>``. NAME must be a plain
+    branch name other than HEAD, main, master or the remote's default
+    branch (case-insensitive). ``--tags`` with a lease, any configured
+    ``remote.*.push``, and an unknown default branch are refused.
     """
     remote, refspecs, lease = push_args(argv)
     if not lease:
         return False
-    if remote is None or not refspecs:
+    if remote is None or not refspecs or "--tags" in argv:
         return True
-    protected = {"HEAD", "main", "master", default_branch(base, remote)}
+    if git_out(base, "config", "-z", "--get-regexp", r"^remote\..*\.push$") is not None:
+        return True  # a push mapping exists (exit 1 with no output means none)
+    default = default_branch(base, remote)
+    if default is None:
+        return True
+    protected = {"head", "main", "master", default.casefold()}
     for refspec in refspecs:
-        dst = refspec.split(":", 1)[1] if ":" in refspec else refspec
-        if dst.startswith("refs/heads/"):
-            dst = dst[len("refs/heads/"):]
-        if not dst or dst.startswith("refs/") or dst in protected:
+        src, colon, dst = refspec.partition(":")
+        if not colon or not src or src == "@" or not dst.startswith("refs/heads/"):
+            return True
+        name = dst[len("refs/heads/"):]
+        if (not BRANCH_RE.match(name) or name.endswith((".lock", "/", ".")) or ".." in name
+                or "//" in name or name.casefold() in protected):
             return True
     return False
 
@@ -478,13 +524,16 @@ def approved(command, wanted, others, cwd=None, roots=None):
             return False
         if key == ("cd",):
             # Absolute only: bash looks a relative target up in CDPATH.
-            if len(argv) != 2 or not argv[1].startswith("/"):
+            # bash resolves . and .. by text before the kernel follows
+            # symlinks, so only a normalised path means the same place to both.
+            target = argv[1] if len(argv) == 2 else ""
+            if not target.startswith("/") or os.path.normpath(target) != target:
                 return False
-            base = os.path.realpath(argv[1])
+            base = os.path.realpath(target)
             if not os.path.isdir(base):
                 return False
             continue
-        if (key in PUBLISH or key in COMMIT) and not under(base, roots):
+        if (key in PUBLISH or key in COMMIT) and not repo_under(base, roots):
             return False
         if key == ("git", "push") and (
                 local_remote(argv, base) or config_forces(base) or unsafe_lease(argv, base)):
