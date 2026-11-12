@@ -79,8 +79,8 @@ expect "grant: add commit push" $P "$A" allow "git add -A && git commit -m 'fix(
 expect "grant: scoped PR title" $P "$A" allow "gh pr create --title 'feat(x): y' --body-file $tb/b.md"
 expect "grant: gh pr merge" $P "$A" allow "gh pr merge 12 --squash --delete-branch"
 expect "grant: push origin HEAD" $P "$A" allow "git push origin HEAD"
-expect "grant: force-with-lease" $P "$A" none "git push --force-with-lease origin br"
-expect "grant: force-with-lease value" $P "$A" none "git push --force-with-lease=br origin br"
+expect "grant: force-with-lease feature branch" $P "$A" allow "git push --force-with-lease origin br"
+expect "grant: force-with-lease value" $P "$A" allow "git push --force-with-lease=br origin br"
 expect "grant: gh pr create flags" $P "$A" allow "gh pr create -B main -H x -t t -F $tb/b.md --draft"
 expect "grant: gh pr create -R refused" $P "$A" none "gh pr create -B main -t t -F b.md -R o/r"
 expect "grant: gh pr review approve" $P "$A" allow "gh pr review 3 --approve --body-file $tb/r.md"
@@ -146,6 +146,47 @@ git -C "$repo" config --unset 'remote.a b.push'
 printf '[remote "origin"]\n\tmirror\n' >>"$repo/.git/config"
 expect "grant: bare mirror key refused" $P "$A" none "git push" "$repo"
 expect "grant: relative cwd push refused" $P "$A" none "git push" "relative/dir"
+# Lease pushes, quiet, and cd tracking.
+lr="$work/lease"; git init -q "$lr"
+expect "grant: push -q" $P "$A" allow "git push -q fork ful-1"
+expect "grant: lease -q to fork branch" $P "$A" allow "git push -q --force-with-lease fork ful-1070" "$lr"
+expect "grant: lease src:dst branch" $P "$A" allow "git push --force-with-lease fork HEAD:refs/heads/ful-1" "$lr"
+expect "grant: lease to main refused" $P "$A" none "git push --force-with-lease origin main" "$lr"
+expect "grant: lease to master refused" $P "$A" none "git push --force-with-lease origin HEAD:refs/heads/master" "$lr"
+expect "grant: lease to HEAD refused" $P "$A" none "git push --force-with-lease origin HEAD" "$lr"
+expect "grant: lease without refspec refused" $P "$A" none "git push --force-with-lease origin" "$lr"
+expect "grant: lease without remote refused" $P "$A" none "git push --force-with-lease" "$lr"
+expect "grant: lease to tag refused" $P "$A" none "git push --force-with-lease origin refs/tags/v1" "$lr"
+expect "grant: lease to empty dst refused" $P "$A" none "git push --force-with-lease origin HEAD:" "$lr"
+git -C "$lr" update-ref refs/remotes/fork/trunk "$(git -C "$lr" hash-object -w --stdin </dev/null)" 2>/dev/null
+git -C "$lr" symbolic-ref refs/remotes/fork/HEAD refs/remotes/fork/trunk
+expect "grant: lease to remote default refused" $P "$A" none "git push --force-with-lease fork trunk" "$lr"
+expect "grant: lease to other branch with default set" $P "$A" allow "git push --force-with-lease fork ful-2" "$lr"
+expect "grant: force still refused" $P "$A" none "git push --force fork ful-2" "$lr"
+expect "grant: cd abs then push" $P "$A" allow "cd $lr && git push -q --force-with-lease fork ful-1"
+expect "grant: cd abs then add commit push" $P "$A" allow "cd $lr && git add -A && git commit -m x && git push fork ful-1"
+expect "commit: cd abs then commit" $T "$A" allow "cd $lr && git add -A && git commit --amend --no-edit"
+expect "grant: cd relative refused" $P "$A" none "cd lease && git push" "$work"
+expect "grant: cd missing dir refused" $P "$A" none "cd $work/nope && git push"
+expect "grant: cd into forcing config refused" $P "$A" none "cd $repo && git push"
+expect "grant: cd then lease to main refused" $P "$A" none "cd $lr && git push --force-with-lease fork main"
+# Roots.
+mkdir -p "$work/inside/repo" "$work/outside"
+R=33333333-cccc-4ccc-8ccc-333333333333
+printf '{"granted_at": %s, "expires_at": %s, "roots": ["%s"]}' "$now" "$((now + 3600))" "$work/inside" >"$grants/$R.json"
+expect "roots: cd under root allowed" $P "$R" allow "cd $work/inside/repo && git push fork ful-1"
+expect "roots: cwd under root allowed" $P "$R" allow "git push fork ful-1" "$work/inside/repo"
+expect "roots: cd outside root refused" $P "$R" none "cd $work/outside && git push fork ful-1"
+expect "roots: cwd outside root refused" $P "$R" none "git push fork ful-1" "$work/outside"
+expect "roots: commit outside root refused" $T "$R" none "git commit -m x" "$work/outside"
+expect "roots: read outside root allowed with publish inside" $P "$R" allow "git status && cd $work/inside && git push fork ful-1" "$work/outside"
+ln -s "$work/outside" "$work/inside/escape"
+expect "roots: symlink escape refused" $P "$R" none "cd $work/inside/escape && git push fork ful-1"
+printf '{"granted_at": %s, "expires_at": %s, "roots": []}' "$now" "$((now + 3600))" >"$grants/$R.json"
+expect "roots: empty list is no grant" $P "$R" none "git push fork ful-1" "$work/inside"
+printf '{"granted_at": %s, "expires_at": %s, "roots": ["rel"]}' "$now" "$((now + 3600))" >"$grants/$R.json"
+expect "roots: relative root is no grant" $P "$R" none "git push fork ful-1" "$work/inside"
+rm -f "$grants/$R.json"
 expect "grant: gh issue comment" $P "$A" allow "gh issue comment 3 --body-file $tb/c.md"
 expect "grant: gh issue close reason" $P "$A" allow "gh issue close 3 --reason completed"
 expect "grant: read then push" $P "$A" allow "git status && git log --oneline -n 3 && git push"
@@ -289,5 +330,11 @@ if [ -z "$(ls -A "$grants")" ]; then pass "cli revoke all"; else fail "cli revok
 
 if "$cli" 1h >/dev/null 2>&1; then fail "cli without session id" "accepted"; else pass "cli without session id"; fi
 if "$cli" revoke >/dev/null 2>&1; then fail "cli revoke without session id" "accepted"; else pass "cli revoke without session id"; fi
+if "$cli" 1h "$R" --root "$work/inside" >/dev/null && python3 -c 'import json,sys; g=json.load(open(sys.argv[1])); assert g["roots"]==[sys.argv[2]]' "$grants/$R.json" "$(realpath "$work/inside")"; then pass "cli --root records root"; else fail "cli --root records root" "$(cat "$grants/$R.json" 2>&1)"; fi
+expect "cli --root grant enforced" $P "$R" none "git push fork ful-1" "$work/outside"
+expect "cli --root grant allows inside" $P "$R" allow "git push fork ful-1" "$work/inside/repo"
+if "$cli" 1h "$R" --root "$work/nope" >/dev/null 2>&1; then fail "cli rejects missing root" "accepted"; else pass "cli rejects missing root"; fi
+if "$cli" list --root "$work" >/dev/null 2>&1; then fail "cli rejects --root on list" "accepted"; else pass "cli rejects --root on list"; fi
+if "$cli" 1h "$B" >/dev/null && ! grep -q roots "$grants/$B.json"; then pass "cli without --root covers any dir"; else fail "cli without --root" "$(cat "$grants/$B.json")"; fi
 
 if [ "$fails" -eq 0 ]; then echo "all passed"; else echo "$fails failed"; exit 1; fi

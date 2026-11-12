@@ -17,17 +17,22 @@ grant written by ``claude-grant``:
 What a grant approves, as ``&&``-joined segments that each match SPECS
 exactly (listed flags only, no abbreviations, no unknown options):
 
-* publish: ``git push`` (no force of any kind, no +refspec, no branch
-  deletion, and refused when the repository config has a push refspec
-  starting with + or : or a mirror remote; an explicit remote must be a name and must not exist as a path
+* publish: ``git push`` (``-q`` allowed; ``--force-with-lease`` only with an
+  explicit remote and destination that is not HEAD, main, master or the
+  remote's default branch; no --force, no +refspec, no branch deletion,
+  and refused when the repository config has a push refspec starting
+  with + or : or a mirror remote; an explicit remote must be a name and must not exist as a path
   relative to the payload ``cwd``, since git treats a word that is not a
   configured remote as a URL or path and runs that repository's hooks),
   ``gh pr create|merge|comment|review|edit|ready|close|reopen`` and
   ``gh issue create|comment|edit|close|reopen``, which take a PR or issue
   number only (a URL would reach another repository);
 * commit: ``git commit``;
-* neither publish nor commit may follow a ``cd`` segment, since it would act
-  on whatever repository ``cd`` named;
+* ``cd`` must name an absolute directory (a relative one goes through
+  CDPATH); the hook follows it and checks later segments against that
+  directory. By default a grant covers any directory, including a
+  repository the agent set up with its own hooks. ``claude-grant --root
+  DIR`` limits publish and commit to directories under DIR;
 * around them: ``cd``, ``git add|status|rev-parse|log|show``,
   ``gh pr view|checks|list|status|diff`` and ``gh issue|run view|list``.
   ``git push`` also runs the client ``pre-push`` hook.
@@ -127,7 +132,8 @@ def gh_read(positionals, **flags):
 
 READ = dict(value="--json")
 PUBLISH = {
-    ("git", "push"): spec(MANY, bool="-u --set-upstream --tags --dry-run -n"),
+    ("git", "push"): spec(MANY, bool="-u --set-upstream --tags --dry-run -n -q --quiet",
+                          optional="--force-with-lease"),
     ("gh", "pr", "create"): gh(NONE, value="--title -t --body-file -F --base -B --head -H"
                                " --label -l --reviewer -r --assignee -a", bool="--draft -d --fill"),
     ("gh", "pr", "merge"): gh(ONE, value="--subject -t --body-file -F",
@@ -174,14 +180,19 @@ def grant_dir():
     return os.path.join(state, "claude-publish-grants")
 
 
-def grant_expiry(session_id, now):
-    """Return expires_at of a valid grant for SESSION_ID, else None."""
+def grant_info(session_id, now):
+    """Return (expires_at, roots) of a valid grant for SESSION_ID, else None.
+
+    ROOTS is None when the grant covers every directory, else the list of
+    resolved directories a publish or commit must run under.
+    """
     if not isinstance(session_id, str) or not SESSION_RE.match(session_id):
         return None
     try:
         with open(os.path.join(grant_dir(), session_id + ".json")) as f:
             grant = json.load(f)
         granted, expires = grant["granted_at"], grant["expires_at"]
+        roots = grant.get("roots")
     except Exception:  # noqa: BLE001 - missing or malformed means no grant
         return None
     for value in (granted, expires):
@@ -189,7 +200,18 @@ def grant_expiry(session_id, now):
             return None
     if not granted <= now < expires or expires - granted > MAX_GRANT:
         return None
-    return expires
+    if roots is not None:
+        if not isinstance(roots, list) or not roots:
+            return None
+        if not all(isinstance(r, str) and os.path.isabs(r) for r in roots):
+            return None
+        roots = [os.path.realpath(r) for r in roots]
+    return expires, roots
+
+
+def under(path, roots):
+    """True when ROOTS is None or PATH is one of ROOTS or below one."""
+    return roots is None or any(os.path.commonpath([path, r]) == r for r in roots)
 
 
 def segments(command):
@@ -253,8 +275,8 @@ def safe_file(path, base):
 
     A message or body file is published as-is with no classifier check, so
     it must not name an arbitrary local file such as a key, a ``.env`` or a
-    ``.git/config`` that holds a token. BASE is the payload cwd, or None after a cd segment, when the directory
-    is unknown. realpath follows symlinks, so a link to a key is refused.
+    ``.git/config`` that holds a token. BASE is the directory the segment
+    runs in, or None when it is unknown. realpath follows symlinks, so a link to a key is refused.
     The file must exist, be a regular file of at most MAX_FILE bytes, and
     hold nothing that SECRET_RE matches, so a key copied into /tmp is
     refused too. This catches common formats only; it is not a secret scanner.
@@ -370,20 +392,59 @@ def config_forces(cwd):
     return False
 
 
-def local_remote(argv, cwd, moved):
+def push_args(argv):
+    """Return (remote, refspecs, lease) for a conforming git push ARGV."""
+    positionals = [a for a in argv[2:] if not a.startswith("-")]
+    lease = any(a == "--force-with-lease" or a.startswith("--force-with-lease=") for a in argv[2:])
+    return (positionals[0] if positionals else None), positionals[1:], lease
+
+
+def default_branch(base, remote):
+    """Return the branch REMOTE/HEAD points at in the repository at BASE, or None."""
+    try:
+        res = subprocess.run(
+            ["git", "-C", base, "symbolic-ref", "--quiet", "--short", "refs/remotes/%s/HEAD" % remote],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:  # noqa: BLE001 - unknown default
+        return None
+    name = res.stdout.strip()
+    return name[len(remote) + 1:] if res.returncode == 0 and name.startswith(remote + "/") else None
+
+
+def unsafe_lease(argv, base):
+    """True when git push ARGV force-pushes with a lease to a protected or unnamed branch.
+
+    A lease push must name its remote and every destination. A destination
+    of HEAD, main, master, the remote's default branch, or anything outside
+    refs/heads is refused.
+    """
+    remote, refspecs, lease = push_args(argv)
+    if not lease:
+        return False
+    if remote is None or not refspecs:
+        return True
+    protected = {"HEAD", "main", "master", default_branch(base, remote)}
+    for refspec in refspecs:
+        dst = refspec.split(":", 1)[1] if ":" in refspec else refspec
+        if dst.startswith("refs/heads/"):
+            dst = dst[len("refs/heads/"):]
+        if not dst or dst.startswith("refs/") or dst in protected:
+            return True
+    return False
+
+
+def local_remote(argv, base):
     """True when git push ARGV names a remote that git could open as a local path.
 
     git tries NAME and NAME.git (enter_repo also tries the /.git forms, which
     imply one of these exists). git resolves the name from the worktree root,
-    which is cwd or one of its ancestors, so every ancestor is checked. After a
-    cd segment the directory is unknown.
+    which is BASE or one of its ancestors, so every ancestor is checked.
     """
-    remote = next((a for a in argv[2:] if not a.startswith("-")), None)
+    remote = push_args(argv)[0]
     if remote is None:
         return False
-    if moved or not isinstance(cwd, str) or not os.path.isabs(cwd):
-        return True
-    d = os.path.normpath(cwd)
+    d = base
     while True:
         if any(os.path.lexists(os.path.join(d, remote + s)) for s in ("", ".git")):
             return True
@@ -393,26 +454,41 @@ def local_remote(argv, cwd, moved):
         d = parent
 
 
-def approved(command, wanted, others, cwd=None):
-    """True when every segment conforms to WANTED or OTHERS and one to WANTED."""
+def approved(command, wanted, others, cwd=None, roots=None):
+    """True when every segment conforms to WANTED or OTHERS and one to WANTED.
+
+    The hook follows each ``cd`` to an absolute directory, so later segments
+    are checked against the directory they run in. A publish or commit must
+    run under one of ROOTS when the grant lists any.
+    """
     argvs = segments(command)
     if not argvs:
         return False
-    hit, moved = False, False
-    known = isinstance(cwd, str) and os.path.isabs(cwd)
+    hit = False
+    base = os.path.realpath(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else None
     for argv in argvs:
         key, entry = lookup(argv, wanted)
         if key:
             hit = True
         else:
             key, entry = lookup(argv, others)
-        if not key or not conforms(argv, key, entry, cwd if known and not moved else None):
+        if not key or not conforms(argv, key, entry, base):
             return False
-        if moved and (key in PUBLISH or key in COMMIT):
-            return False  # it would act on whatever repository cd named
-        if key == ("git", "push") and (local_remote(argv, cwd, moved) or config_forces(cwd)):
+        if base is None:
             return False
-        moved = moved or key == ("cd",)
+        if key == ("cd",):
+            # Absolute only: bash looks a relative target up in CDPATH.
+            if len(argv) != 2 or not argv[1].startswith("/"):
+                return False
+            base = os.path.realpath(argv[1])
+            if not os.path.isdir(base):
+                return False
+            continue
+        if (key in PUBLISH or key in COMMIT) and not under(base, roots):
+            return False
+        if key == ("git", "push") and (
+                local_remote(argv, base) or config_forces(base) or unsafe_lease(argv, base)):
+            return False
     return hit
 
 
@@ -424,12 +500,13 @@ def main():
         if payload.get("tool_name") != "Bash" or not isinstance(command, str):
             return 0
         now = int(time.time())
-        expires = grant_expiry(payload.get("session_id"), now)
-        if expires is None:
+        info = grant_info(payload.get("session_id"), now)
+        if info is None:
             return 0
+        expires, roots = info
         until = time.strftime("%H:%M", time.localtime(expires))
         if event == "PermissionRequest" and approved(command, {**PUBLISH, **COMMIT}, {**LOCAL, **READS},
-                                                     payload.get("cwd")):
+                                                     payload.get("cwd"), roots):
             out = {
                 "systemMessage": "publish-gate: approved by grant until %s" % until,
                 "hookSpecificOutput": {
@@ -437,7 +514,7 @@ def main():
                     "decision": {"behavior": "allow"},
                 },
             }
-        elif event == "PreToolUse" and approved(command, COMMIT, LOCAL, payload.get("cwd")):
+        elif event == "PreToolUse" and approved(command, COMMIT, LOCAL, payload.get("cwd"), roots):
             out = {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
