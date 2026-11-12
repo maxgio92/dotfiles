@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Grant one Claude Code session a time-limited pass on publish prompts.
 
-Usage: claude-grant <duration> [session-id] [--root DIR]...
-                                  duration: 30m, 2h, or minutes (max 8h)
+Usage: claude-grant <duration> [session-id]   duration: 30m, 2h, or minutes (max 8h)
        claude-grant list
        claude-grant revoke [session-id|all]
 The deny rule Bash(claude-grant:*) blocks only the plain `claude-grant`
@@ -13,11 +12,14 @@ from the argument, else from $CLAUDE_CODE_SESSION_ID; with neither, it exits
 with an error. The publish-gate hook reads the grant file; see
 .claude/hooks/publish-gate.py for what a grant approves.
 
-Without --root a grant covers publishes from any directory the agent cds
-into. Each --root DIR limits publish and commit to directories under DIR.
+A grant approves every permission prompt in that session except the
+exceptions in ${XDG_CONFIG_HOME:-~/.config}/claude-grant/exceptions (built-in
+defaults when the file is missing). The grant pins that file: edit it,
+then grant again.
 """
 
 import glob
+import hashlib
 import json
 import os
 import re
@@ -62,7 +64,17 @@ def parse_duration(text):
     return seconds
 
 
-def grant(seconds, sid, roots=None):
+def exceptions_pin():
+    """sha256 of the exceptions file, or "defaults" when it is missing."""
+    config = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    try:
+        with open(os.path.join(config, "claude-grant", "exceptions"), "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except FileNotFoundError:
+        return "defaults"
+
+
+def grant(seconds, sid):
     directory = grant_dir()
     os.makedirs(directory, mode=0o700, exist_ok=True)
     os.chmod(directory, 0o700)
@@ -71,16 +83,12 @@ def grant(seconds, sid, roots=None):
     fd, tmp = tempfile.mkstemp(dir=directory, prefix=".tmp-")  # mode 0600
     try:
         with os.fdopen(fd, "w") as f:
-            record = {"granted_at": now, "expires_at": expires}
-            if roots:
-                record["roots"] = roots
-            json.dump(record, f)
+            json.dump({"granted_at": now, "expires_at": expires, "exceptions": exceptions_pin()}, f)
         os.replace(tmp, os.path.join(directory, sid + ".json"))
     except BaseException:
         os.unlink(tmp)
         raise
     print("granted session %s until %s" % (sid, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expires))))
-    print("  roots: %s" % (", ".join(roots) if roots else "any directory"))
 
 
 def grants():
@@ -93,13 +101,10 @@ def list_grants():
     for sid, path in grants():
         try:
             with open(path) as f:
-                record = json.load(f)
-            expires = record["expires_at"]
+                expires = json.load(f)["expires_at"]
             state = "until %s" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expires))
             if expires <= now:
                 state = "expired"
-            elif record.get("roots"):
-                state += " roots: %s" % ", ".join(record["roots"])
         except Exception:  # noqa: BLE001 - report, do not crash on a bad file
             state = "malformed"
         print("%s %s" % (sid, state))
@@ -122,21 +127,7 @@ def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__.strip().split("\n\n")[1], file=sys.stderr)
         return 64 if not argv else 0
-    cmd, rest, roots = argv[0], [], []
-    args = iter(argv[1:])
-    for arg in args:
-        if arg == "--root" or arg.startswith("--root="):
-            value = arg.split("=", 1)[1] if "=" in arg else next(args, None)
-            if not value:
-                die("--root needs a directory")
-            real = os.path.realpath(os.path.expanduser(value))
-            if not os.path.isdir(real):
-                die("--root %s is not a directory" % value)
-            roots.append(real)
-        else:
-            rest.append(arg)
-    if roots and cmd in ("list", "revoke"):
-        die("--root only applies to a grant")
+    cmd, rest = argv[0], argv[1:]
     if len(rest) > 1 or (cmd == "list" and rest):
         die("too many arguments")
     if cmd == "list":
@@ -145,7 +136,7 @@ def main(argv):
         revoke(rest[0] if rest else None)
     else:
         seconds = parse_duration(cmd)
-        grant(seconds, resolve_session(rest[0] if rest else None), roots)
+        grant(seconds, resolve_session(rest[0] if rest else None))
     return 0
 
 
