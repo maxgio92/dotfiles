@@ -220,6 +220,15 @@ expect_tool "exc: MCP destination field" "$A" none mcp__fs__move "{\"source\": \
 expect_tool "exc: camelCase filePath" "$A" none mcp__linear__create_attachment_from_upload "{\"filePath\": \"$HOME/.claude/settings.json\"}"
 expect_tool "exc: MCP non-string path" "$A" none mcp__fs__write_file '{"path": ["x"]}'
 expect_tool "not exc: MCP harmless path" "$A" allow mcp__fs__write_file '{"path": "/tmp/notes.md", "content": "x"}'
+expect_tool "exc: edit ~/.local/bin helper" "$A" none Edit "{\"file_path\": \"$HOME/.local/bin/gh-api-safe\", \"old_string\": \"a\", \"new_string\": \"b\"}"
+expect_tool "exc: write dotfiles bin" "$A" none Write "{\"file_path\": \"$HOME/.dotfiles/bin/workmux\", \"content\": \"x\"}"
+expect_tool "exc: write clorch handler" "$A" none Write "{\"file_path\": \"$HOME/.local/share/clorch/hooks/event_handler.sh\", \"content\": \"x\"}"
+expect_tool "exc: edit bashrc" "$A" none Edit "{\"file_path\": \"$HOME/.bashrc\", \"old_string\": \"a\", \"new_string\": \"b\"}"
+expect_tool "exc: write systemd unit" "$A" none Write "{\"file_path\": \"$HOME/.config/systemd/user/x.service\", \"content\": \"x\"}"
+expect "exc: shell into ~/.local/bin" $P "$A" none "cp /tmp/x ~/.local/bin/gh-api-safe && git push"
+expect "exc: shell on zshrc" $P "$A" none "echo x >> ~/.zshrc"
+expect_tool "not exc: Linear comment" "$A" allow mcp__linear__save_comment '{"issueId": "X-1", "body": "b"}'
+expect_tool "not exc: edit outside workdir" "$A" allow Edit '{"file_path": "/tmp/other/main.go", "old_string": "a", "new_string": "b"}'
 expect_tool "exc: NotebookEdit no path" "$A" none NotebookEdit '{"new_source": "x"}'
 expect_tool "exc: non-dict input" "$A" none Bash '"git push"'
 # Not exceptions: lease, -d on gh, refspec colons.

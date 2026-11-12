@@ -73,6 +73,8 @@ PATH_KEY_RE = re.compile(r"(path|file|dir|directory|destination|target)s?$", re.
 CORE = r"""
 # Shell access to Claude config, the exceptions file and the grants.
 bash \.claude\b|claude-grant|claude-publish-grants|\.git/hooks
+# Programs that hooks, allow rules and services run; an edit would outlast the grant.
+bash \.local/bin\b|\.dotfiles/bin\b|\.local/share/clorch\b
 # Questions and plan approval belong to the user.
 tool AskUserQuestion
 tool ExitPlanMode
@@ -80,8 +82,9 @@ tool ExitPlanMode
 # directories from the same XDG variables the hook reads.
 path ~/.claude
 path ~/.dotfiles/.claude
-path ~/.dotfiles/bin/claude-grant
-path ~/.local/bin/claude-grant
+path ~/.dotfiles/bin
+path ~/.local/bin
+path ~/.local/share/clorch
 """
 
 # Applied when the exceptions file is missing; the file replaces these.
@@ -101,6 +104,14 @@ bash \bgit\b[^\n;&|]*\bremote\b[^\n;&|]*--mirror
 bash \.git/config\b
 # Raw GitHub API writes; gh-api-gate asks only for writes, reads never prompt.
 bash \bgh\s+api\b
+# Shell startup files and user services run code in every later session.
+bash \.(bashrc|bash_profile|zshrc|zprofile|profile)\b|\.config/systemd\b
+path ~/.bashrc
+path ~/.bash_profile
+path ~/.zshrc
+path ~/.zprofile
+path ~/.profile
+path ~/.config/systemd
 # Slack speaks for the user as a person. Every command segment that names
 # agent-slack is an exception unless the whole segment is one read (message
 # list|get, search, channel list, user get|list, canvas get, auth test) with
