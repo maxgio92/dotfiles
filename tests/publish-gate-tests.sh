@@ -253,6 +253,18 @@ printf 'bash x\n' >"$XDG_CONFIG_HOME/claude-grant/exceptions"; chmod 000 "$XDG_C
 if [ -r "$XDG_CONFIG_HOME/claude-grant/exceptions" ]; then pass "custom: unreadable (skipped as root)"; else expect "custom: unreadable excepts all" $P "$A" none "ls"; fi
 rm -f "$XDG_CONFIG_HOME/claude-grant/exceptions"; write_grant "$A" "$now" "$((now + 3600))"
 
+# check mode: the publish skill asks whether a grant covers a post command.
+chk() { CLAUDE_CODE_SESSION_ID="$1" "$hook" check -- "$2"; }
+[ "$(chk "$A" 'gh pr comment 1 --body-file /tmp/b.md')" = approved ] && pass "check: granted post approved" || fail "check: granted post approved" "$(chk "$A" 'gh pr comment 1 --body-file /tmp/b.md')"
+chk "$A" 'gh pr comment 1 --body-file /tmp/b.md' >/dev/null; [ $? -eq 0 ] && pass "check: approved exits 0" || fail "check: approved exits 0" "nonzero"
+[ "$(chk "$A" 'agent-slack message send C1 "$(cat /tmp/m)"')" = excepted ] && pass "check: Slack post excepted" || fail "check: Slack post excepted" "approved"
+chk "$A" 'agent-slack message send C1 x' >/dev/null; [ $? -eq 1 ] && pass "check: excepted exits 1" || fail "check: excepted exits 1" "exit 0"
+[ "$(chk "$A" 'gh api -X POST repos/o/r/issues/1/comments -f body=x')" = excepted ] && pass "check: gh api excepted" || fail "check: gh api excepted" "approved"
+[ "$(chk "$B" 'gh pr comment 1 --body-file /tmp/b.md')" = excepted ] && pass "check: no grant excepted" || fail "check: no grant excepted" "approved"
+[ "$(CLAUDE_CODE_SESSION_ID= "$hook" check -- 'gh pr comment 1')" = excepted ] && pass "check: no session id excepted" || fail "check: no session id excepted" "approved"
+[ "$("$hook" check 'gh pr comment 1' 2>/dev/null)" = excepted ] && pass "check: bad usage excepted" || fail "check: bad usage excepted" "approved"
+out="$(payload $P "$A" "gh pr comment 1" | "$hook")"; printf '%s' "$out" | grep -q '"allow"' && pass "check: hook mode unchanged" || fail "check: hook mode unchanged" "$out"
+
 # PreToolUse is ignored: commits go to the classifier.
 expect "PreToolUse ignored" $T "$A" none "git commit -m x"
 

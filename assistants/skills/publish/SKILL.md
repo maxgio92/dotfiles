@@ -52,6 +52,11 @@ that publishes; drafting skills (`draft-pr`, `draft-issue`, `pr-review-message`,
    pending or failed; report the blocking item instead of posting. The only
    exception is a draft PR announcement the user explicitly asked to share
    while CI runs, and only when the user says so for that post.
+9. Grant. Only if the conversation shows `granted session <this session> until
+   <time>` from `claude-grant` and that time has not passed, run
+   `~/.claude/hooks/publish-gate.py check -- '<exact post command>'` before
+   asking. `approved` means the grant covers the post: post without asking,
+   then report the permalink. Anything else, or no such line: ask as usual.
 
 ## Not publishing
 

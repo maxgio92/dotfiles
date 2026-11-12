@@ -44,7 +44,9 @@ This is a convenience boundary, not a security boundary: the CORE shell
 rule matches text, so a disguised command bundled with a prompting one can
 still write a grant file. Only a separate OS user would close that.
 
-The hook never exits 2 and prints nothing on any error.
+The hook never exits 2 and prints nothing on any error. ``publish-gate.py
+check -- COMMAND`` answers the same question for the publish skill without
+approving anything; see check().
 """
 
 import fnmatch
@@ -307,5 +309,35 @@ def main():
     return 0
 
 
+def check(argv):
+    """``publish-gate.py check -- COMMAND``: would a grant approve this Bash command?
+
+    For the publish skill, and only in a session the user granted. Uses this
+    session's grant ($CLAUDE_CODE_SESSION_ID) and the current directory, and
+    prints ``approved`` (exit 0) or ``excepted`` (exit 1), the answer the
+    PermissionRequest hook would give for the same command. Any error prints
+    ``excepted``. It never approves anything itself.
+    """
+    try:
+        if len(argv) != 2 or argv[0] != "--":
+            raise ValueError("usage: publish-gate.py check -- COMMAND")
+        payload = {
+            "session_id": os.environ.get("CLAUDE_CODE_SESSION_ID"),
+            "tool_name": "Bash",
+            "tool_input": {"command": argv[1]},
+            "cwd": os.getcwd(),
+        }
+        if grant_expiry(payload["session_id"], int(time.time())) is not None \
+                and not excepted(payload, load_rules()):
+            print("approved")
+            return 0
+    except Exception:  # noqa: BLE001 - any doubt means ask as usual
+        pass
+    print("excepted")
+    return 1
+
+
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["check"]:
+        sys.exit(check(sys.argv[2:]))
     sys.exit(main())
