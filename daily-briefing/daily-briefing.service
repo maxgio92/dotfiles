@@ -13,4 +13,9 @@ TimeoutStartSec=30min
 ProtectHome=read-only
 ReadWritePaths=-%h/.local/state/daily-briefing -%h/notes/notes
 ReadWritePaths=-%h/.claude -%h/.claude.json -%h/.cache -%h/.local/state/gh -%h/.cache/gh
+# agent-slack keeps its user cache and file downloads in
+# $XDG_RUNTIME_DIR/agent-slack, which ProtectHome also makes read-only.
+RuntimeDirectory=agent-slack
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
 NoNewPrivileges=yes

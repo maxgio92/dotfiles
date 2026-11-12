@@ -104,8 +104,13 @@ user does not own goes through this skill after the human approves it.
   in the browser. Then continue under `drive-to-merge`; the URL is a
   checkpoint, not the end.
 - Another person's Linear issue: `save_comment`, or `save_issue` for a body or status change the owner asked for.
-- Slack: the Slack send tools, or the repository's posting helper if one
-  exists.
+- Slack: write the approved text to a file and run `agent-slack message send
+  <message-url> "$(cat <file>)"` to reply in that thread, or `agent-slack
+  message send <channel-id> "$(cat <file>)" [--thread-ts <root-ts>]`; the
+  `slack` skill covers targets and output. Report the `ts` and `permalink` it
+  prints, and fetch the message with `agent-slack message list` when no
+  permalink comes back. Never resend after a failed or timed-out send; read the
+  thread first, since the post may have landed.
 
 Permission gates (the Claude Code ask list, pi's outward-write-gate, the codex
 sandbox) fire on these commands by design; the prompt they raise is the

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Front end for the agent-slack CLI (https://github.com/stablyai/agent-slack).
+#
+# Usage: agent-slack <agent-slack arguments>
+#
+# `make bin` installs this file to ~/.local/bin, which comes before the npm
+# global bin on PATH, so it shadows the real CLI. It reads the Slack user
+# token from ~/.config/agent-slack/token (mode 600, owned by the caller) and
+# passes it as SLACK_TOKEN, with AGENT_SLACK_NO_UPDATE_CHECK=1, to the real
+# CLI it execs. When SLACK_WORKSPACE_URL is unset and
+# ~/.config/agent-slack/workspace holds a workspace URL, it exports that too:
+# without one, `message send` to a channel ID returns no permalink.
+#
+# It refuses `update` (it rewrites the global install) and `auth import-*`
+# (it stores browser session tokens) with exit 64, before the CLI runs.
+#
+# The real CLI is found by absolute path, never PATH, since PATH resolves to
+# this wrapper. No environment variable can change it: a caller that could
+# would receive the token in its own program. Tests rewrite REAL_CLI in a copy.
+
+set -euo pipefail
+
+readonly EX_POLICY=64
+
+die() {
+  echo "agent-slack: $*" >&2
+  exit 1
+}
+
+policy() {
+  echo "agent-slack: $*" >&2
+  exit "$EX_POLICY"
+}
+
+readonly REAL_CLI=/home/linuxbrew/.linuxbrew/bin/agent-slack
+real=$REAL_CLI
+[ -x "$real" ] || die "no executable agent-slack CLI at $real; install it with npm i -g agent-slack"
+real_path=$(readlink -f -- "$real") || die "cannot resolve $real"
+self_path=$(readlink -f -- "${BASH_SOURCE[0]}") || die "cannot resolve the wrapper path"
+[ "$real_path" != "$self_path" ] || die "$real resolves to this wrapper; fix REAL_CLI"
+
+# The subcommand is the first argument that is not a global option, so
+# `--safe-mode update` is refused like `update`.
+args=("$@")
+i=0
+while [ "$i" -lt "${#args[@]}" ] && [[ ${args[i]} == -* ]]; do
+  i=$((i + 1))
+done
+case "${args[i]:-}" in
+  update) policy "refusing 'update'; upgrade with npm i -g agent-slack" ;;
+  auth)
+    for arg in "${args[@]:i+1}"; do
+      [[ $arg == -* ]] && continue
+      case "$arg" in
+        import-*) policy "refusing 'auth $arg'; the token comes from ~/.config/agent-slack/token" ;;
+      esac
+      break
+    done
+    ;;
+esac
+
+config_dir="$HOME/.config/agent-slack"
+token_file="$config_dir/token"
+[ -f "$token_file" ] || die "missing $token_file; save a Slack user token (xoxp-) there with mode 600"
+read -r mode owner < <(stat -c '%a %u' -- "$token_file") || die "cannot stat $token_file"
+[ "$mode" = 600 ] || die "$token_file has mode $mode; run chmod 600 $token_file"
+[ "$owner" = "$(id -u)" ] || die "$token_file is not owned by the current user"
+token=$(<"$token_file")
+# Strip surrounding whitespace, such as the trailing newline of an editor.
+token=${token#"${token%%[![:space:]]*}"}
+token=${token%"${token##*[![:space:]]}"}
+[ -n "$token" ] || die "$token_file is empty"
+
+# agent-slack calls the API at the workspace URL it is given, so a URL on
+# another host would receive the token. Every URL the CLI can take (an
+# inherited SLACK_WORKSPACE_URL, a --workspace value, a message or canvas URL
+# argument) must be https on *.slack.com; a --workspace name selector must
+# not look like a URL. An argument that starts with http is treated as a URL,
+# so message text that is only a non-Slack link is refused too.
+slack_url_re='^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.slack\.com(/[^[:space:]]*)?$'
+check_url() {
+  [[ $1 =~ $slack_url_re ]] || policy "refusing $2 '$1'; only https://<name>.slack.com URLs carry the token"
+}
+if [ -n "${SLACK_WORKSPACE_URL:-}" ]; then
+  check_url "$SLACK_WORKSPACE_URL" SLACK_WORKSPACE_URL
+fi
+want_workspace=
+for arg in "$@"; do
+  if [ -n "$want_workspace" ]; then
+    want_workspace=
+    value=$arg
+  elif [ "$arg" = --workspace ]; then
+    want_workspace=1
+    continue
+  elif [[ $arg == --workspace=* ]]; then
+    value=${arg#--workspace=}
+  else
+    shopt -s nocasematch
+    if [[ $arg == http* ]]; then
+      shopt -u nocasematch
+      check_url "$arg" "URL argument"
+    fi
+    shopt -u nocasematch
+    continue
+  fi
+  if [[ $value == *:* || $value == */* ]]; then
+    check_url "$value" "--workspace"
+  fi
+done
+
+workspace_file="$config_dir/workspace"
+if [ -z "${SLACK_WORKSPACE_URL:-}" ] && [ -f "$workspace_file" ]; then
+  workspace=$(<"$workspace_file")
+  workspace=${workspace//[[:space:]]/}
+  [[ $workspace =~ ^https://[A-Za-z0-9.-]+\.slack\.com/?$ ]] ||
+    die "$workspace_file does not hold a https://<name>.slack.com workspace URL"
+  export SLACK_WORKSPACE_URL="$workspace"
+fi
+
+# A browser cookie would switch an xoxc token to browser auth; this token is
+# a user token, so none is passed on.
+# The CLI runs with a clean environment: an inherited NODE_OPTIONS, NODE_PATH,
+# proxy, CA or TLS override, LD_* or browser cookie would let other code see
+# or redirect the token. PATH is fixed, since the CLI's shebang finds node
+# through it.
+keep=(HOME="$HOME" PATH="$(dirname "$REAL_CLI"):/usr/bin:/bin"
+  SLACK_TOKEN="$token" AGENT_SLACK_NO_UPDATE_CHECK=1)
+for var in LANG LC_ALL TZ TERM XDG_RUNTIME_DIR SLACK_WORKSPACE_URL; do
+  if [ -n "${!var:-}" ]; then keep+=("$var=${!var}"); fi
+done
+exec env -i "${keep[@]}" "$real" "$@"

@@ -1,10 +1,26 @@
 #!/bin/sh
 # Run the daily-briefing skill headless and save the result as
 # ~/.local/state/daily-briefing/briefings/<date>.md, plus a latest.md link.
-# Slack content is untrusted, so the agent gets only read-only Slack tools:
+# Slack content is untrusted, so the agent gets only read-only agent-slack
+# commands (Bash prefix rules plus the --bash-gate hook) and no file tools:
 # this script reads the config, fetches PRs, and writes every file itself.
 set -eu
 umask 077
+
+# Hook mode, called by claude before every Bash or Monitor call of the run. Claude Code
+# runs its built-in read-only commands (grep, find, cat...) without a prompt
+# in every mode, so permission rules alone would let Slack-steered text read
+# the disk. This PreToolUse gate denies (exit 2) any command but one
+# agent-slack read whose arguments are plain words or double-quoted text free
+# of $, `, \ and control characters. Exit 1 would let the call through, so
+# unreadable input denies too.
+if [ "${1:-}" = --bash-gate ]; then
+	jq -e '.tool_input.command | type == "string" and test("\\Aagent-slack (channel list|message list|message get|search messages)( ([A-Za-z0-9_.,:=/#@+-]+|\"[^\"$`\\\\\\x00-\\x1f\\x7f]*\"))*\\z")' >/dev/null 2>&1 || {
+		echo "daily-briefing only runs one agent-slack read (channel list, message list, message get, search messages) with plain arguments" >&2
+		exit 2
+	}
+	exit 0
+fi
 
 state="${XDG_STATE_HOME:-$HOME/.local/state}/daily-briefing"
 dir="$state/briefings"
@@ -37,22 +53,46 @@ done | jq -s --argjson ignore "$ignore" -c '
 	add // [] | map(select((.author.is_bot | not) and ((.author.login) as $a | $ignore | index($a) | not))
 		| {url, title, author: .author.login, isDraft, state, commentsCount})' >"$prs"
 
+# The run loads user settings for the skill, and allow lists merge, so every
+# user Bash allow (codex-companion, gh-api-safe) would reach Slack-steered
+# text. Deny beats allow: deny each one in this run.
+# A settings file jq cannot read stops the run rather than skipping the denies.
+user_settings="$HOME/.claude/settings.json"
+rules=
+if [ -e "$user_settings" ]; then
+	rules=$(jq -r '.permissions.allow[]? | select(startswith("Bash"))' "$user_settings") || {
+		echo "daily-briefing: cannot read $user_settings" >&2
+		exit 1
+	}
+fi
+set --
+while IFS= read -r rule; do
+	if [ -n "$rule" ]; then set -- "$@" "$rule"; fi
+done <<EOF
+$rules
+EOF
+
+self=$(readlink -f "$0" | sed "s/'/'\\\\''/g")
+settings=$(jq -nc --arg cmd "sh '$self' --bash-gate" \
+	'{hooks: {PreToolUse: [{matcher: "Bash|Monitor", hooks: [{type: "command", command: $cmd}]}]}}')
+
 cd "$dir"
 claude -p "Use the daily-briefing skill to give me my daily briefing.
-Window start: $since (Unix $since_epoch). Do not read or write files and do not run commands.
+Window start: $since (Unix $since_epoch). Do not read or write files. Run no command except the agent-slack reads the skill names.
 Config:
 $(cat "$config")
 Feature PRs from the watched repositories, already fetched and filtered (JSON):
 $(cat "$prs")
 Return only the briefing Markdown." \
 	--permission-mode default \
-	--disallowedTools "Bash" "Read" "Write" "Edit" "NotebookEdit" "WebFetch" "WebSearch" \
+	--settings "$settings" \
+	--disallowedTools "Read" "Grep" "Glob" "Write" "Edit" "NotebookEdit" "WebFetch" "WebSearch" "$@" \
 	--allowedTools \
 	"Skill" "ToolSearch" "Agent" \
-	"mcp__plugin_slack_slack__slack_search_channels" \
-	"mcp__plugin_slack_slack__slack_read_channel" \
-	"mcp__plugin_slack_slack__slack_read_thread" \
-	"mcp__plugin_slack_slack__slack_search_public_and_private" \
+	"Bash(agent-slack channel list:*)" \
+	"Bash(agent-slack message list:*)" \
+	"Bash(agent-slack message get:*)" \
+	"Bash(agent-slack search messages:*)" \
 	>"$tmp"
 
 # Drop any progress notes the agent printed before the heading.

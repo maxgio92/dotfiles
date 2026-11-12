@@ -5,7 +5,7 @@ description: Build a daily briefing of what happened at the user's employer from
 
 # Daily Briefing
 
-Read the followed Slack channels and watched repositories over a time window, keep what matters, and return a short briefing. This skill reads and stops; it never posts, reacts, or replies.
+Read the followed Slack channels and watched repositories over a time window, keep what matters, and return a short briefing. This skill reads and stops; it never posts, reacts, or replies. Read Slack only with the `agent-slack` reads below (the `slack` skill covers their output); never run a write command.
 
 ## Config
 
@@ -27,11 +27,11 @@ ignore_authors:      # PR authors to drop (bots)
 
 The optional scalar `employer:` key names the company. When it is absent, say "the user's employer" instead; never add the key on your own.
 
-Build every Slack permalink as `https://<slack_domain>/archives/<channel id>/p<ts without the dot>`, and pass `slack_domain` to each subagent. Never guess the domain; if `slack_domain` is missing, take the host from a permalink a Slack tool returned and ask the user to add it.
+Cite a search result by the `permalink` it carries. Build any other Slack permalink as `https://<slack_domain>/archives/<channel id>/p<ts without the dot>`, and pass `slack_domain` to each subagent. Never guess the domain; if `slack_domain` is missing, take the host from a returned `permalink` and ask the user to add it.
 
-**First run.** If the file is missing, call `slack_list_user_channels` with `exclude_archived: true` and `format: names_only`. Propose the channels whose names suggest company-wide news (`announce`, `general`, `release`, `product`, `eng`, `launch`, `incident`) and ask the user which to follow and which repositories to watch. Write the file with their answer, then continue.
+**First run.** If the file is missing, list the user's channels with `agent-slack channel list --limit 200` (page with `--cursor <next_cursor>`). Propose the channels whose names suggest company-wide news (`announce`, `general`, `release`, `product`, `eng`, `launch`, `incident`) and ask the user which to follow and which repositories to watch. Write the file with their answer, then continue.
 
-**Edits.** When the user asks to follow or drop a channel or repository, edit the file and confirm in one line. Resolve an unknown channel name with `slack_search_channels` before adding it.
+**Edits.** When the user asks to follow or drop a channel or repository, edit the file and confirm in one line. Resolve an unknown channel name with `agent-slack channel list --all --limit 200` before adding it.
 
 ## Window
 
@@ -41,7 +41,7 @@ Read `~/.local/state/daily-briefing/last-run` (an ISO timestamp). Start the wind
 
 Run these in parallel.
 
-1. **Channels.** Resolve each channel name to an ID once with `slack_search_channels` and cache the IDs in the config as `name: id` comments. Call `slack_read_channel` with `oldest` set to the window start and `response_format: detailed`; page with `cursor` until the window is covered. Open a thread with `slack_read_thread` when the parent has 5+ replies or 5+ reactions, or when it announces something and the outcome sits in the replies.
+1. **Channels.** Resolve each channel name to an ID once with `agent-slack channel list` and cache the IDs in the config as `name: id` comments. Read each channel with `agent-slack message list <id> --oldest <window start, Unix> --limit 200 --include-reactions`; when 200 messages come back, read again with `--latest` set to the oldest `ts` returned until the window is covered. Open a thread with `agent-slack message list <id> --thread-ts <ts>` when the parent has 5+ replies or 5+ reactions, or when it announces something and the outcome sits in the replies. `agent-slack search messages "<query>" --channel <name>` finds a topic across the window.
 2. **PRs.** For each watched repository: `gh search prs "feat in:title" --repo <repo> --created ">=<window start date>" --json url,title,author,isDraft,labels,state,commentsCount --limit 1000`. A monorepo opens hundreds of feature PRs a day, so never list them all: keep the PRs linked from the followed channels, then the 10 with the most comments, and report the rest as a count per top-level area (the scope in `feat(<scope>)`). Also collect every GitHub PR URL found in the channel messages.
 3. **Fan-out.** With more than 6 channels, give batches of 3 channels to general-purpose subagents. Each returns candidate items in the item format below, with the Slack permalink for each. Read the channels yourself otherwise.
 

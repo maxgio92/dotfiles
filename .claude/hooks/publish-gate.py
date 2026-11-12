@@ -99,9 +99,20 @@ bash \bgit\b[^\n;&|]*\bremote\b[^\n;&|]*--mirror
 bash \.git/config\b
 # Raw GitHub API writes; gh-api-gate asks only for writes, reads never prompt.
 bash \bgh\s+api\b
-# Slack speaks for the user as a person.
+# Slack speaks for the user as a person. Every command segment that names
+# agent-slack is an exception unless the whole segment is one read (message
+# list|get, search, channel list, user get|list, canvas get, auth test) with
+# plain words or double-quoted text free of $, `, \ and control characters
+# as arguments. Quoting, env prefixes, paths and flags before the read words
+# all prompt: an extra prompt is cheaper than a send under a grant.
+bash (?:^|[\n;&|])(?![ \t]*agent-slack[ \t]+(?:message[ \t]+(?:list|get)|search|channel[ \t]+list|user[ \t]+(?:get|list)|canvas[ \t]+get|auth[ \t]+test)(?:[ \t]+(?:[A-Za-z0-9_.,:=/#@+-]+|"[^"$`\\\x00-\x1f\x7f]*"))*[ \t]*(?:[\n;&|]|$))[^\n;&|]*\bagent-slack\b
+# MCP Slack writes, while the Slack plugin is still enabled anywhere.
 tool mcp__plugin_slack_slack__slack_send_message
 tool mcp__plugin_slack_slack__*canvas*
+# The Slack token and the variables that carry it; the wrapper reads it,
+# agents never need to.
+bash \.config/agent-slack\b|(?i:\bslack_token\b|\bagent_slack_bin\b)
+path ~/.config/agent-slack
 """
 
 
@@ -237,13 +248,16 @@ def excepted(payload, rules):
     if not isinstance(tool, str) or not isinstance(tool_input, dict):
         return True
     command = tool_input.get("command") if tool == "Bash" else None
+    if isinstance(command, str):
+        # The shell drops a backslash-newline before splitting words, so
+        # `message \<newline> send` runs as `message send`.
+        command = command.replace("\\\n", "")
     if isinstance(command, str) and PUSH_RE.search(command) and config_forces(payload.get("cwd")):
         return True  # the repository's own config would force the push
     for kind, matcher in rules:
         if kind == "tool" and fnmatch.fnmatchcase(tool, matcher):
             return True
         if kind == "bash" and tool == "Bash":
-            command = tool_input.get("command")
             if not isinstance(command, str) or matcher.search(command):
                 return True
         if kind == "path":

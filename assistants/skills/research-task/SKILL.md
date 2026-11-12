@@ -40,14 +40,14 @@ Split work by source or source cluster. Match the available tool to the source:
 | --- | --- |
 | Linked Linear issues | Linear tools, when the harness provides them |
 | GitHub pull requests, issues, code, and status | Read-only `gh` reads and searches |
-| Linked Slack threads | Slack tools, when the harness provides them |
+| Linked Slack threads | `agent-slack message list <message-url>` (the `slack` skill), read-only |
 | General URLs and web context | Prefer Exa search and fetch tools when available; otherwise use suitable web search and page-reading tools |
 | Linear topic search | When the harness provides Linear tools, search other issues about the same domain, feature, or problem |
 | GitHub topic search | Search issues, pull requests, code, and status for related work the target does not link |
-| Slack topic search | When the harness provides Slack tools, search recent conversations on the same topic, not only linked threads |
+| Slack topic search | `agent-slack search messages "<query>"`: search recent conversations on the same topic, not only linked threads |
 | Counts, rates, and trends | BigQuery through a reachable CLI, MCP server, or existing export |
 
-When the harness does not provide Linear or Slack tools, ask the user for the relevant content or note the source as unreachable in the report.
+When the harness does not provide Linear tools or `agent-slack auth test` fails, ask the user for the relevant content or note the source as unreachable in the report.
 
 Reach for BigQuery when the task makes a quantitative claim, when a recommendation would be stronger with a number, or when the size of a problem is unknown. Prefer a measured number over an estimate. Record the query and run date beside the number. If no client is reachable, state that limitation and continue. Absence is not a finding.
 

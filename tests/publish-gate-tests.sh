@@ -137,8 +137,39 @@ expect "exc: shell on .claude" $P "$A" none "sed -i s/ask/allow/ ~/.claude/setti
 expect "exc: shell on dotfiles .claude" $P "$A" none "cp x ~/.dotfiles/.claude/settings.json"
 expect "exc: claude-grant" $P "$A" none "~/.local/bin/claude-grant 8h"
 expect "exc: grant dir" $P "$A" none "echo x > ~/.local/state/claude-publish-grants/y.json"
-expect_tool "exc: Slack send" "$A" none mcp__plugin_slack_slack__slack_send_message '{"channel_id": "C1", "message": "m"}'
-expect_tool "exc: Slack canvas" "$A" none mcp__plugin_slack_slack__slack_create_canvas '{"title": "t"}'
+expect "exc: Slack send" $P "$A" none 'agent-slack message send C1 "$(cat /tmp/m.txt)" --thread-ts 1.2'
+expect "exc: Slack send via wrapper path" $P "$A" none "~/.local/bin/agent-slack message send C1 hi"
+expect "exc: Slack send via npm path" $P "$A" none "/home/linuxbrew/.linuxbrew/bin/agent-slack message send C1 hi"
+expect "exc: Slack send via node" $P "$A" none "node /x/node_modules/agent-slack/bin/agent-slack.js message send C1 hi"
+expect "exc: Slack send after env prefix" $P "$A" none "SLACK_TOKEN=x agent-slack message send C1 hi"
+expect "exc: Slack send after global flag" $P "$A" none "agent-slack --safe-mode message send C1 hi"
+expect "exc: Slack send quoted" $P "$A" none "agent-slack 'message' \"send\" C1 hi"
+expect "exc: Slack send in compound" $P "$A" none "cd /tmp && agent-slack message send C1 hi | jq .ts"
+expect "exc: Slack send after line continuation" $P "$A" none $'agent-slack message \\\nsend C1 hi'
+expect "exc: Slack send split mid-word" $P "$A" none $'agent-sl\\\nack message send C1 hi'
+expect "exc: Slack compose after flag between words" $P "$A" none "agent-slack message --safe-mode compose C1 hi"
+expect "exc: Slack send after quoted flag and continuation" $P "$A" none $'agent-slack \'message\' --safe-mode \\\n  "send" C1 hi'
+expect "exc: Slack scheduled cancel after flag" $P "$A" none "agent-slack message scheduled --safe-mode cancel X"
+expect "exc: push after line continuation" $P "$A" none $'git \\\npush --force origin main'
+for sub in "message edit" "message delete" "message compose" "message draft create" "message react add" \
+  "message react remove" "message scheduled cancel" "canvas create" "canvas edit" "channel new" \
+  "channel invite" "channel mark" "user dm-open" "workflow run"; do
+  expect "exc: Slack $sub" $P "$A" none "agent-slack $sub X"
+done
+expect "exc: Slack token read" $P "$A" none "cat ~/.config/agent-slack/token"
+expect "exc: Slack compose after quoted flag and env prefix" $P "$A" none 'CI=1 agent-slack message "--safe-mode" compose C1 hi'
+expect "exc: Slack send with quote inside a word" $P "$A" none "agent-slack mess'age' send C1 hi"
+expect "exc: Slack send after empty quotes" $P "$A" none 'agent-slack message ""send C1 hi'
+expect "exc: Slack read with substitution" $P "$A" none 'agent-slack message list C1 "$(agent-slack message send C1 hi)"'
+expect "exc: Slack in subshell" $P "$A" none '(agent-slack message send C1 hi)'
+expect "exc: Slack outside the read list" $P "$A" none "agent-slack message scheduled list"
+expect_tool "exc: Slack MCP send" "$A" none mcp__plugin_slack_slack__slack_send_message '{"channel_id": "C1", "message": "m"}'
+expect_tool "exc: Slack MCP canvas" "$A" none mcp__plugin_slack_slack__slack_create_canvas '{"title": "t"}'
+expect "not exc: Slack message list" $P "$A" allow "agent-slack message list C1 --thread-ts 1.2"
+expect "not exc: Slack search messages send" $P "$A" allow "agent-slack search messages send --limit 5"
+expect "not exc: Slack channel list" $P "$A" allow "agent-slack channel list --limit 100"
+expect "not exc: Slack search with quoted query" $P "$A" allow 'cd /tmp && agent-slack search messages "release notes" --limit 5 | jq .'
+expect "not exc: send in a later segment" $P "$A" allow "agent-slack message list C1; echo message send"
 expect_tool "exc: AskUserQuestion" "$A" none AskUserQuestion '{"questions": []}'
 expect_tool "exc: ExitPlanMode" "$A" none ExitPlanMode '{"plan": "p"}'
 expect_tool "exc: Edit ~/.claude" "$A" none Edit "{\"file_path\": \"$HOME/.claude/settings.json\", \"old_string\": \"a\", \"new_string\": \"b\"}"
@@ -178,6 +209,10 @@ git -C "$cr" config 'remote.a b.push' ':refs/heads/x'; git -C "$cr" config --uns
 expect "config check: spaced remote name" $P "$A" none "git push fork" "$cr"
 expect "config check: non-push prompt unaffected" $P "$A" allow "gh pr ready 1" "$cr"
 expect "config check: no cwd refused" $P "$A" none "git push fork b" ""
+expect "exc: SLACK_TOKEN" $P "$A" none "SLACK_TOKEN=x agent-slack message list C1"
+expect "exc: AGENT_SLACK_BIN" $P "$A" none "AGENT_SLACK_BIN=/tmp/e agent-slack auth test"
+expect "exc: slack_token lower" $P "$A" none "echo \$slack_token && git push"
+expect_tool "exc: Read token file" "$A" none Read "{\"file_path\": \"$HOME/.config/agent-slack/token\"}"
 expect "not exc: --follow-tags" $P "$A" allow "git push --follow-tags fork b"
 expect "not exc: --dry-run" $P "$A" allow "git push --dry-run fork b"
 expect_tool "exc: MCP tool path field" "$A" none mcp__fs__write_file "{\"path\": \"$HOME/.claude/settings.json\", \"content\": \"x\"}"
@@ -201,7 +236,8 @@ write_grant "$A" "$now" "$((now + 3600))"
 expect "custom: merge excepted" $P "$A" none "gh pr merge 1"
 expect "custom: force now allowed" $P "$A" allow "git push -f fork b"
 expect_tool "custom: Linear excepted" "$A" none mcp__linear__save_comment '{"body": "b"}'
-expect_tool "custom: Slack now allowed" "$A" allow mcp__plugin_slack_slack__slack_send_message '{"message": "m"}'
+expect "custom: Slack now allowed" $P "$A" allow "agent-slack message send C1 hi"
+expect_tool "custom: Slack MCP now allowed" "$A" allow mcp__plugin_slack_slack__slack_send_message '{"message": "m"}'
 expect "custom: core still guards .claude" $P "$A" none "sed -i s/a/b/ ~/.claude/settings.json"
 expect_tool "custom: core still guards questions" "$A" none AskUserQuestion '{"questions": []}'
 : >"$XDG_CONFIG_HOME/claude-grant/exceptions"; write_grant "$A" "$now" "$((now + 3600))"
