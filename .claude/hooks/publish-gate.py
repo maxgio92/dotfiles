@@ -93,8 +93,6 @@ DEFAULTS = r"""
 # +refspec (quoted or not), --mirror, --prune, and the abbreviations git
 # accepts for them. --force-with-lease passes.
 bash \bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(\s--fo(r|rc|rce)?(\s|=|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s['"]?\+[^\s]|\s--mi(r|rr|rro|rror)?(\s|=|$)|\s--pr(u|un|une)?(\s|=|$))
-# Branch or tag deletion: --delete, -d, :dst.
-bash \bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(\s--de(l|le|let|lete)?(\s|=|$)|\s-[a-zA-Z]*d[a-zA-Z]*(\s|$)|\s['"]?:[^\s])
 # Push config that turns a plain push into a force push: git config, git -c,
 # --config-env, and GIT_CONFIG_* environment variables.
 bash \bgit\b[^\n;&|]*\bconfig\b[^\n;&|]*(push|mirror)
