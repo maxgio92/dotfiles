@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""Grant one Claude Code session a time-limited pass on publish prompts.
+
+Usage: claude-grant <duration> [session-id]   duration: 30m, 2h, or minutes (max 8h)
+       claude-grant list
+       claude-grant revoke [session-id|all]
+The deny rule Bash(claude-grant:*) blocks only the plain `claude-grant`
+invocation by the agent; it is a convenience guard, not a security boundary.
+
+Run it inside the target session as `! claude-grant 2h`. The session id comes
+from the argument, else from $CLAUDE_CODE_SESSION_ID; with neither, it exits
+with an error. The publish-gate hook reads the grant file; see
+.claude/hooks/publish-gate.py for what a grant approves.
+"""
+
+import glob
+import json
+import os
+import re
+import sys
+import tempfile
+import time
+
+MAX_GRANT = 8 * 3600
+SESSION_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
+DURATION_RE = re.compile(r"^([1-9][0-9]*)([mh]?)$")
+
+
+def die(msg):
+    print("claude-grant: %s" % msg, file=sys.stderr)
+    sys.exit(64)
+
+
+def grant_dir():
+    state = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+    return os.path.join(state, "claude-publish-grants")
+
+
+def resolve_session(arg):
+    if arg is not None:
+        sid = arg
+    elif os.environ.get("CLAUDE_CODE_SESSION_ID"):
+        sid = os.environ["CLAUDE_CODE_SESSION_ID"]
+    else:
+        die("CLAUDE_CODE_SESSION_ID is unset; pass the session id explicitly")
+    if not SESSION_RE.match(sid):
+        die("invalid session id %r" % sid)
+    return sid
+
+
+def parse_duration(text):
+    m = DURATION_RE.match(text)
+    if not m:
+        die("invalid duration %r; use 30m, 2h, or minutes" % text)
+    seconds = int(m.group(1)) * (3600 if m.group(2) == "h" else 60)
+    if seconds > MAX_GRANT:
+        die("duration %s exceeds the 8h cap" % text)
+    return seconds
+
+
+def grant(seconds, sid):
+    directory = grant_dir()
+    os.makedirs(directory, mode=0o700, exist_ok=True)
+    os.chmod(directory, 0o700)
+    now = int(time.time())
+    expires = now + seconds
+    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".tmp-")  # mode 0600
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump({"granted_at": now, "expires_at": expires}, f)
+        os.replace(tmp, os.path.join(directory, sid + ".json"))
+    except BaseException:
+        os.unlink(tmp)
+        raise
+    print("granted session %s until %s" % (sid, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expires))))
+
+
+def grants():
+    for path in sorted(glob.glob(os.path.join(grant_dir(), "*.json"))):
+        yield os.path.basename(path)[: -len(".json")], path
+
+
+def list_grants():
+    now = int(time.time())
+    for sid, path in grants():
+        try:
+            with open(path) as f:
+                expires = json.load(f)["expires_at"]
+            state = "until %s" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expires))
+            if expires <= now:
+                state = "expired"
+        except Exception:  # noqa: BLE001 - report, do not crash on a bad file
+            state = "malformed"
+        print("%s %s" % (sid, state))
+
+
+def revoke(arg):
+    if arg == "all":
+        targets = [path for _, path in grants()]
+    else:
+        targets = [os.path.join(grant_dir(), resolve_session(arg) + ".json")]
+    for path in targets:
+        try:
+            os.unlink(path)
+            print("revoked %s" % os.path.basename(path)[: -len(".json")])
+        except FileNotFoundError:
+            print("no grant for %s" % os.path.basename(path)[: -len(".json")])
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__.strip().split("\n\n")[1], file=sys.stderr)
+        return 64 if not argv else 0
+    cmd, rest = argv[0], argv[1:]
+    if len(rest) > 1 or (cmd == "list" and rest):
+        die("too many arguments")
+    if cmd == "list":
+        list_grants()
+    elif cmd == "revoke":
+        revoke(rest[0] if rest else None)
+    else:
+        seconds = parse_duration(cmd)
+        grant(seconds, resolve_session(rest[0] if rest else None))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

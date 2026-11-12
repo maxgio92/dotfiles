@@ -31,7 +31,9 @@
       "Bash(gh issue unlock:*)",
       "Bash(gh secret:*)",
       "Bash(gh variable:*)",
-      "Bash(gh config:*)"
+      "Bash(gh config:*)",
+      "Bash(claude-grant:*)",
+      "Edit(~/.local/state/claude-publish-grants/**)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -106,6 +108,16 @@
     ],
     "PermissionRequest": [
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x $HOME/.claude/hooks/publish-gate.py ] || $HOME/.claude/hooks/publish-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
@@ -178,6 +190,11 @@
           {
             "type": "command",
             "command": "h=$HOME/.claude/hooks/gh-api-gate.py; if [ -x \"$h\" ]; then exec \"$h\"; elif grep -q \"gh api\"; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"gh-api-gate is not installed\"}}'; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "[ ! -x $HOME/.claude/hooks/publish-gate.py ] || $HOME/.claude/hooks/publish-gate.py",
             "timeout": 10
           }
         ]
