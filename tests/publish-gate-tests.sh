@@ -140,6 +140,11 @@ git -C "$repo" config remote.origin.mirror true
 expect "grant: mirror remote refused" $P "$A" none "git push" "$repo"
 git -C "$repo" config remote.origin.mirror false
 expect "grant: mirror false allowed" $P "$A" allow "git push" "$repo"
+git -C "$repo" config 'remote.a b.push' '+refs/heads/*:refs/heads/*'
+expect "grant: + push config on spaced remote refused" $P "$A" none "git push" "$repo"
+git -C "$repo" config --unset 'remote.a b.push'
+printf '[remote "origin"]\n\tmirror\n' >>"$repo/.git/config"
+expect "grant: bare mirror key refused" $P "$A" none "git push" "$repo"
 expect "grant: relative cwd push refused" $P "$A" none "git push" "relative/dir"
 expect "grant: gh issue comment" $P "$A" allow "gh issue comment 3 --body-file $tb/c.md"
 expect "grant: gh issue close reason" $P "$A" allow "gh issue close 3 --reason completed"

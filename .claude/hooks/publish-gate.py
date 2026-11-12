@@ -347,7 +347,7 @@ def config_forces(cwd):
         return True
     try:
         res = subprocess.run(
-            ["git", "-C", cwd, "config", "--get-regexp", r"^remote\..*\.(push|mirror)$"],
+            ["git", "-C", cwd, "config", "-z", "--get-regexp", r"^remote\..*\.(push|mirror)$"],
             capture_output=True, text=True, timeout=5,
         )
     except Exception:  # noqa: BLE001 - no answer means refuse
@@ -356,11 +356,16 @@ def config_forces(cwd):
         return False  # no such keys
     if res.returncode != 0:
         return True
-    for line in res.stdout.splitlines():
-        name, _, value = line.partition(" ")
-        if name.endswith(".mirror") and value.strip().lower() not in ("false", "no", "off", "0"):
+    # With -z each record is KEY, a newline, VALUE, then NUL; a key with no
+    # value (a bare boolean) has no newline. Remote names may hold spaces.
+    for record in res.stdout.split("\0"):
+        if not record:
+            continue
+        name, sep, value = record.partition("\n")
+        value = value.strip() if sep else "true"
+        if name.endswith(".mirror") and value.lower() not in ("false", "no", "off", "0"):
             return True
-        if name.endswith(".push") and value.strip().startswith(("+", ":")):
+        if name.endswith(".push") and value.startswith(("+", ":")):
             return True
     return False
 
