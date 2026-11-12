@@ -18,8 +18,6 @@
       "Bash(gh-api-safe:*)"
     ],
     "deny": [
-      "mcp__plugin_slack_slack__slack_send_message_draft",
-      "mcp__plugin_slack_slack__slack_schedule_message",
       "mcp__linear__delete_comment",
       "mcp__linear__delete_diff_comment",
       "mcp__linear__delete_status_update",
@@ -33,7 +31,10 @@
       "Bash(gh variable:*)",
       "Bash(gh config:*)",
       "Bash(claude-grant:*)",
-      "Edit(~/.local/state/claude-publish-grants/**)"
+      "Edit(~/.local/state/claude-publish-grants/**)",
+      "Read(~/.config/agent-slack/**)",
+      "Bash(agent-slack update:*)",
+      "Bash(agent-slack auth import-*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -57,10 +58,19 @@
       "Bash(gh workflow run:*)",
       "Bash(gh-review-reply:*)",
       "Bash(gh-review-post:*)",
-      "mcp__plugin_slack_slack__slack_send_message",
-      "mcp__plugin_slack_slack__slack_add_reaction",
-      "mcp__plugin_slack_slack__slack_create_canvas",
-      "mcp__plugin_slack_slack__slack_update_canvas",
+      "Bash(agent-slack message send:*)",
+      "Bash(agent-slack message edit:*)",
+      "Bash(agent-slack message delete:*)",
+      "Bash(agent-slack message react:*)",
+      "Bash(agent-slack message scheduled cancel:*)",
+      "Bash(agent-slack message compose:*)",
+      "Bash(agent-slack canvas create:*)",
+      "Bash(agent-slack canvas edit:*)",
+      "Bash(agent-slack channel new:*)",
+      "Bash(agent-slack channel invite:*)",
+      "Bash(agent-slack channel mark:*)",
+      "Bash(agent-slack user dm-open:*)",
+      "Bash(agent-slack workflow run:*)",
       "mcp__linear__save_comment",
       "mcp__linear__save_issue",
       "mcp__linear__save_diff_comment",
@@ -396,7 +406,7 @@
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
-    "slack@claude-plugins-official": true,
+    "slack@claude-plugins-official": false,
     "security-guidance@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "codex@openai-codex": true,
