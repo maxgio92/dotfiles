@@ -100,6 +100,8 @@ bash \bgit\b[^\n;&|]*\s(-c|--config-env)(\s|=)
 bash \bGIT_CONFIG
 bash \bgit\b[^\n;&|]*\bremote\b[^\n;&|]*--mirror
 bash \.git/config\b
+# Deleting a protected branch or a tag: feature-branch cleanup passes.
+bash \bgit\b[^\n;&|]*\bpush\b(?=[^\n;&|]*(\s--de(l|le|let|lete)?(\s|=|$)|\s-[a-zA-Z]*d[a-zA-Z]*(\s|$)|\s['"]?:[^\s]))[^\n;&|]*(\s|:|/)['\"]?(main|master|HEAD|trunk|develop|release[^\s]*|refs/tags/[^\s]*|v[0-9][^\s]*)(['"]?)(\s|$)
 # Raw GitHub API writes; gh-api-gate asks only for writes, reads never prompt.
 bash \bgh\s+api\b
 # Shell startup files and user services run code in every later session.
