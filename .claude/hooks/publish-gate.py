@@ -18,7 +18,8 @@ What a grant approves, as ``&&``-joined segments that each match SPECS
 exactly (listed flags only, no abbreviations, no unknown options):
 
 * publish: ``git push`` (no force of any kind, no +refspec, no branch
-  deletion; an explicit remote must be a name and must not exist as a path
+  deletion, and refused when the repository config has a push refspec
+  starting with + or : or a mirror remote; an explicit remote must be a name and must not exist as a path
   relative to the payload ``cwd``, since git treats a word that is not a
   configured remote as a URL or path and runs that repository's hooks),
   ``gh pr create|merge|comment|review|edit|ready|close|reopen`` and
@@ -42,7 +43,8 @@ An allowed command skips the auto-mode classifier, so during a grant nothing
 checks what gets published: a secret pushed to a public repository goes
 out unreviewed. ``-F``/``--file``/``--body-file`` must resolve, symlinks
 followed, to a file below ``/tmp`` outside any ``.git``, so a granted agent
-cannot publish an arbitrary local file such as a key or a ``.env``. Publish
+cannot publish an arbitrary local file such as a key or a ``.env``. The
+file is also refused when it holds a private key or a common token format. Publish
 commands take no ``--repo``/``-R``, so they act on the repository of the
 current directory.
 The allowlist closes command-line vectors only. Programs configured in the
@@ -69,6 +71,8 @@ import json
 import os
 import re
 import shlex
+import stat
+import subprocess
 import sys
 import time
 
@@ -82,6 +86,17 @@ OPERATOR_CHARS = set("();|&")
 REMOTE_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*$")
 # Flags whose value names a local file that gets published.
 FILE_FLAGS = {"-F", "--file", "--body-file"}
+# A body or message file larger than this, or holding a secret, is refused.
+MAX_FILE = 1 << 20
+SECRET_RE = re.compile(
+    rb"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----"
+    rb"|\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}"
+    rb"|\bgithub_pat_[A-Za-z0-9_]{22,}"
+    rb"|\bglpat-[A-Za-z0-9_-]{20}"
+    rb"|\bAKIA[0-9A-Z]{16}\b"
+    rb"|\bxox[abposr]-[A-Za-z0-9-]{10,}"
+    rb"|\bsk-(?:ant-)?[A-Za-z0-9_-]{20,}"
+)
 
 # Flag kinds: BOOL takes no value; VALUE takes the next token (even one that
 # starts with '-', as git parse-options and pflag do) or an attached one;
@@ -240,6 +255,9 @@ def safe_file(path, base):
     it must not name an arbitrary local file such as a key, a ``.env`` or a
     ``.git/config`` that holds a token. BASE is the payload cwd, or None after a cd segment, when the directory
     is unknown. realpath follows symlinks, so a link to a key is refused.
+    The file must exist, be a regular file of at most MAX_FILE bytes, and
+    hold nothing that SECRET_RE matches, so a key copied into /tmp is
+    refused too. This catches common formats only; it is not a secret scanner.
     """
     if not path or base is None:
         return False
@@ -247,7 +265,23 @@ def safe_file(path, base):
     root = os.path.realpath("/tmp")
     if real == root or os.path.commonpath([real, root]) != root:
         return False
-    return ".git" not in real.split(os.sep)
+    if ".git" in real.split(os.sep):
+        return False
+    try:
+        fd = os.open(real, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return False
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_size > MAX_FILE:
+            return False
+        with os.fdopen(fd, "rb") as f:
+            fd = None
+            data = f.read(MAX_FILE + 1)
+    finally:
+        if fd is not None:
+            os.close(fd)
+    return len(data) <= MAX_FILE and not SECRET_RE.search(data)
 
 
 def conforms(argv, key, entry, base):
@@ -301,6 +335,36 @@ def conforms(argv, key, entry, base):
     return True
 
 
+def config_forces(cwd):
+    """True unless the repository at CWD has no push config that force-pushes.
+
+    A remote.<name>.push refspec that starts with + or :, or a
+    remote.<name>.mirror, turns a plain ``git push`` into a force push or a
+    branch deletion. Reading config runs no program. Any error counts as
+    forcing, so a miss costs a prompt.
+    """
+    if not isinstance(cwd, str) or not os.path.isabs(cwd):
+        return True
+    try:
+        res = subprocess.run(
+            ["git", "-C", cwd, "config", "--get-regexp", r"^remote\..*\.(push|mirror)$"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:  # noqa: BLE001 - no answer means refuse
+        return True
+    if res.returncode == 1 and not res.stdout:
+        return False  # no such keys
+    if res.returncode != 0:
+        return True
+    for line in res.stdout.splitlines():
+        name, _, value = line.partition(" ")
+        if name.endswith(".mirror") and value.strip().lower() not in ("false", "no", "off", "0"):
+            return True
+        if name.endswith(".push") and value.strip().startswith(("+", ":")):
+            return True
+    return False
+
+
 def local_remote(argv, cwd, moved):
     """True when git push ARGV names a remote that git could open as a local path.
 
@@ -341,7 +405,7 @@ def approved(command, wanted, others, cwd=None):
             return False
         if moved and (key in PUBLISH or key in COMMIT):
             return False  # it would act on whatever repository cd named
-        if key == ("git", "push") and local_remote(argv, cwd, moved):
+        if key == ("git", "push") and (local_remote(argv, cwd, moved) or config_forces(cwd)):
             return False
         moved = moved or key == ("cd",)
     return hit

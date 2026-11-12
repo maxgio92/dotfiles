@@ -14,7 +14,10 @@ cli="$here/../bin/claude-grant"
 XDG_STATE_HOME="$(mktemp -d)"
 export XDG_STATE_HOME
 work="$(mktemp -d)"
-trap 'rm -rf "$XDG_STATE_HOME" "$work"' EXIT
+# Body and message files must live under /tmp, whatever TMPDIR says.
+tb="$(mktemp -d /tmp/publish-gate-tests.XXXXXX)"
+trap 'rm -rf "$XDG_STATE_HOME" "$work" "$tb"' EXIT
+for f in b.md r.md c.md msg.txt pr-body.md; do echo "plain text" >"$tb/$f"; done
 grants="$XDG_STATE_HOME/claude-publish-grants"
 unset CLAUDE_CODE_SESSION_ID
 
@@ -41,10 +44,10 @@ else:
     print(h["decision"]["behavior"] if "decision" in h else h["permissionDecision"])'
 }
 
-# expect NAME EVENT SESSION WANT COMMAND: exit 0 and WANT is allow, or none.
+# expect NAME EVENT SESSION WANT COMMAND [CWD]: exit 0 and WANT is allow, or none.
 expect() {
   local name="$1" event="$2" sid="$3" want="$4" cmd="$5" out status got
-  out="$(payload "$event" "$sid" "$cmd" | "$hook" 2>&1)"; status=$?
+  out="$(payload "$event" "$sid" "$cmd" "${6-$work}" | "$hook" 2>&1)"; status=$?
   [ "$status" -eq 0 ] || { fail "$name" "exit $status: $out"; return; }
   got="$(printf '%s' "$out" | decision)"
   [ "$got" = "$want" ] || { fail "$name" "decided $got, want $want: $out"; return; }
@@ -73,16 +76,16 @@ write_grant "$A" "$now" "$((now + 3600))"
 # Valid grant for session A: commands inside the allowlist.
 expect "grant: push upstream" $P "$A" allow "git push -u origin br"
 expect "grant: add commit push" $P "$A" allow "git add -A && git commit -m 'fix(scope): y' && git push"
-expect "grant: scoped PR title" $P "$A" allow "gh pr create --title 'feat(x): y' --body-file /tmp/b.md"
+expect "grant: scoped PR title" $P "$A" allow "gh pr create --title 'feat(x): y' --body-file $tb/b.md"
 expect "grant: gh pr merge" $P "$A" allow "gh pr merge 12 --squash --delete-branch"
 expect "grant: push origin HEAD" $P "$A" allow "git push origin HEAD"
 expect "grant: force-with-lease" $P "$A" none "git push --force-with-lease origin br"
 expect "grant: force-with-lease value" $P "$A" none "git push --force-with-lease=br origin br"
-expect "grant: gh pr create flags" $P "$A" allow "gh pr create -B main -H x -t t -F /tmp/b.md --draft"
+expect "grant: gh pr create flags" $P "$A" allow "gh pr create -B main -H x -t t -F $tb/b.md --draft"
 expect "grant: gh pr create -R refused" $P "$A" none "gh pr create -B main -t t -F b.md -R o/r"
-expect "grant: gh pr review approve" $P "$A" allow "gh pr review 3 --approve --body-file /tmp/r.md"
-expect "grant: body file under /tmp" $P "$A" allow "gh pr create -t t --body-file /tmp/pr-body.md"
-expect "grant: commit file attached" $P "$A" allow "git commit -F/tmp/msg.txt"
+expect "grant: gh pr review approve" $P "$A" allow "gh pr review 3 --approve --body-file $tb/r.md"
+expect "grant: body file under /tmp" $P "$A" allow "gh pr create -t t --body-file $tb/pr-body.md"
+expect "grant: commit file attached" $P "$A" allow "git commit -F$tb/msg.txt"
 expect "grant: abs body file refused" $P "$A" none "gh pr create -t t --body-file /etc/passwd"
 expect "grant: attached abs body refused" $P "$A" none "gh pr comment 1 --body-file=/etc/passwd"
 expect "grant: short abs body refused" $P "$A" none "gh issue create -t t -F/etc/passwd"
@@ -99,9 +102,9 @@ expect "grant: symlinked commit file refused" $T "$A" none "git commit -F linked
 expect "grant: publish --repo refused" $P "$A" none "gh pr comment 1 -R other/repo --body-file b.md"
 expect "grant: read --repo allowed" $P "$A" allow "gh pr view 1 -R o/r && gh pr merge 1 --squash"
 expect "grant: -F= attached abs refused" $P "$A" none "gh pr create -t t -F=/etc/passwd"
-expect "grant: -F= attached review refused" $P "$A" none "gh pr review 1 -c -F=/tmp/r.md"
+expect "grant: -F= attached review refused" $P "$A" none "gh pr review 1 -c -F=$tb/r.md"
 expect "grant: PR URL merge refused" $P "$A" none "gh pr merge https://github.com/other/repo/pull/1 --squash"
-expect "grant: PR URL comment refused" $P "$A" none "gh pr comment https://github.com/other/repo/pull/1 --body-file /tmp/b.md"
+expect "grant: PR URL comment refused" $P "$A" none "gh pr comment https://github.com/other/repo/pull/1 --body-file $tb/b.md"
 expect "grant: issue URL close refused" $P "$A" none "gh issue close https://github.com/other/repo/issues/1"
 expect "grant: branch selector refused" $P "$A" none "gh pr merge feature-x --squash"
 expect "grant: cd then gh merge refused" $P "$A" none "cd /tmp/x && gh pr merge 1 --squash"
@@ -113,16 +116,40 @@ expect "grant: :dst delete refused" $P "$A" none "git push origin :main"
 expect "grant: .git/config body refused" $P "$A" none "gh pr comment 1 --body-file .git/config"
 expect "grant: cwd body file refused" $P "$A" none "gh pr comment 1 --body-file notes.md"
 expect "grant: /tmp .git body refused" $P "$A" none "gh pr comment 1 --body-file /tmp/r/.git/config"
-expect "commit: /tmp message file" $T "$A" allow "git commit -F /tmp/msg.txt"
-expect "grant: gh issue comment" $P "$A" allow "gh issue comment 3 --body-file /tmp/c.md"
+expect "commit: /tmp message file" $T "$A" allow "git commit -F $tb/msg.txt"
+printf -- '-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n' >"$tb/key.md"
+echo "token ghp_abcdefghijklmnopqrstuvwxyz0123456789" >"$tb/tok.md"
+expect "grant: private key body refused" $P "$A" none "gh pr comment 1 --body-file $tb/key.md"
+expect "grant: token body refused" $P "$A" none "gh pr create -t t -F $tb/tok.md"
+expect "commit: private key message refused" $T "$A" none "git commit -F $tb/key.md"
+expect "grant: missing body refused" $P "$A" none "gh pr comment 1 --body-file $tb/missing.md"
+mkfifo "$tb/fifo.md"
+expect "grant: fifo body refused" $P "$A" none "gh pr comment 1 --body-file $tb/fifo.md"
+ln -s "$tb/b.md" "$tb/link.md"
+expect "grant: /tmp symlink to /tmp allowed" $P "$A" allow "gh pr comment 1 --body-file $tb/link.md"
+repo="$work/cfg"; git init -q "$repo"
+git -C "$repo" config remote.origin.push 'refs/heads/main:refs/heads/main'
+expect "grant: plain push config allowed" $P "$A" allow "git push" "$repo"
+git -C "$repo" config remote.origin.push '+refs/heads/*:refs/heads/*'
+expect "grant: + push config refused" $P "$A" none "git push" "$repo"
+expect "grant: + push config explicit refused" $P "$A" none "git push origin main" "$repo"
+git -C "$repo" config remote.origin.push ':refs/heads/release'
+expect "grant: : push config refused" $P "$A" none "git push" "$repo"
+git -C "$repo" config --unset remote.origin.push
+git -C "$repo" config remote.origin.mirror true
+expect "grant: mirror remote refused" $P "$A" none "git push" "$repo"
+git -C "$repo" config remote.origin.mirror false
+expect "grant: mirror false allowed" $P "$A" allow "git push" "$repo"
+expect "grant: relative cwd push refused" $P "$A" none "git push" "relative/dir"
+expect "grant: gh issue comment" $P "$A" allow "gh issue comment 3 --body-file $tb/c.md"
 expect "grant: gh issue close reason" $P "$A" allow "gh issue close 3 --reason completed"
 expect "grant: read then push" $P "$A" allow "git status && git log --oneline -n 3 && git push"
 expect "grant: attached short value" $P "$A" allow "git log -n5 && git push"
-expect "grant: checks after create" $P "$A" allow "gh pr create -t t -F /tmp/b.md && gh pr checks --json name"
+expect "grant: checks after create" $P "$A" allow "gh pr create -t t -F $tb/b.md && gh pr checks --json name"
 expect "grant: message that looks like a flag" $P "$A" allow "git commit -m --no-verify && git push"
 expect "grant: message with operators" $P "$A" allow "git commit -m 'a; b | c (d) R&D' && git push"
 expect "grant: commit -am" $P "$A" allow "git commit -am 'fix: x' && git push"
-expect "grant: commit -F" $P "$A" allow "git commit -F /tmp/msg.txt && git push"
+expect "grant: commit -F" $P "$A" allow "git commit -F $tb/msg.txt && git push"
 expect "grant: git commit PreToolUse" $T "$A" allow "git commit -m 'fix(evals): x'"
 expect "grant: add then commit PreToolUse" $T "$A" allow "git add a b && git status && git commit -m x"
 
