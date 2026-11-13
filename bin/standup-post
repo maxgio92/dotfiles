@@ -39,7 +39,9 @@ die() { log "$*"; exit 1; }
 # must end the token, so 100%, 17:31 and #2024-planning pass. Linear keys
 # (FUL-917, ECO-12345) never match.
 pr_refs() {
-  sed -E 's#https://github\.com/[^[:space:]<>|]*##g' <<<"$1" |
+  # A markdown link to a GitHub PR, [owner/repo#N](url), is a proper citation,
+  # so drop it whole before looking for bare references.
+  sed -E 's#\[[^]]*\]\(https://github\.com/[^)[:space:]]*\)##g; s#https://github\.com/[^[:space:]<>|]*##g' <<<"$1" |
     grep -oiE '([[:alnum:]_.-]*#[0-9]+|\b(prs?|pull) [0-9]+|(^|[^[:alnum:]_.#/-])[0-9]{5,})([^[:alnum:]_%-]|$)' |
     sed -E 's/^[^[:alnum:]#]//; s/[^[:alnum:]]$//' || true
 }
@@ -209,7 +211,7 @@ draft_violations() {
   local scanner=(python3 "$rules_dir/scanner.py" --policy-json "$rules_dir/policy.json" --rules "$rules_dir/rules.md")
   refs=$(pr_refs "$1")
   if [ -n "$refs" ]; then
-    printf 'It cites a pull request as a bare number: %s. Replace each with the full https://github.com/<owner>/<repo>/pull/<n> URL, or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
+    printf 'It cites a pull request as a bare number: %s. Replace each with a markdown link [owner/repo#<n>](https://github.com/<owner>/<repo>/pull/<n>), or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
   fi
   verdict=$(printf '%s' "$1" | "${scanner[@]}" scan-text 2>/dev/null) || true
   if [ "$verdict" != pass ]; then

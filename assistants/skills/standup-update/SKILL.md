@@ -39,7 +39,7 @@ Delete every line with no evidence, as the template asks. Today is the exception
 
 ## Output
 
-Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as its full bare URL each time it appears, including a repeat in the same line; never a bare number like `70016`. Never put punctuation right after a URL; Slack folds it into the link. Cite Linear issues by key only (`ABC-123`), no URL.
+Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as a markdown link, `[owner/repo#N](https://github.com/owner/repo/pull/N)`, each time it appears, including a repeat in the same line; never a bare number like `70016` or a bare URL. The poster turns markdown links into Slack links, so text may follow them. Cite Linear issues by key only (`ABC-123`), no URL.
 
 ```
 Moved:
@@ -49,7 +49,7 @@ Today:
 • <what you're on>
 
 PRs waiting on review:
-• <url> (<who>)
+• [<owner/repo#N>](<url>) (<who>)
 
 Docs blocked:
 • <doc>: <what is unresolved>

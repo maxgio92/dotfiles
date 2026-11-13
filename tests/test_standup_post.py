@@ -519,6 +519,22 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(self.sends()[0][3], text)
         self.assertFalse((self.home / ".local/state/standup-post/pwned").exists())
 
+    def test_markdown_pr_links_pass(self):
+        for text in ("• merged [acme/app#70016](https://github.com/acme/app/pull/70016) today",
+                     "• [acme/app#39](https://github.com/acme/app/pull/39) (owners), then [acme/app#40](https://github.com/acme/app/pull/40)"):
+            with self.subTest(text):
+                self.reset_state()
+                self.save_pending(text=text)
+                result = self.run_script("--approve")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(self.sends()), 1)
+
+    def test_markdown_link_text_does_not_hide_a_bare_number(self):
+        self.save_pending(text="• merged [acme/app#70016](https://github.com/acme/app/pull/70016) and #41")
+        result = self.run_script("--approve")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("#41", result.stderr)
+
     def test_bare_pr_numbers_block_the_post(self):
         url = "https://github.com/acme/{}/pull/{}"
         cases = [
@@ -541,7 +557,7 @@ class StandupPost(unittest.TestCase):
                 denied = self.run_script("--approve")
                 self.assertEqual(denied.returncode, 1)
                 self.assertIn(ref, denied.stderr)
-                self.assertIn("https://github.com/<owner>/<repo>/pull/<n>", denied.stderr)
+                self.assertIn("[owner/repo#<n>](https://github.com/<owner>/<repo>/pull/<n>)", denied.stderr)
                 self.assertEqual(self.sends(), [])
                 self.save_pending(text=cited)
                 self.assertEqual(self.run_script("--approve").returncode, 0)
