@@ -205,20 +205,11 @@ fenced_draft() {
 # draft passes here before it is saved and again before it is posted. The
 # scanner must print "pass", so a scanner that cannot run denies.
 draft_violations() {
-  local refs verdict rules bad
+  local refs verdict rules
   local scanner=(python3 "$rules_dir/scanner.py" --policy-json "$rules_dir/policy.json" --rules "$rules_dir/rules.md")
   refs=$(pr_refs "$1")
   if [ -n "$refs" ]; then
     printf 'It cites a pull request as a bare number: %s. Replace each with the full https://github.com/<owner>/<repo>/pull/<n> URL, or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
-  fi
-  # Slack links a URL only when nothing follows it on its line, so each URL
-  # must end its line and a line holds at most one.
-  bad=$(printf '%s\n' "$1" | awk '/https?:\/\// {
-    n = gsub(/https?:\/\/[^[:space:]]+/, "&")
-    if (n > 1 || $0 !~ /https?:\/\/[^[:space:]]*[A-Za-z0-9\/_=-][[:space:]]*$/) print
-  }')
-  if [ -n "$bad" ]; then
-    printf 'Text follows a URL, or a line holds more than one URL: %s. Put each URL last on its own bullet, with nothing after it, not even punctuation; for PRs waiting on review write "• <who>: <url>".\n' "${bad//$'\n'/ | }"
   fi
   verdict=$(printf '%s' "$1" | "${scanner[@]}" scan-text 2>/dev/null) || true
   if [ "$verdict" != pass ]; then

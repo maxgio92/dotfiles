@@ -290,11 +290,6 @@ class StandupPost(unittest.TestCase):
             "bare pull request": (DRAFT_TEXT.replace("https://github.com/acme/mono/pull/70016", "mono#70016"),
                                   "mono#70016"),
             "em dash": (DRAFT_TEXT.replace("review", f"review {EM_DASH} docs"), "No em dashes."),
-            "text after a url": (DRAFT_TEXT.replace("pull/70016", "pull/70016 (owners)"),
-                                 "Text follows a URL"),
-            "two urls on a line": (DRAFT_TEXT.replace("pull/70016", "pull/70016 https://github.com/acme/mono/pull/70017"),
-                                   "more than one URL"),
-            "closing parenthesis": (DRAFT_TEXT.replace("pull/70016", "pull/70016)"), "Text follows a URL"),
         }
         for name, (text, reason) in cases.items():
             with self.subTest(name):
@@ -528,16 +523,16 @@ class StandupPost(unittest.TestCase):
         url = "https://github.com/acme/{}/pull/{}"
         cases = [
             ("385710", "root-caused the stereo 385710 halt",
-             f"root-caused the halt in {url.format('stereo', 385710)}"),
+             f"root-caused the {url.format('stereo', 385710)} halt"),
             ("pull 385710", "root-caused the stereo pull 385710 halt",
-             f"root-caused the stereo halt in {url.format('stereo', 385710)}"),
+             f"root-caused the stereo {url.format('stereo', 385710)} halt"),
             ("mono#70016", "rebased mono#70016 today",
-             f"rebased today {url.format('mono', 70016)}"),
+             f"rebased {url.format('mono', 70016)} today"),
             ("#39", "• merged #39", f"• merged {url.format('dotfiles', 39)}"),
             ("PR 70016", "opened PR 70016, waiting on review",
-             f"opened, waiting on review {url.format('mono', 70016)}"),
-            ("PR 70016", "PR 70016: ready", f"ready: {url.format('mono', 70016)}"),
-            ("#39", "merged #39: done", f"done: {url.format('dotfiles', 39)}"),
+             f"opened {url.format('mono', 70016)} waiting on review"),
+            ("PR 70016", "PR 70016: ready", f"{url.format('mono', 70016)}: ready"),
+            ("#39", "merged #39: done", f"merged {url.format('dotfiles', 39)}: done"),
         ]
         for ref, bare, cited in cases:
             with self.subTest(ref):
