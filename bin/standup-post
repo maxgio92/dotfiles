@@ -32,12 +32,12 @@ die() { log "$*"; exit 1; }
 
 # Prints, one per line, the bare pull request references left in $1 once every
 # https://github.com/ URL is removed: #<digits>, with or without a repository
-# prefix (#39, mono#70016), PR, PRs or pull, one space and digits (PR 70016,
+# prefix (#39, app#70016), PR, PRs or pull, one space and digits (PR 70016,
 # pull 385710), in any case, or a standalone number of 5 or more digits
-# (stereo 385710), since mono and stereo pull requests have 5 and 6 digits.
+# (app 385710), since pull requests in large repositories have 5 or 6 digits.
 # A shorter count after any other word (reviewed 120 files) passes. The digits
 # must end the token, so 100%, 17:31 and #2024-planning pass. Linear keys
-# (FUL-917, ECO-12345) never match.
+# (ABC-917, XYZ-12345) never match.
 pr_refs() {
   # A markdown link to a GitHub PR, [owner/repo#N](url), is a proper citation,
   # so drop it whole before looking for bare references.
@@ -73,7 +73,7 @@ env_file="$HOME/.config/standup-post.env"
   die "missing $env_file; copy standup-post/standup-post.env.example there and fill it in"
 # shellcheck source=/dev/null
 . "$env_file"
-for key in STANDUP_CHANNEL STANDUP_SUBTEAM STANDUP_SELF STANDUP_TEAM; do
+for key in STANDUP_CHANNEL STANDUP_SUBTEAM STANDUP_SELF STANDUP_TEAM STANDUP_REQUEST_TEAM; do
   [ -n "${!key:-}" ] || die "$env_file does not set $key"
 done
 # The IDs go into agent-slack arguments, a jq regex and the prompt, so allow
@@ -83,10 +83,13 @@ done
 [[ $STANDUP_SELF =~ ^U[A-Z0-9]+$ ]] || die "STANDUP_SELF in $env_file is not a Slack user ID"
 [[ $STANDUP_TEAM =~ ^[A-Za-z0-9][A-Za-z0-9\ ._-]*$ ]] ||
   die "STANDUP_TEAM in $env_file may hold only letters, digits, spaces, dots, underscores and hyphens"
+[[ $STANDUP_REQUEST_TEAM =~ ^[A-Za-z0-9][A-Za-z0-9\ ._-]*$ ]] ||
+  die "STANDUP_REQUEST_TEAM in $env_file may hold only letters, digits, spaces, dots, underscores and hyphens"
 CHANNEL=$STANDUP_CHANNEL
 SUBTEAM=$STANDUP_SUBTEAM
 SELF=$STANDUP_SELF
 TEAM=$STANDUP_TEAM
+REQUEST_TEAM=$STANDUP_REQUEST_TEAM
 
 install -d -m 700 "$state_dir"
 case "${1:-}" in
@@ -250,13 +253,13 @@ image_request_violations() {
   fi
   line=$(image_request_line)
   if [ -z "$line" ]; then
-    printf 'It has no IMAGE_REQUESTS line. Query the Delivery issues assigned to you and print IMAGE_REQUESTS <keys> or IMAGE_REQUESTS none.\n'
+    printf 'It has no IMAGE_REQUESTS line. Query the %s issues assigned to you and print IMAGE_REQUESTS <keys> or IMAGE_REQUESTS none.\n' "$REQUEST_TEAM"
     return 0
   fi
   [ "$line" = none ] || read -ra keys <<<"$line"
   for key in "${keys[@]}"; do
     if ! [[ $key =~ ^[A-Z]+-[0-9]+$ ]]; then
-      printf 'Its IMAGE_REQUESTS line is not a list of issue keys such as DELI-123, or none.\n'
+      printf 'Its IMAGE_REQUESTS line is not a list of issue keys such as ABC-123, or none.\n'
       return 0
     fi
   done
@@ -389,7 +392,7 @@ prompt="You run unattended to draft the $TEAM daily standup reply. Do not ask th
 The team is $TEAM. $scope
 
 a. Read $skill_dir/SKILL.md and follow it to draft the reply for the window starting $since (UTC). Read files it names, such as ~/.claude/skills/slack-message/SKILL.md, with the Read tool. Run the sessions script as $sessions $since. Pass literal dates to gh and never use command substitution; for the open PR search use --updated \">=$updated_since\". Delete every field line without evidence, including Ask when the evidence does not settle it, but never Today: fill it with the team work planned for today as the skill says. Leave out the user's own initiatives (Linear issues labelled design and their pull requests). Put a blank line between sections. The draft must have a Moved: line and no template placeholders; if it cannot, print ERROR: <reason> and stop. The fenced block holds only the reply text: no Sources line and no marker.
-   Image requests are the user's issues in the Linear team named Delivery: call mcp__linear__list_issues with assignee \"me\" and team \"Delivery\", requesting the url field, and keep the issues whose status type is neither completed nor canceled. When any are left, the first bullet under Today: must be \"• image requests: [<key>](<url>) <name>, [<key>](<url>) <name>\" listing every one of them. Outside the fenced block, print one line IMAGE_REQUESTS followed by their space-separated keys, or IMAGE_REQUESTS none when there are none.
+   Image requests are the user's issues in the Linear team named $REQUEST_TEAM: call mcp__linear__list_issues with assignee \"me\" and team \"$REQUEST_TEAM\", requesting the url field, and keep the issues whose status type is neither completed nor canceled. When any are left, the first bullet under Today: must be \"• image requests: [<key>](<url>) <name>, [<key>](<url>) <name>\" listing every one of them. Outside the fenced block, print one line IMAGE_REQUESTS followed by their space-separated keys, or IMAGE_REQUESTS none when there are none.
 b. Print the draft as one fenced code block, then the IMAGE_REQUESTS line from step a, then exactly one final line: DRAFT, SKIP: <reason>, or ERROR: <reason>."
 
 # No Slack tool: the script already found the thread and posts the reply

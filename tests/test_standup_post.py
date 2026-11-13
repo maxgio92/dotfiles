@@ -62,12 +62,12 @@ WINDOW_END = 1792144800
 LATEST = 1792188000
 THREAD_TS = f"{OLDEST + 60}.000100"
 SENT_TODAY = f"{TODAY} {THREAD_TS}"
-DRAFT_TEXT = "Moved:\n• merged https://github.com/acme/mono/pull/70016\n\nToday:\n• review"
+DRAFT_TEXT = "Moved:\n• merged https://github.com/acme/lib/pull/70016\n\nToday:\n• review"
 DRAFT_OUTPUT = f"drafting\n```\n{DRAFT_TEXT}\n```\nSources: s1\nIMAGE_REQUESTS none\nDRAFT\n"
 IMAGE_TEXT = DRAFT_TEXT.replace(
-    "Today:\n", "Today:\n• image requests: DELI-4882 bump go, DELI-4787 add jq\n")
+    "Today:\n", "Today:\n• image requests: ABC-4882 bump go, ABC-4787 add jq\n")
 IMAGE_OUTPUT = DRAFT_OUTPUT.replace(DRAFT_TEXT, IMAGE_TEXT).replace(
-    "IMAGE_REQUESTS none", "IMAGE_REQUESTS DELI-4882 DELI-4787")
+    "IMAGE_REQUESTS none", "IMAGE_REQUESTS ABC-4882 ABC-4787")
 PERMALINK = "https://x.slack.com/archives/C/p1"
 CHANNEL = "C0TEST00001"
 SUBTEAM = "S0TEST00001"
@@ -76,6 +76,7 @@ STANDUP_ENV = f"""STANDUP_CHANNEL={CHANNEL}
 STANDUP_SUBTEAM={SUBTEAM}
 STANDUP_SELF={SELF}
 STANDUP_TEAM='Test Team'
+STANDUP_REQUEST_TEAM='Test Requests'
 """
 
 
@@ -287,8 +288,8 @@ class StandupPost(unittest.TestCase):
 
     def test_denied_draft_redrafts_once(self):
         cases = {
-            "bare pull request": (DRAFT_TEXT.replace("https://github.com/acme/mono/pull/70016", "mono#70016"),
-                                  "mono#70016"),
+            "bare pull request": (DRAFT_TEXT.replace("https://github.com/acme/lib/pull/70016", "lib#70016"),
+                                  "lib#70016"),
             "em dash": (DRAFT_TEXT.replace("review", f"review {EM_DASH} docs"), "No em dashes."),
         }
         for name, (text, reason) in cases.items():
@@ -313,7 +314,7 @@ class StandupPost(unittest.TestCase):
     def test_draft_prompt_asks_for_image_requests(self):
         self.run_script(output="SKIP: x\n")
         prompt = self.flag(self.calls()[0]["argv"], "-p")
-        self.assertIn('mcp__linear__list_issues with assignee "me" and team "Delivery"', prompt)
+        self.assertIn('mcp__linear__list_issues with assignee "me" and team "Test Requests"', prompt)
         self.assertIn("neither completed nor canceled", prompt)
         self.assertIn("IMAGE_REQUESTS none", prompt)
         self.assertIn("• image requests:", prompt)
@@ -322,16 +323,16 @@ class StandupPost(unittest.TestCase):
     def test_missing_image_requests_redrafts_once(self):
         no_bullet = IMAGE_OUTPUT.replace(IMAGE_TEXT, DRAFT_TEXT)
         cases = {
-            "no bullet": (no_bullet, "Today must start with • image requests: listing DELI-4882 DELI-4787"),
+            "no bullet": (no_bullet, "Today must start with • image requests: listing ABC-4882 ABC-4787"),
             "bullet not first": (IMAGE_OUTPUT.replace(
-                "Today:\n", "Today:\n• review first\n"), "listing DELI-4882 DELI-4787"),
-            "missing key": (IMAGE_OUTPUT.replace("DELI-4787 add jq", "DELI-47870 add jq"),
-                            "listing DELI-4882 DELI-4787"),
-            "suffixed key": (IMAGE_OUTPUT.replace("DELI-4787 add jq", "DELI-4787-x add jq"),
-                             "listing DELI-4882 DELI-4787"),
+                "Today:\n", "Today:\n• review first\n"), "listing ABC-4882 ABC-4787"),
+            "missing key": (IMAGE_OUTPUT.replace("ABC-4787 add jq", "ABC-47870 add jq"),
+                            "listing ABC-4882 ABC-4787"),
+            "suffixed key": (IMAGE_OUTPUT.replace("ABC-4787 add jq", "ABC-4787-x add jq"),
+                             "listing ABC-4882 ABC-4787"),
             "no line": (DRAFT_OUTPUT.replace("IMAGE_REQUESTS none\n", ""),
                         "It has no IMAGE_REQUESTS line"),
-            "bad key": (IMAGE_OUTPUT.replace("DELI-4882 DELI-4787\n", "DELI-4882 $(x)\n"),
+            "bad key": (IMAGE_OUTPUT.replace("ABC-4882 ABC-4787\n", "ABC-4882 $(x)\n"),
                         "not a list of issue keys"),
             "line inside the fence": (DRAFT_OUTPUT.replace(
                 "• review\n```", "• review\nIMAGE_REQUESTS none\n```"),
@@ -352,7 +353,7 @@ class StandupPost(unittest.TestCase):
             self.argv_file.unlink(missing_ok=True)
             result = self.run_script(output=no_bullet, redraft=DRAFT_OUTPUT)
             self.assertEqual(result.returncode, 1)
-            self.assertIn("listing DELI-4882 DELI-4787", result.stderr)
+            self.assertIn("listing ABC-4882 ABC-4787", result.stderr)
             self.assertFalse(self.pending.exists())
             self.assertFalse(self.draft.exists())
             self.assertEqual(len(self.calls()), 2)
@@ -498,7 +499,7 @@ class StandupPost(unittest.TestCase):
     def test_approve_rescreens_the_saved_draft(self):
         cases = {
             "em dash": (DRAFT_TEXT.replace("review", f"review {EM_DASH} docs"), "No em dashes."),
-            "bare pull request": (DRAFT_TEXT + " mono#70016", "mono#70016"),
+            "bare pull request": (DRAFT_TEXT + " lib#70016", "lib#70016"),
             "control characters": ("Moved:\n• a\x1b[8mb", "control characters"),
             "empty": ("  ", "empty"),
         }
@@ -538,16 +539,16 @@ class StandupPost(unittest.TestCase):
     def test_bare_pr_numbers_block_the_post(self):
         url = "https://github.com/acme/{}/pull/{}"
         cases = [
-            ("385710", "root-caused the stereo 385710 halt",
-             f"root-caused the {url.format('stereo', 385710)} halt"),
-            ("pull 385710", "root-caused the stereo pull 385710 halt",
-             f"root-caused the stereo {url.format('stereo', 385710)} halt"),
-            ("mono#70016", "rebased mono#70016 today",
-             f"rebased {url.format('mono', 70016)} today"),
+            ("385710", "root-caused the app 385710 halt",
+             f"root-caused the {url.format('app', 385710)} halt"),
+            ("pull 385710", "root-caused the app pull 385710 halt",
+             f"root-caused the app {url.format('app', 385710)} halt"),
+            ("lib#70016", "rebased lib#70016 today",
+             f"rebased {url.format('lib', 70016)} today"),
             ("#39", "• merged #39", f"• merged {url.format('dotfiles', 39)}"),
             ("PR 70016", "opened PR 70016, waiting on review",
-             f"opened {url.format('mono', 70016)} waiting on review"),
-            ("PR 70016", "PR 70016: ready", f"{url.format('mono', 70016)}: ready"),
+             f"opened {url.format('lib', 70016)} waiting on review"),
+            ("PR 70016", "PR 70016: ready", f"{url.format('lib', 70016)}: ready"),
             ("#39", "merged #39: done", f"merged {url.format('dotfiles', 39)}: done"),
         ]
         for ref, bare, cited in cases:
@@ -562,7 +563,7 @@ class StandupPost(unittest.TestCase):
                 self.save_pending(text=cited)
                 self.assertEqual(self.run_script("--approve").returncode, 0)
                 self.assertEqual(len(self.sends()), 1)
-        for text in ("filed FUL-917", "blocked on ECO-5500", "filed ECO-12345", "triaged 48 feedback items",
+        for text in ("filed ABC-917", "blocked on XYZ-5500", "filed XYZ-12345", "triaged 48 feedback items",
                      "reviewed 120 files", "over 1500 tests", "issue 4567", "70% merge-rate", "standup at 17:31", "planned for October 2026"):
             with self.subTest(text):
                 self.reset_state()
