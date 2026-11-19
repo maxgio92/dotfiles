@@ -395,8 +395,11 @@ Verdict: request-changes
             (REVIEW_PR_APPROVE, "approve"),
             (REVIEW_PR_SKIP, "skip"),
             ("# Review: x\n\n```markdown\nLooks fine\n```\n", None),
+            ("# Review: x\n\n```markdown\nRequest changes: the new branch is untested.\n```\n", "request-changes"),
+            ("# Review: x\n\n```markdown\nApprove: the rename keeps every caller.\n```\n", "approve"),
+            ("# Review: x\n\n```markdown\nLooks fine: approve\n```\n", None),
         ):
-            with self.subTest(verdict=verdict):
+            with self.subTest(text=text, verdict=verdict):
                 self.assertEqual(parse_review_pr(text).verdict, verdict)
 
     def test_review_pr_findings_carry_side(self) -> None:

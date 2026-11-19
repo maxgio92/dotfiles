@@ -351,7 +351,8 @@ def parse_review_pr(text: str) -> Review:
     closing = _REVIEW_PR_FENCE_CLOSE.search(text, opening.end())
     block = text[opening.end() : closing.start() if closing else len(text)]
     first_line = next((line.strip() for line in block.splitlines() if line.strip()), "")
-    verdict = _REVIEW_PR_VERDICTS.get(first_line.rstrip(".").lower())
+    # The verdict may carry a reason after a colon: "Request changes: <why>".
+    verdict = _REVIEW_PR_VERDICTS.get(first_line.split(":", 1)[0].rstrip(".").lower())
     matches = list(_REVIEW_PR_FINDING.finditer(block))
     findings = []
     for i, match in enumerate(matches):
