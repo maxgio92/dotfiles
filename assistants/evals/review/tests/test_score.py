@@ -651,7 +651,8 @@ class CaseFixtureTest(unittest.TestCase):
             ("other defect asking for a test", "strong", "pricing.py", 9, "integer division rounds the discounted price down", "Add a test for odd amounts.", 0.0),
             ("nit only", "nit", "pricing.py", 8, "discount branch is untested", "", 0.0),
             ("outside window", "strong", "pricing.py", 6, "no test for the quantity check", "", 0.0),
-            ("test file", "strong", "tests/test_pricing.py", 8, "no test for the discount", "", 0.0),
+            ("test file", "strong", "tests/test_pricing.py", 8, "no test for the discount", "", 1.0),
+            ("other file", "strong", "tests/conftest.py", 8, "no test for the discount", "", 0.0),
         )
         for name, severity, file, line, title, body, expected in rows:
             with self.subTest(name=name):
@@ -675,7 +676,7 @@ class CaseFixtureTest(unittest.TestCase):
     def test_generated_lockfile_case(self) -> None:
         root = CASES_DIR / "generated-lockfile"
         loaded = load_case(root / "case.json")
-        self.assertEqual(loaded.verdict, {"review-pr": frozenset({"skip"}), "dastardly": frozenset({"approve", "request-changes"})})
+        self.assertEqual(loaded.verdict, {"review-pr": frozenset({"skip"}), "dastardly": frozenset({"approve", "request-changes", "reject-design"})})
         head = tree_files(root / "head")
         self.assertIn("package-lock.json", head)
         self.assertNotIn("package-lock.json", tree_files(root / "base"))
@@ -683,7 +684,9 @@ class CaseFixtureTest(unittest.TestCase):
         self.assertEqual(score_output(loaded, "review-pr", REVIEW_PR_SKIP).score, 1.0)
         self.assertEqual(score_output(loaded, "dastardly", "[nit] package-lock.json:1: lock file\n\nNo package.json.\n\nVerdict: approve\n").score, 1.0)
         self.assertEqual(score_output(loaded, "dastardly", "[strong] package-lock.json:1: delete this\n\nNo package.json.\n\nVerdict: request-changes\n").score, 1.0)
-        self.assertEqual(score_output(loaded, "dastardly", "[block] package-lock.json:1: lock file\n\nNo package.json.\n\nVerdict: request-changes\n").score, 0.0)
+        # Questioning the lockfile as a whole is a design point; blocking on its generated contents is not.
+        self.assertEqual(score_output(loaded, "dastardly", "[block] package-lock.json:1: no package.json\n\nNo generator input.\n\nVerdict: reject-design\n").score, 1.0)
+        self.assertEqual(score_output(loaded, "dastardly", "[block] package-lock.json:40: wrong integrity hash\n\nFix it.\n\nVerdict: request-changes\n").score, 0.0)
         self.assertEqual(score_output(loaded, "review-pr", REVIEW_PR_APPROVE).score, 0.0)
 
 

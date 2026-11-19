@@ -3,8 +3,9 @@ description: Dastardly adversarially reviews a scope (working-tree diff by defau
 ---
 
 Use the Agent tool to launch the dastardly agent for this review; send the
-packet per the `delegate-task` skill (Task, Scope, Validation, Output as a
-report with a length budget).
+packet per the `delegate-task` skill (Task, Scope, Validation, and an Output
+field that names dastardly's own Output Format, verbatim, with no `Answer:`
+line).
 
 Scope: $ARGUMENTS
 

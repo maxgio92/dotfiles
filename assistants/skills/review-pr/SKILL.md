@@ -38,8 +38,9 @@ Options:
 - In local mode, save to
   `${XDG_DATA_HOME:-$HOME/.local/share}/agent-reports/<repo dir name>/<YYYY-MM-DD>-review-pr-local-<short head>.md`.
   `<repo dir name>` is the base name of `git -C <repo> rev-parse
-  --show-toplevel`, and `<short head>` is the first 12 characters of the head
-  SHA. The header carries `PR: local <repo path> <base>...<head>`, with the
+  --show-toplevel`, and `<short head>` is the output of `git -C <repo>
+  rev-parse --short=12 <head sha>`, pasted from that output and never typed
+  from memory. The header carries `PR: local <repo path> <base>...<head>`, with the
   absolute top-level path and the refs as given, and `Head: <full head sha>`.
 - The last `Head:` line outside code fences in the saved report is the guard
   that `publish` compares against the live head before posting: the header's,

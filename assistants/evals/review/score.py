@@ -104,6 +104,9 @@ class Matcher:
     lines: tuple[int, int] | None = None
     min_rank: int = 0
     side: str | None = None
+    # A second file that also satisfies the matcher at any line, such as the
+    # test file that should hold a missing test.
+    or_file: str | None = None
 
 
 @dataclass(frozen=True)
@@ -186,7 +189,7 @@ def _matcher(raw: Any, key: str, index: int, name: str) -> Matcher:
     where = f"{name}: {key}[{index}]"
     if not isinstance(raw, dict) or not isinstance(raw.get("pattern"), str):
         raise CaseError(f"{where}: needs a string pattern")
-    unknown = set(raw) - {"pattern", "file", "lines", "min_severity", "side"}
+    unknown = set(raw) - {"pattern", "file", "or_file", "lines", "min_severity", "side"}
     if unknown:
         raise CaseError(f"{where}: unknown keys {sorted(unknown)}")
     try:
@@ -196,6 +199,9 @@ def _matcher(raw: Any, key: str, index: int, name: str) -> Matcher:
     file_value = raw.get("file")
     if file_value is not None and not isinstance(file_value, str):
         raise CaseError(f"{where}: file must be a string")
+    or_file = raw.get("or_file")
+    if or_file is not None and (not isinstance(or_file, str) or file_value is None):
+        raise CaseError(f"{where}: or_file must be a string next to file")
     lines = raw.get("lines")
     if lines is not None:
         if (
@@ -218,6 +224,7 @@ def _matcher(raw: Any, key: str, index: int, name: str) -> Matcher:
         lines=lines,
         min_rank=SEVERITY_RANK[severity] if severity else 0,
         side=side,
+        or_file=_normalize_path(or_file) if or_file is not None else None,
     )
 
 
@@ -468,10 +475,11 @@ def shim_calls(log: str | Iterable[str]) -> tuple[list[str], list[str]]:
 def _matches(matcher: Matcher, finding: Finding, reviewer: str) -> bool:
     if finding.rank < matcher.min_rank:
         return False
-    if matcher.file is not None and finding.file != matcher.file:
+    in_or_file = matcher.or_file is not None and finding.file == matcher.or_file
+    if matcher.file is not None and finding.file != matcher.file and not in_or_file:
         return False
     last = max(finding.line, finding.end_line or finding.line)
-    if matcher.lines is not None and (last < matcher.lines[0] or finding.line > matcher.lines[1]):
+    if not in_or_file and matcher.lines is not None and (last < matcher.lines[0] or finding.line > matcher.lines[1]):
         return False
     # dastardly findings have no side, so a side applies to review-pr only.
     if matcher.side is not None and reviewer == REVIEW_PR and finding.side != matcher.side:

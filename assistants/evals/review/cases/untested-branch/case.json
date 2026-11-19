@@ -1,6 +1,6 @@
 {
   "must_flag": [
-    {"pattern": "\\bno tests?\\b|\\buntested\\b|\\bnot covered\\b|\\buncovered\\b|\\blacks? (test )?coverage\\b|\\bmissing (test )?coverage\\b|\\bmissing tests?\\b", "file": "pricing.py", "lines": [8, 9], "min_severity": "request"}
+    {"pattern": "\\bno tests?\\b|\\buntested\\b|\\bnot covered\\b|\\buncovered\\b|\\blacks? (test )?coverage\\b|\\bmissing (test )?coverage\\b|\\bmissing tests?\\b", "file": "pricing.py", "lines": [8, 9], "or_file": "tests/test_pricing.py", "min_severity": "request"}
   ],
   "must_not_flag": [],
   "verdict": ["request-changes", "reject-design"],
