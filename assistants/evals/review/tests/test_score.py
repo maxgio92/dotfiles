@@ -650,6 +650,7 @@ class CaseFixtureTest(unittest.TestCase):
             ("lacks test coverage", "strong", "pricing.py", 9, "bulk discount", "The branch lacks test coverage.", 1.0),
             ("missing coverage", "strong", "pricing.py", 8, "missing coverage for the bulk discount", "", 1.0),
             ("missing tests", "strong", "pricing.py", 9, "bulk discount has missing tests", "", 1.0),
+            ("no unit coverage", "block", "pricing.py", 8, "discount branch has no unit coverage", "", 1.0),
             ("substring only", "strong", "pricing.py", 8, "attest the latest contest result", "", 0.0),
             ("other defect asking for a test", "strong", "pricing.py", 9, "integer division rounds the discounted price down", "Add a test for odd amounts.", 0.0),
             ("nit only", "nit", "pricing.py", 8, "discount branch is untested", "", 0.0),
