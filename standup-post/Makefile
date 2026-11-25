@@ -5,6 +5,7 @@ standup-post:
 	@command -v jq >/dev/null
 	@command -v flock >/dev/null
 	@install -Dm755 "$(DOTFILES)/bin/standup-post" "$(HOME)/.local/bin/standup-post"
+	@install -Dm755 "$(DOTFILES)/bin/slack-rich-text" "$(HOME)/.local/bin/slack-rich-text"
 	@install -d -m700 "$(HOME)/.local/state/standup-post"
 	@install -Dm644 "$(DOTFILES)/standup-post/standup-post.service" "$(HOME)/.config/systemd/user/standup-post.service"
 	@install -Dm644 "$(DOTFILES)/standup-post/standup-post.timer" "$(HOME)/.config/systemd/user/standup-post.timer"

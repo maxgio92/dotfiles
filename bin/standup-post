@@ -39,7 +39,7 @@ die() { log "$*"; exit 1; }
 # must end the token, so 100%, 17:31 and #2024-planning pass. Linear keys
 # (ABC-917, XYZ-12345) never match.
 pr_refs() {
-  # A markdown link to a GitHub PR, [owner/repo#N](url), is a proper citation,
+  # A markdown link to a GitHub PR, [repo#N](url), is a proper citation,
   # so drop it whole before looking for bare references.
   sed -E 's#\[[^]]*\]\(https://github\.com/[^)[:space:]]*\)##g; s#https://github\.com/[^[:space:]<>|]*##g' <<<"$1" |
     grep -oiE '([[:alnum:]_.-]*#[0-9]+|\b(prs?|pull) [0-9]+|(^|[^[:alnum:]_.#/-])[0-9]{5,})([^[:alnum:]_%-]|$)' |
@@ -214,7 +214,7 @@ draft_violations() {
   local scanner=(python3 "$rules_dir/scanner.py" --policy-json "$rules_dir/policy.json" --rules "$rules_dir/rules.md")
   refs=$(pr_refs "$1")
   if [ -n "$refs" ]; then
-    printf 'It cites a pull request as a bare number: %s. Replace each with a markdown link [owner/repo#<n>](https://github.com/<owner>/<repo>/pull/<n>), or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
+    printf 'It cites a pull request as a bare number: %s. Replace each with a markdown link [<repo>#<n>](https://github.com/<owner>/<repo>/pull/<n>), or reword a number that is not a pull request.\n' "${refs//$'\n'/, }"
   fi
   verdict=$(printf '%s' "$1" | "${scanner[@]}" scan-text 2>/dev/null) || true
   if [ "$verdict" != pass ]; then
@@ -360,7 +360,13 @@ if [ "$mode" = approve ]; then
   log "posting the approved draft to thread $thread"
   # The draft is one argument, so the shell never expands its contents.
   status=0
-  output=$(timeout 2m agent-slack message send "$CHANNEL" "$draft" --thread-ts "$thread") || status=$?
+  # agent-slack posts markdown links as plain text, so send Block Kit link
+  # elements built from the draft; the draft text stays as the fallback.
+  blocks_file=$(mktemp "$state_dir/blocks.XXXXXX")
+  python3 -I "$(dirname "$(readlink -f "$0")")/slack-rich-text" <<<"$draft" >"$blocks_file" ||
+    { rm -f "$blocks_file"; die "cannot build the Slack blocks for the draft"; }
+  output=$(timeout 2m agent-slack message send "$CHANNEL" "$draft" --thread-ts "$thread" --blocks "$blocks_file") || status=$?
+  rm -f "$blocks_file"
   if [ "$status" -ne 0 ]; then
     # A timeout or a lost response may still have posted, so never retry
     # here: the next --approve reads the thread first and skips a landed reply.

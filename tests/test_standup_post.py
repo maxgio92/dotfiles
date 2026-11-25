@@ -3,9 +3,11 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
 import unittest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "bin/standup-post"
+REPO = SCRIPT.parents[1]
 # The em dash the fake scanner blocks, built from its code point so no
 # source line carries one.
 EM_DASH = chr(0x2014)
@@ -407,10 +409,11 @@ class StandupPost(unittest.TestCase):
         result = self.approve()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.calls(), [], "approve never runs claude")
-        self.assertEqual(self.slack_calls(), [
-            ["message", "list", CHANNEL, "--thread-ts", THREAD_TS],
-            ["message", "send", CHANNEL, DRAFT_TEXT, "--thread-ts", THREAD_TS],
-        ])
+        calls = self.slack_calls()
+        self.assertEqual(calls[0], ["message", "list", CHANNEL, "--thread-ts", THREAD_TS])
+        self.assertEqual(calls[1][:6], ["message", "send", CHANNEL, DRAFT_TEXT, "--thread-ts", THREAD_TS])
+        self.assertEqual(calls[1][6], "--blocks")
+        self.assertEqual(len(calls), 2)
         self.assertIn(f"posted {PERMALINK}", result.stderr)
         self.assertEqual(self.sent.read_text(), SENT_TODAY + "\n")
         self.assertEqual(self.state.read_text().strip(), TODAY)
@@ -520,6 +523,27 @@ class StandupPost(unittest.TestCase):
         self.assertEqual(self.sends()[0][3], text)
         self.assertFalse((self.home / ".local/state/standup-post/pwned").exists())
 
+    def test_approve_sends_link_blocks(self):
+        self.save_pending()
+        result = self.run_script("--approve")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        send = self.sends()[0]
+        self.assertIn("--blocks", send)
+        self.assertEqual(list((self.home / ".local/state/standup-post").glob("blocks.*")), [])
+
+    def test_rich_text_turns_links_into_link_elements(self):
+        draft = ("Moved:\n• merged [acme/app#1](https://github.com/acme/app/pull/1) and https://x.example/2\n\n"
+                 "Today:\n• review")
+        out = subprocess.run([sys.executable, "-I", str(REPO / "bin/slack-rich-text")], input=draft,
+                             capture_output=True, text=True, check=True).stdout
+        blocks = json.loads(out)
+        links = [e for e in _walk(blocks) if e.get("type") == "link"]
+        self.assertEqual([(l["url"], l.get("text")) for l in links],
+                         [("https://github.com/acme/app/pull/1", "acme/app#1"), ("https://x.example/2", None)])
+        lists = [e for e in _walk(blocks) if e.get("type") == "rich_text_list"]
+        self.assertEqual(len(lists), 2)
+        self.assertNotIn("](", out)
+
     def test_markdown_pr_links_pass(self):
         for text in ("• merged [acme/app#70016](https://github.com/acme/app/pull/70016) today",
                      "• [acme/app#39](https://github.com/acme/app/pull/39) (owners), then [acme/app#40](https://github.com/acme/app/pull/40)"):
@@ -558,7 +582,7 @@ class StandupPost(unittest.TestCase):
                 denied = self.run_script("--approve")
                 self.assertEqual(denied.returncode, 1)
                 self.assertIn(ref, denied.stderr)
-                self.assertIn("[owner/repo#<n>](https://github.com/<owner>/<repo>/pull/<n>)", denied.stderr)
+                self.assertIn("[<repo>#<n>](https://github.com/<owner>/<repo>/pull/<n>)", denied.stderr)
                 self.assertEqual(self.sends(), [])
                 self.save_pending(text=cited)
                 self.assertEqual(self.run_script("--approve").returncode, 0)
@@ -751,3 +775,13 @@ class StandupPost(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _walk(node):
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _walk(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _walk(value)

@@ -39,7 +39,7 @@ Delete every line with no evidence, as the template asks. Today is the exception
 
 ## Output
 
-Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as a markdown link, `[owner/repo#N](https://github.com/owner/repo/pull/N)`, each time it appears, including a repeat in the same line; never a bare number like `70016` or a bare URL. The poster turns markdown links into Slack links, so text may follow them. Cite every Linear issue as a markdown link too, `[ABC-123](<url>)`, using the `url` field the tracker returns (ask for it), so no workspace name is hard-coded.
+Follow `slack-message` for register. The channel template overrides the Slack sentence budget and the no-lists rule: each field label on its own line, then one `•` bullet per item, with a blank line between sections so Slack renders each one apart, lowercase, no bold. Cite every pull request as a markdown link with the repository name and number as its text, `[repo#N](https://github.com/owner/repo/pull/N)` (no owner prefix), each time it appears, including a repeat in the same line; never a bare number like `70016` or a bare URL. The poster turns markdown links into Slack links, so text may follow them. Cite every Linear issue as a markdown link too, `[ABC-123](<url>)`, using the `url` field the tracker returns (ask for it), so no workspace name is hard-coded.
 
 ```
 Moved:
@@ -49,7 +49,7 @@ Today:
 • <what you're on>
 
 PRs waiting on review:
-• [<owner/repo#N>](<url>) (<who>)
+• [<repo#N>](<url>) (<who>)
 
 Docs blocked:
 • <doc>: <what is unresolved>
